@@ -132,8 +132,11 @@ function VM:fetch_next_node(input)
 
     if node_type == "text" then
         return node, true
-    else
+    elseif node_type == "link" then
+        ip:set(node.link)
         return nil, true
+    else
+        error("not implemented")
     end
 end
 
@@ -156,6 +159,36 @@ function VM:node_type(node)
         -- Arrays are internal structures and we just throw an error here.
     end
     error("unexpected node")
+end
+
+--- Computes a path to a node and the node itself by their labels.
+---
+--- The labels should be absolute and complete, that is, it should start from the root node
+--- and never miss any label in between:
+--- - Correct: `part_1.chapter_1.section_1.paragraph_1`,
+--- - Incorrect: `part_1.section_1.paragraph_1`, even if there is only one `section_1` under `part_1`.
+---
+--- @return TablePath,any
+function VM:get_by_label(root_name, ...)
+    if not root_name then
+        root_name = self:get_coroutine().root_name
+    end
+    local current = self:get_root(root_name)
+    local path = TablePath.new()
+    local labels = {...}
+    for i = 1, #labels do
+        local label = labels[i]
+        if not TablePath.new():is_array(current) then
+            return nil, nil
+        end
+        local relative = current[1].labels[label]
+        -- I just don't want to require("table"), or else we can table.unpack.
+        for j = 1, #relative do
+            path:resolve(relative[j])
+        end
+        current = TablePath.from(relative):get(current)
+    end
+    return path, current
 end
 
 return brocatel

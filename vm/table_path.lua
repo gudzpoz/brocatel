@@ -36,6 +36,19 @@ function TablePath:copy()
     return TablePath.from(self)
 end
 
+--- Sets the path in place.
+---
+--- @param t table|TablePath the new path
+function TablePath:set(t)
+    local n = #t
+    while #self > n do
+        self[#self] = nil
+    end
+    for i = 1, n do
+        self[i] = t[i]
+    end
+end
+
 --- Returns true if the two paths equal.
 ---
 --- @param path table|TablePath the other path
