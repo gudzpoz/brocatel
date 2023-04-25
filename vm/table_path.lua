@@ -52,6 +52,7 @@ end
 --- Returns true if the two paths equal.
 ---
 --- @param path table|TablePath the other path
+--- @return boolean eq
 function TablePath:equals(path)
     assert(type(path) == "table", "expecting a table")
     if #self ~= #path then
@@ -72,6 +73,7 @@ end
 ---
 --- @param t table
 --- @param parents number|nil the levels to go up
+--- @return string|table|nil node
 function TablePath:get(t, parents)
     assert(type(t) == "table", "expecting a table")
     if not parents then
@@ -98,7 +100,7 @@ end
 --- - `TablePath.from({1, 1, 1}):resolve(nil, nil, 2)` points the path to `{1, 2}`.
 ---
 --- @vararg string|number|nil the relative path
---- @return TablePath the new current path, *not* a new one
+--- @return TablePath self the new current path, *not* a new one
 function TablePath:resolve(...)
     local n = select("#", ...)
     local args = {...}
@@ -116,6 +118,7 @@ end
 --- Returns true if the pointer is pointing to an brocatel array.
 ---
 --- @param t table
+--- @return boolean
 function TablePath:is_array(t, parents)
     local node = self:get(t, parents)
     if type(node) ~= "table" then
@@ -171,7 +174,7 @@ end
 ---
 --- @param t table
 --- @param init boolean|nil see the above usage tips
---- @return boolean false if the tree is exhausted and no valid next element can be found
+--- @return boolean success false if the tree is exhausted and no valid next element can be found
 function TablePath:step(t, init)
     assert(type(t) == "table", "expecting a table")
     while true do
@@ -200,10 +203,15 @@ function TablePath:step(t, init)
 end
 
 --- Returns true if the pointer cannot get further incremented
+---
+--- @return boolean done
 function TablePath:is_done()
     return #self == 0
 end
 
+--- Concatenates path segments with `/`.
+---
+--- @return string path the concatenated string
 function TablePath:__tostring()
     local str = ""
     for _, v in ipairs(self) do

@@ -1,11 +1,12 @@
 local TablePath = require("table_path")
 
 --- The brocatel module, containing the core brocatel.VM implementation.
---- @module brocatel
+---
 --- @see VM
 local brocatel = {}
 
 --- The brocatel runtime VM.
+---
 --- @class VM
 --- @field code table the compiled brocatel scripts
 --- @field save table save data
@@ -16,8 +17,8 @@ VM.version = 1
 
 --- Creates a VM from compiled brocatel scripts, in brocatel runtime format.
 ---
---- @param compiled_chunk table
---- @return VM
+--- @param compiled_chunk table the loaded chunk
+--- @return VM vm the created VM
 function VM.new(compiled_chunk)
     local vm = {
         code = compiled_chunk,
@@ -28,7 +29,9 @@ function VM.new(compiled_chunk)
 end
 
 --- Fetches a root node of the specified name
+---
 --- @param name string the root name
+--- @return table root the root node
 function VM:get_root(name)
     local root = self.code[name]
     if type(root) == "table" then
@@ -75,13 +78,37 @@ function VM:init()
     }
 end
 
+--- @class Thread
+--- @field current_coroutine number
+--- @field coroutines table
+--- @field thread_locals table
+local Thread = {}
+
+--- Fetches a thread by name.
+---
 --- @param thread_name string|nil the thread name
---- @param coroutine_id number|nil the coroutine id
-function VM:get_coroutine(thread_name, coroutine_id)
+--- @return Thread thread
+function VM:get_thread(thread_name)
     if not thread_name then
         thread_name = self.save.current_thread
     end
-    local thread = self.save.threads[thread_name]
+    return self.save.threads[thread_name]
+end
+
+--- @class Coroutine
+--- @field ip TablePath
+--- @field root_name string
+--- @field locals table
+--- @field stack table
+local Coroutine = {}
+
+--- Fetches a coroutine by thread name and id.
+---
+--- @param thread_name string|nil the thread name
+--- @param coroutine_id number|nil the coroutine id
+--- @return Coroutine|nil co
+function VM:get_coroutine(thread_name, coroutine_id)
+    local thread = self:get_thread(thread_name)
     if not thread then
         return nil
     end
@@ -92,6 +119,10 @@ function VM:get_coroutine(thread_name, coroutine_id)
 end
 
 --- Yields the next line.
+---
+---@param input number|nil
+---@return string|table|nil
+---@return boolean|table|nil
 function VM:next(input)
     while true do
         local line, tags = self:fetch_next_node(input)
@@ -118,7 +149,7 @@ function VM:fetch_next_node(input)
     if input then
         error("not implemented")
     end
-    local co = self:get_coroutine()
+    local co = assert(self:get_coroutine())
     local root = self:get_root(co.root_name)
     --- @type TablePath
     local ip = co.ip
@@ -126,9 +157,9 @@ function VM:fetch_next_node(input)
         return nil, nil
     end
 
-    local node = ip:get(root)
+    local node = assert(ip:get(root))
     ip:step(root)
-    local node_type = self:node_type(node)
+    local node_type = VM.node_type(node)
 
     if node_type == "text" then
         return node, true
@@ -143,7 +174,7 @@ end
 --- Returns "text", "tagged_text", "func", "if-else", "select" or "link" depending on the node type.
 ---
 --- @param node any
-function VM:node_type(node)
+function VM.node_type(node)
     local t = type(node)
     if t == "string" then
         return "text"
@@ -168,11 +199,12 @@ end
 --- - Correct: `part_1.chapter_1.section_1.paragraph_1`,
 --- - Incorrect: `part_1.section_1.paragraph_1`, even if there is only one `section_1` under `part_1`.
 ---
---- @return TablePath,any
+--- @return TablePath|nil,any
 function VM:get_by_label(root_name, ...)
     if not root_name then
         root_name = self:get_coroutine().root_name
     end
+    --- @type any
     local current = self:get_root(root_name)
     local path = TablePath.new()
     local labels = {...}
