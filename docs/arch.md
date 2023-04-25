@@ -143,7 +143,7 @@ There are several kinds of values in the compiled Lua table tree.
   }
   ```
 
-### Function Calls
+### Function Call Environments
 
 We don't want the users (especially those with not that much programming experiences)
 to worry about Lua scopes / environments - ideally, scopes in Lua code should be identical
@@ -178,6 +178,46 @@ In the Lua snippets, one has access to the following variables (overridden by la
 Labels and local variables are declared in the metadata of arrays.
 The former one is stored globally while the latter lives on a stack thing.
 
+#### Implementation Details
+
+This section should help explaining why things are so.
+
+1. After Lua 5.2, the `setfenv` function is officially removed, and we cannot change a function's environment
+   freely (at least without the use of the `debug` module). Therefore, the only way we can bind an environment
+   to a function while maintaining compatibility through Lua 5.x is when it is loaded with `load`.
+   So, throughout the VM lifetime, we have to reuse the same environment instance, requiring us to make
+   heavy use of the `__index` and `__newindex` meta-methods. (Thanks to them, we are precisely achieve what
+   we want (with quite a bit of work) described below.)
+
+2. Variables belong to different scopes, which can differ in their expected behaviors. For example, you don't
+   want to save the Lua `_VERSION` string.
+
+3. The outermost scope is the **Lua** environment, containing Lua functions and packages. It will **not** be included
+   in the save data. It is mostly **read-only** but **writable when loading Lua files**.
+
+4. The second is the **global** scope. It is shared between all scripts and will be **saved** in the save data.
+   Any modifications, if not captured by inner scopes, will end up here (except when loading Lua files).
+
+5. Then, the **file-local** scope. For non-programmers, I assume leaving everything global can be most friendly,
+   so the default is putting everything in the *global* scope, and *file-local* variables need a special kind of
+   declaration (with a function provided at runtime). It is **saved**.
+
+6. Here follows the *label* scope. I suppose it is the most curious scope, since we want to it to be **read-only**.
+   The scope is generated from existing statistics, probably with a special `__index` function to compute things
+   lazily. In particular, a visited label `chapte_1.section_1` or `section_1` should return a table, while unvisited
+   ones should return `nil` (and continue the lookup in outer scopes). And `__newindex` should errs.
+
+7. Thread-locals and function-locals (or just function parameters) are quite instinctive and are **saved** along
+   the thread.
+
+Procedure:
+
+1. Loading Lua files (*Lua scope*): Global variable writes goes to the Lua scope.
+2. Loading save data: Writes to a new global scope, local scopes for each file and the label statistics.
+3. Running functions (*Lua*, *global*, *file-local*, *label*, *thread*, *function*):
+   - Reads: Looks up things from inner scopes to outer ones.
+   - Writes: Looks up from inner to outer, excluding the Lua scope and the label scope.
+
 ### Runtime Pseudo-Code
 
 ```python
@@ -191,6 +231,7 @@ def run():
         value = state.yield_next_node(user_input_if_any())
         if value is not None:
             yield value
+
 
 def yield_next_node(self, user_input):
     node = self.get_current_node()
@@ -251,17 +292,21 @@ SaveData = {
                     ip = CurrentInstructionPointer,
                     root_name = "root_node_name",
                     locals = {
-                        localVariable1 = "Hello",
+                        values = {
+                            localVariable1 = "Hello",
+                        },
+                        keys = {
+                            localVariable1 = true,
+                        },
                     },
                     stack = {
-                        {ip = InstructionPointer1, root_name = "some_other_root", locals = {}},
-                        {ip = InstructionPointer2, root_name = "some_other_root", locals = {}},
-                    }
+                        {ip = InstructionPointer1, root_name = "some_other_root", locals = { ... }},
+                        {ip = InstructionPointer2, root_name = "some_other_root", locals = { ... }},
+                    },
                 },
             },
             thread_locals = {
-                threadLocalVariable1 = 1,
-                currentPlayerNameVariable1 = "player",
+                -- ...
             },
         },
     },
