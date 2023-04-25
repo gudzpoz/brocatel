@@ -7,7 +7,7 @@ assert(TablePath.new():equals(TablePath.from({})))
 assert(not TablePath.new():equals(TablePath.from({ 1 })))
 assert(TablePath.from({ 1, 2, 3 }):__tostring() == "/1/2/3")
 
-local path = TablePath:from({ 1, 2, 3 })
+local path = TablePath.from({ 1, 2, 3 })
 assert(path:copy():copy():equals(path))
 
 local tree = {

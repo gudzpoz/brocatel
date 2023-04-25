@@ -26,7 +26,7 @@ end
 --- Creates a new table-path that points to the root table itself.
 --- @return TablePath
 function TablePath.new()
-    return TablePath:from({})
+    return TablePath.from({})
 end
 
 --- Returns a copy of the current pointer.
