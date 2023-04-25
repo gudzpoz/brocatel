@@ -186,6 +186,11 @@ function TablePath:step(t, init)
     end
 end
 
+--- Returns true if the pointer cannot get further incremented
+function TablePath:is_done()
+    return #self == 0
+end
+
 function TablePath:__tostring()
     local str = ""
     for _, v in ipairs(self) do

@@ -247,21 +247,21 @@ SaveData = {
         ["threadName1"] = {
             current_coroutine = 1,
             coroutines = {
-                CurrentInstructionPointer,
+                {
+                    ip = CurrentInstructionPointer,
+                    root_name = "root_node_name",
+                    locals = {
+                        localVariable1 = "Hello",
+                    },
+                    stack = {
+                        {ip = InstructionPointer1, root_name = "some_other_root", locals = {}},
+                        {ip = InstructionPointer2, root_name = "some_other_root", locals = {}},
+                    }
+                },
             },
             thread_locals = {
                 threadLocalVariable1 = 1,
                 currentPlayerNameVariable1 = "player",
-            },
-            stack = {
-                {ret = nil},
-                {ret = PrevPrevIP,},
-                {
-                    ret = PrevIPToReturnTo,
-                    locals = {
-                        localVariable1 = "Hello",
-                    },
-                },
             },
         },
     },

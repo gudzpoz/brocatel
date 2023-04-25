@@ -9,7 +9,7 @@ since drastic change in our Markdown grammar is expected (and personally I don't
 
 Single-threaded virtual machine implementation:
 
-- [ ] VM skeleton with delayed root node loading and array walking capabilities.
+- [X] VM skeleton with delayed root node loading and array walking capabilities.
 - [ ] Label and link support in the VM.
   - [ ] A label should also serve as a text pointer.
 - [ ] Global environment and if-else call support.

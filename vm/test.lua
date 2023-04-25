@@ -40,3 +40,26 @@ repeat
 until not path:step(tree)
 -- Not actually a path, but we just use it to compare tables for convenience.
 assert(TablePath.from(results):equals({"Hello", "Hi", "!"}))
+
+--[[
+    VM tests
+]]--
+local brocatel = require("brocatel")
+local vm = brocatel.VM.new({
+    [""] = {
+        version = 1,
+        entry = "main",
+    },
+    main = tree,
+})
+results = {}
+while true do
+    local line, _ = vm:next()
+    if line then
+        results[#results + 1] = line
+    else
+        break
+    end
+end
+-- Not actually a path, but we just use it to compare tables for convenience.
+assert(TablePath.from(results):equals({"Hello", "Hi", "!"}))
