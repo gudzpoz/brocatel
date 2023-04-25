@@ -1,14 +1,18 @@
 local TablePath = require("table_path")
+local StackedEnv = require("stacked_env")
 
 --- The brocatel module, containing the core brocatel.VM implementation.
 ---
 --- @see VM
 local brocatel = {}
+brocatel.StackedEnv = StackedEnv
+brocatel.TablePath = TablePath
 
 --- The brocatel runtime VM.
 ---
 --- @class VM
 --- @field code table the compiled brocatel scripts
+--- @field env StackedEnv the environment handle
 --- @field save table save data
 local VM = {}
 brocatel.VM = VM
@@ -18,10 +22,13 @@ VM.version = 1
 --- Creates a VM from compiled brocatel scripts, in brocatel runtime format.
 ---
 --- @param compiled_chunk table the loaded chunk
+--- @param env StackedEnv the environment used to load the chunk
 --- @return VM vm the created VM
-function VM.new(compiled_chunk)
+function VM.new(compiled_chunk, env)
+    --- @type VM
     local vm = {
         code = compiled_chunk,
+        env = env,
     }
     setmetatable(vm, VM)
     vm:init()
@@ -38,7 +45,9 @@ function VM:get_root(name)
         return root
     end
     if type(root) == "function" then
+        self.env:set_init(true)
         self.code[name] = root()
+        self.env:set_init(false)
         return self:get_root(name)
     end
     error("expecting a table or a function")
@@ -56,7 +65,7 @@ function VM:init()
     local root = self:get_root(meta.entry)
     local ip = TablePath.new()
     ip:step(root, true)
-    self.save = {
+    local save = {
         version = meta.version,
         current_thread = "",
         threads = {
@@ -66,23 +75,35 @@ function VM:init()
                     {
                         ip = ip,
                         root_name = meta.entry,
-                        locals = {},
+                        locals = { keys = {}, values = {} },
                         stack = {},
                     },
                 },
-                thread_locals = {},
+                thread_locals = { keys = {}, values = {} },
             },
         },
         labels = {},
         globals = {},
     }
+    self.save = save
+    self.env:set_global_scope(save.globals)
+    self.env:set_label_lookup(function(keys) return self:lookup_label(keys) end)
+    self.env:set_init(false)
+end
+
+--- Looks up a label relative to the current IP.
+---
+---@param keys table relative label path
+---@return TablePath|nil
+function VM:lookup_label(keys)
+    -- TODO: Relative lookups.
+    return self.save.labels[keys[1]]
 end
 
 --- @class Thread
 --- @field current_coroutine number
 --- @field coroutines table
 --- @field thread_locals table
-local Thread = {}
 
 --- Fetches a thread by name.
 ---
@@ -100,7 +121,6 @@ end
 --- @field root_name string
 --- @field locals table
 --- @field stack table
-local Coroutine = {}
 
 --- Fetches a coroutine by thread name and id.
 ---
@@ -221,6 +241,12 @@ function VM:get_by_label(root_name, ...)
         current = TablePath.from(relative):get(current)
     end
     return path, current
+end
+
+function VM:get_env()
+    self.env:clear()
+    self.env:push(self:get_thread().thread_locals)
+    self.env:push(self:get_coroutine().locals)
 end
 
 return brocatel
