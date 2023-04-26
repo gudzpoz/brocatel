@@ -85,6 +85,7 @@ assert(t1.values.k1 == "ok")
 assert(t1.values.k2 == 2)
 assert(t2.values.k1 == 1)
 
+-- Env and if-else.
 local chunk
 local code = [[
     a = 3
@@ -143,6 +144,7 @@ assert(vm_with_env.save.globals["a"], 7)
 --[[
     VM tests
 ]]--
+-- Basic.
 local vm = brocatel.VM.new({
     [""] = {
         version = 1,
@@ -154,6 +156,7 @@ results = gather_til_end(vm)
 -- Not actually a path, but we just use it to compare tables for convenience.
 assert(TablePath.from(results):equals({ "Hello", "Hi", "!" }))
 
+-- Links.
 vm = brocatel.VM.new({
     [""] = {
         version = 1,
@@ -191,6 +194,7 @@ _, line = vm:lookup_label({ "curious", "first" })
 assert(#line == 1)
 assert(#line[1] == 0)
 
+-- Translation and function calls.
 local call_count = 0
 vm = brocatel.VM.new({
     [""] = { version = 1, entry = "main" },
@@ -214,3 +218,32 @@ results = gather_til_end(vm)
 -- Not actually a path, but we just use it to compare tables for convenience.
 assert(TablePath.from(results):equals({ "is" }))
 assert(call_count == 2)
+
+-- Select.
+call_count = 0
+vm = brocatel.VM.new({
+    [""] = { version = 1, entry = "main" },
+    main = {
+        {},
+        {
+            type = "select",
+            select = {
+                {},
+                { {}, "Selection #1", "Result #1" },
+                { {}, { function() call_count = call_count + 1; return false end, "Selection #2" }, "Result #2" },
+                { {}, { function() call_count = call_count + 1; return true end }, "Never" },
+                { {}, { function() call_count = call_count + 1; return true end, "Selection #3" }, "Result #3" },
+            },
+        },
+        "Hello",
+    }
+}, StackedEnv.new())
+local selections = vm:next()
+assert(type(selections) == "table")
+for k, _ in pairs(selections) do
+    assert(k == 2 or k == 5)
+end
+assert(selections[2][1] == "Selection #1")
+assert(selections[5][1] == "Selection #3")
+assert(vm:next(5) == "Result #3")
+assert(vm:next() == "Hello")

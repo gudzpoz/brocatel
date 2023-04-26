@@ -129,7 +129,7 @@ There are several kinds of values in the compiled Lua table tree.
     type = "select",
     select = {
       { {}, "Option One", "Outcome #1" },
-      { {}, "", "" },
+      { {}, { function() has_item() end, "Use Item" }, "Item Used" },
     },
   }
   ```

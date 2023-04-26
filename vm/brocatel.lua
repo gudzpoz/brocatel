@@ -182,15 +182,13 @@ end
 --- - `nil, true` when the caller should call again to fetch the next line.
 ---
 --- @param input number|nil user-selected option index
+--- @param ip TablePath|nil the pointer
 --- @return string|table|nil result
 --- @return table|boolean|nil tags `nil` if reaches the end
-function VM:fetch_and_next(input)
-    if input then
-        error("not implemented")
-    end
+function VM:fetch_and_next(input, ip)
     local co = assert(self:get_coroutine())
+    ip = ip or co.ip
     local root = assert(self:get_root(co.root_name))
-    local ip = co.ip
     if ip:is_done() then
         return nil, nil
     end
@@ -232,9 +230,34 @@ function VM:fetch_and_next(input)
         ip:step(root)
         node.func(args)
         return nil, true
-    else
-        error("not implemented")
+    elseif node_type == "select" then
+        local select = node.select
+        local base = ip:copy()
+        local base_root = co.root_name
+        if input then
+            ip:resolve("select", input, 3):step(root, true)
+            return nil, true
+        end
+        local selectables = {}
+        for i = 2, #select do
+            local option_node = assert(ip:resolve("select", i, 2):get(root))
+            if self.node_type(option_node) == "if-else" and #option_node <= 2 then
+                self:set_env()
+                ip:resolve(option_node[1]() and 2 or 3)
+                if ip:get(root) then
+                    local line, tags = self:next()
+                    selectables[i] = { line, tags }
+                end
+            else
+                local line, tags = self:next()
+                selectables[i] = { line, tags }
+            end
+            co.root_name = base_root
+            ip:set(base)
+        end
+        return selectables, true
     end
+    error("not implemented")
 end
 
 --- Returns "text", "tagged_text", "func", "if-else", "select" or "link" depending on the node type.

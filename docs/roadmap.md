@@ -15,7 +15,7 @@ Single-threaded virtual machine implementation:
 - [X] Global environment and if-else call support.
 - [X] Function call support.
 - [X] Tagged text support and Gettext API design.
-- [ ] User input (options) support.
+- [X] User input (options) support.
 - [ ] Save data saving & loading.
 
 ### `v0.2.0`
