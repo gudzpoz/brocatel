@@ -128,8 +128,8 @@ There are several kinds of values in the compiled Lua table tree.
   Select = {
     type = "select",
     select = {
-      {{}, "Option One", "Outcome #1"},
-      {{}, "", ""},
+      { {}, "Option One", "Outcome #1" },
+      { {}, "", "" },
     },
   }
   ```
@@ -137,9 +137,10 @@ There are several kinds of values in the compiled Lua table tree.
 - **link**: Absolute paths (like JSONPath) to certain values.
 
   ```lua
-  node = {
+  Link = {
     type = "link",
     link = { 1, 1, "list", 1 },
+    root_name = "root_name",  -- Optional
   }
   ```
 

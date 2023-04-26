@@ -145,7 +145,7 @@ end
 ---@return boolean|table|nil
 function VM:next(input)
     while true do
-        local line, tags = self:fetch_next_node(input)
+        local line, tags = self:fetch_and_next(input)
         input = nil
         if line or not tags then
             return line, tags
@@ -153,19 +153,20 @@ function VM:next(input)
     end
 end
 
---- Returns the next node of text.
+--- Returns the current node and goes to the next.
 ---
 --- For normal users, use `VM.next` instead.
 ---
 --- Returns:
 --- - `nil, nil` when the tree reaches the end,
---- - `line, nil` on a line without tags,
+--- - `line, true` on a line without tags,
 --- - `line, tags` on a tagged line,
 --- - `nil, true` when the caller should call again to fetch the next line.
 ---
 --- @param input number|nil user-selected option index
---- @return string|table|nil,table|boolean|nil
-function VM:fetch_next_node(input)
+--- @return string|table|nil result
+--- @return table|boolean|nil tags `nil` if reaches the end
+function VM:fetch_and_next(input)
     if input then
         error("not implemented")
     end
@@ -178,13 +179,23 @@ function VM:fetch_next_node(input)
     end
 
     local node = assert(ip:get(root))
-    ip:step(root)
     local node_type = VM.node_type(node)
 
     if node_type == "text" then
+        ip:step(root)
         return node, true
     elseif node_type == "link" then
         ip:set(node.link)
+        local new_root_name = node.root_name
+        if new_root_name then
+            co.root_name = new_root_name
+            root = self:get_root(new_root_name)
+        end
+        ip:step(root, true)
+        return nil, true
+    elseif node_type == "if-else" then
+        self:set_env()
+        ip:resolve(node[1]() and 2 or 3):step(root, true)
         return nil, true
     else
         error("not implemented")
@@ -243,7 +254,7 @@ function VM:get_by_label(root_name, ...)
     return path, current
 end
 
-function VM:get_env()
+function VM:set_env()
     self.env:clear()
     self.env:push(self:get_thread().thread_locals)
     self.env:push(self:get_coroutine().locals)
