@@ -176,6 +176,8 @@ vm = brocatel.VM.new({
         },
     }
 }, StackedEnv.new())
+local as_is = function (msgid) return msgid end
+vm:set_gettext(as_is, as_is)
 results = gather_til_end(vm, 10)
 -- Not actually a path, but we just use it to compare tables for convenience.
 assert(TablePath.from(results):equals(
@@ -188,3 +190,27 @@ assert(line.type == "link")
 _, line = vm:lookup_label({ "curious", "first" })
 assert(#line == 1)
 assert(#line[1] == 0)
+
+local call_count = 0
+vm = brocatel.VM.new({
+    [""] = { version = 1, entry = "main" },
+    main = {
+        {},
+        { function() call_count = call_count + 1 end },
+        {
+            type = "func",
+            func = function(args)
+                call_count = call_count + 1
+                assert(args:equals(TablePath.from({ 3, "args" })))
+            end,
+            args = { {} },
+        },
+        "Hi",
+    }
+}, StackedEnv.new())
+as_is = function() return "is" end
+vm:set_gettext(as_is, as_is)
+results = gather_til_end(vm)
+-- Not actually a path, but we just use it to compare tables for convenience.
+assert(TablePath.from(results):equals({ "is" }))
+assert(call_count == 2)

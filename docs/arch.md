@@ -111,7 +111,7 @@ There are several kinds of values in the compiled Lua table tree.
   FunctionCall_TypeI = {
     type = "func",
     func = function() return true end,
-    nested = ArrayOfParameters,
+    args = ArrayOfParameters,
   }
   FunctionCall_TypeII = {
     function() return hasPlayerBeenSomewhere() end,

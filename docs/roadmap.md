@@ -13,8 +13,8 @@ Single-threaded virtual machine implementation:
 - [X] Label and link support in the VM.
   - [ ] A label should also serve as a text pointer.
 - [X] Global environment and if-else call support.
-- [ ] Function call support.
-- [ ] Tagged text support and Gettext API design.
+- [X] Function call support.
+- [X] Tagged text support and Gettext API design.
 - [ ] User input (options) support.
 - [ ] Save data saving & loading.
 
