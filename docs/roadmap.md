@@ -20,6 +20,18 @@ Single-threaded virtual machine implementation:
 
 ### `v0.2.0`
 
+Markdown compiler implementation:
+
+- [ ] Plain text nodes.
+- [ ] Tagged text nodes.
+- [ ] Links.
+- [ ] Options.
+- [ ] Function calls.
+- [ ] Labels.
+- [ ] Macros.
+
+### `v0.3.0`
+
 Multi-thread (not *those* threads) support:
 
 - [ ] Multi-thread API design.
@@ -35,18 +47,6 @@ Some clarifications:
   multiple things simultaneously, just like
   [*threads* in Ink](https://github.com/inkle/ink/blob/master/Documentation/WritingWithInk.md#2-threads).
 - **Story calls** are just function calls for plots.
-
-### `v0.3.0`
-
-Markdown compiler implementation:
-
-- [ ] Plain text nodes.
-- [ ] Tagged text nodes.
-- [ ] Links.
-- [ ] Options.
-- [ ] Function calls.
-- [ ] Labels.
-- [ ] Macros.
 
 ### `v0.4.0` and on
 
