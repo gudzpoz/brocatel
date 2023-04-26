@@ -274,6 +274,7 @@ vm = brocatel.VM.new({
                 { {}, { function() call_count = call_count + 1; return false end, "Selection #2" }, "Result #2" },
                 { {}, { function() call_count = call_count + 1; return true end }, "Never" },
                 { {}, { function() call_count = call_count + 1; return true end, "Selection #3" }, "Result #3" },
+                { {}, { function() call_count = call_count + 1; return true end, "Selection #4" }, "Result #4" },
             },
         },
         "Hello",
@@ -282,9 +283,10 @@ vm = brocatel.VM.new({
 local selections = vm:next()
 assert(type(selections) == "table")
 for k, _ in pairs(selections) do
-    assert(k == 2 or k == 5)
+    assert(k == 2 or k == 5 or k == 6)
 end
 assert(selections[2][1] == "Selection #1")
 assert(selections[5][1] == "Selection #3")
+assert(selections[6][1] == "Selection #4")
 assert(vm:next(5) == "Result #3")
 assert(vm:next() == "Hello")

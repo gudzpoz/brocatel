@@ -187,7 +187,12 @@ function TablePath:step(t, init)
         if init then
             init = false
         else
-            while not self:is_array(t, 1) or #self:get(t, 1) <= self[#self] do
+            while (
+                not self:is_array(t, 1)
+                or #self:get(t, 1) <= self[#self]
+                or self[#self - 1] == "select"
+                or self[#self - 1] == "args"
+            ) do
                 self:resolve(nil)
                 if #self == 0 then
                     return false
