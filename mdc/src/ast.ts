@@ -16,6 +16,7 @@ export type LuaSnippet = string;
  * Nodes in the AST tree.
  */
 export interface TreeNode {
+  type?: 'link' | 'func' | 'select' | 'text';
   parent: TreeNode | null;
 }
 
