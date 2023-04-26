@@ -12,7 +12,7 @@ Single-threaded virtual machine implementation:
 - [X] VM skeleton with delayed root node loading and array walking capabilities.
 - [X] Label and link support in the VM.
   - [ ] A label should also serve as a text pointer.
-- [ ] Global environment and if-else call support.
+- [X] Global environment and if-else call support.
 - [ ] Function call support.
 - [ ] Tagged text support and Gettext API design.
 - [ ] User input (options) support.
@@ -34,7 +34,7 @@ Some clarifications:
 - With **coroutines**, you may construct conversations where people talk about
   multiple things simultaneously, just like
   [*threads* in Ink](https://github.com/inkle/ink/blob/master/Documentation/WritingWithInk.md#2-threads).
-- **Story calls** are just function calls for plots. 
+- **Story calls** are just function calls for plots.
 
 ### `v0.3.0`
 

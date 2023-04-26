@@ -38,9 +38,12 @@ end
 --- Fetches a root node of the specified name
 ---
 --- @param name string the root name
---- @return table root the root node
+--- @return table|nil root the root node
 function VM:get_root(name)
     local root = self.code[name]
+    if not root then
+        return nil
+    end
     if type(root) == "table" then
         return root
     end
@@ -58,11 +61,11 @@ function VM:init()
     if self.save then
         return
     end
-    local meta = self:get_root("")
+    local meta = assert(self:get_root(""))
     if meta.version > VM.version then
         error("library version outdated")
     end
-    local root = self:get_root(meta.entry)
+    local root = assert(self:get_root(meta.entry))
     local ip = TablePath.new()
     ip:step(root, true)
     local save = {
@@ -89,15 +92,6 @@ function VM:init()
     self.env:set_global_scope(save.globals)
     self.env:set_label_lookup(function(keys) return self:lookup_label(keys) end)
     self.env:set_init(false)
-end
-
---- Looks up a label relative to the current IP.
----
----@param keys table relative label path
----@return TablePath|nil
-function VM:lookup_label(keys)
-    -- TODO: Relative lookups.
-    return self.save.labels[keys[1]]
 end
 
 --- @class Thread
@@ -171,8 +165,7 @@ function VM:fetch_and_next(input)
         error("not implemented")
     end
     local co = assert(self:get_coroutine())
-    local root = self:get_root(co.root_name)
-    --- @type TablePath
+    local root = assert(self:get_root(co.root_name))
     local ip = co.ip
     if ip:is_done() then
         return nil, nil
@@ -189,7 +182,7 @@ function VM:fetch_and_next(input)
         local new_root_name = node.root_name
         if new_root_name then
             co.root_name = new_root_name
-            root = self:get_root(new_root_name)
+            root = assert(self:get_root(new_root_name))
         end
         ip:step(root, true)
         return nil, true
@@ -223,35 +216,70 @@ function VM.node_type(node)
     error("unexpected node")
 end
 
---- Computes a path to a node and the node itself by their labels.
+--- Looks up a label relative to the current IP.
 ---
---- The labels should be absolute and complete, that is, it should start from the root node
---- and never miss any label in between:
+--- Returns a path to a node and the node itself by their labels.
+---
+--- The labels should be complete, that is, it should never miss any label in between:
 --- - Correct: `part_1.chapter_1.section_1.paragraph_1`,
 --- - Incorrect: `part_1.section_1.paragraph_1`, even if there is only one `section_1` under `part_1`.
 ---
---- @return TablePath|nil,any
-function VM:get_by_label(root_name, ...)
-    if not root_name then
-        root_name = self:get_coroutine().root_name
+--- @param labels table relative label path
+--- @return TablePath|nil
+--- @return any
+function VM:lookup_label(labels)
+    local co = assert(self:get_coroutine())
+    local root = assert(self:get_root(co.root_name))
+    local ptr = co.ip:copy()
+    local first = labels[1]
+
+    local not_found = false
+    -- The first key, where the lookup will be relative to.
+    while true do
+        local is_array, node = ptr:is_array(root)
+        if is_array then
+            local metadata = node[1]
+            local label_table = metadata.labels
+            if label_table and label_table[first] then
+                root = node
+                break
+            end
+        end
+        if ptr:is_done() then
+            not_found = true
+            break
+        end
+        -- Goes to parent nodes if not found.
+        ptr:resolve(nil)
     end
+
+    if not_found then
+        local new_root = self:get_root(first)
+        if not new_root then
+            return nil
+        end
+        root = new_root
+    end
+
     --- @type any
-    local current = self:get_root(root_name)
+    local current = root
     local path = TablePath.new()
-    local labels = {...}
-    for i = 1, #labels do
+    for i = (not_found and 2 or 1), #labels do
         local label = labels[i]
         if not TablePath.new():is_array(current) then
             return nil, nil
         end
         local relative = current[1].labels[label]
-        -- I just don't want to require("table"), or else we can table.unpack.
-        for j = 1, #relative do
-            path:resolve(relative[j])
-        end
+        path:resolve(relative)
         current = TablePath.from(relative):get(current)
     end
-    return path, current
+
+    if not_found then
+        ptr:resolve(first, path)
+    else
+        ptr:resolve(path)
+    end
+    return ptr, current
 end
 
 --- Sets the environment up.

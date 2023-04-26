@@ -49,7 +49,7 @@ assert(TablePath.from(results):equals({ "Hello", "Hi", "!" }))
 ]]--
 
 local env = StackedEnv.new()
-local lua_env = { a = 1 }
+local lua_env = { a = 1, type = type, assert = assert }
 local glob = {}
 assert(not env:get(""))
 env:set_lua_env(lua_env)
@@ -95,6 +95,9 @@ local code = [[
             {
                 function()
                     a = a + 1
+                    assert(type(main) == "table")
+                    assert(#main == 1)
+                    assert(not not_found)
                     return a > 6
                 end,
                 { {}, "Hello" },
@@ -178,10 +181,10 @@ results = gather_til_end(vm, 10)
 assert(TablePath.from(results):equals(
         { "Hello", "Hi", "Hello", "Hi", "Hello", "Hi", "Hello", "Hi", "Hello", "Hi", }
 ))
-local _, line = vm:get_by_label(nil, "first")
+local _, line = vm:lookup_label({ "first" })
 assert(line == "Hello")
-_, line = vm:get_by_label(nil, "last")
+_, line = vm:lookup_label({ "main", "last" })
 assert(line.type == "link")
-_, line = vm:get_by_label(nil, "curious", "first")
+_, line = vm:lookup_label({ "curious", "first" })
 assert(#line == 1)
 assert(#line[1] == 0)

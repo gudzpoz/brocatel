@@ -99,14 +99,18 @@ end
 --- - `TablePath.new():resolve("a", b", 1)` points the path to `{"a", "b", 1}`.
 --- - `TablePath.from({1, 1, 1}):resolve(nil, nil, 2)` points the path to `{1, 2}`.
 ---
---- @vararg string|number|nil the relative path
+--- @vararg table|string|number|nil the relative path
 --- @return TablePath self the new current path, *not* a new one
 function TablePath:resolve(...)
     local n = select("#", ...)
     local args = {...}
     for i = 1, n do
         local arg = args[i]
-        if arg then
+        if type(arg) == "table" then
+            for _, v in ipairs(arg) do
+                self:resolve(v)
+            end
+        elseif arg then
             self[#self + 1] = arg
         else
             self[#self] = nil
@@ -118,13 +122,15 @@ end
 --- Returns true if the pointer is pointing to an brocatel array.
 ---
 --- @param t table
---- @return boolean
+--- @param parents number|nil
+--- @return boolean is_array
+--- @return any node
 function TablePath:is_array(t, parents)
     local node = self:get(t, parents)
     if type(node) ~= "table" then
         return false
     end
-    return type(node[1]) == "table"
+    return type(node[1]) == "table", node
 end
 
 --- Points the path to the next element.
@@ -202,7 +208,7 @@ function TablePath:step(t, init)
     end
 end
 
---- Returns true if the pointer cannot get further incremented
+--- Returns true if the pointer cannot get further incremented (pointing to the root).
 ---
 --- @return boolean done
 function TablePath:is_done()
