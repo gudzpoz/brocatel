@@ -195,7 +195,8 @@ function TablePath:step(t, init)
             end
             self[#self] = self[#self] + 1
         end
-        if not self:is_array(t) then
+        local is_array, node = self:is_array(t)
+        if not is_array and node then
             return true
         end
         while self:is_array(t) do
