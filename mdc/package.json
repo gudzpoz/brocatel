@@ -1,0 +1,32 @@
+{
+  "name": "brocatel-mdc",
+  "version": "0.1.0",
+  "description": "Markdown compiler for brocatel scripts.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "vitest"
+  },
+  "keywords": [],
+  "author": "gudzpoz",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/lua-json": "^1.0.1",
+    "@types/mdast": "^3.0.11",
+    "@typescript-eslint/eslint-plugin": "^5.59.1",
+    "@typescript-eslint/parser": "^5.59.1",
+    "eslint": "^8.39.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-airbnb-typescript": "^17.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "typescript": "^5.0.4",
+    "vite": "^4.3.2",
+    "vitest": "^0.30.1"
+  },
+  "dependencies": {
+    "lua-json": "^1.0.1",
+    "mdast-util-to-markdown": "^1.5.0",
+    "remark-parse": "^10.0.1",
+    "unified": "^10.1.2"
+  }
+}
