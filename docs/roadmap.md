@@ -11,12 +11,12 @@ Single-threaded virtual machine implementation:
 
 - [X] VM skeleton with delayed root node loading and array walking capabilities.
 - [X] Label and link support in the VM.
-  - [ ] A label should also serve as a text pointer.
+  - [X] A label should also serve as a text pointer.
 - [X] Global environment and if-else call support.
 - [X] Function call support.
 - [X] Tagged text support and Gettext API design.
 - [X] User input (options) support.
-- [ ] Save data saving & loading.
+- [X] Save data saving & loading.
 
 ### `v0.2.0`
 

@@ -1,5 +1,6 @@
 local TablePath = require("table_path")
 local StackedEnv = require("stacked_env")
+local savedata = require("savedata")
 local brocatel = require("brocatel")
 
 --[[
@@ -138,8 +139,48 @@ assert(lua_env["a"] == 3)
 results = gather_til_end(vm_with_env)
 -- Not actually a path, but we just use it to compare tables for convenience.
 assert(TablePath.from(results):equals({ "Hello", "Hi", "End" }))
+vm_with_env:load(vm_with_env:save())
 assert(lua_env["a"] == 3)
-assert(vm_with_env.save.globals["a"], 7)
+vm_with_env:load(vm_with_env:save())
+assert(vm_with_env.savedata.globals["a"], 7)
+
+--[[
+    Savedata tests
+]]--
+
+local complex = {}
+local layer = 5
+local function foreach_index(func)
+    for i = 1, math.pow(layer, layer) do
+        local indices = {}
+        local j = i
+        for _ = 1, layer do
+            local mod = j % layer
+            indices[#indices + 1] = mod + 1
+            j = (j - mod) / layer
+        end
+        func(i, indices)
+    end
+end
+foreach_index(function(i, indices)
+    local t = complex
+    for _, index in ipairs(indices) do
+        if not t[index] then
+            t[index] = {}
+        end
+        t = t[index]
+    end
+    t[1] = i
+end)
+complex = savedata.load(savedata.save(complex))
+foreach_index(function(i, indices)
+    local t = complex
+    for _, index in ipairs(indices) do
+        t = t[index]
+    end
+    assert(t[1] == i)
+end)
+
 
 --[[
     VM tests

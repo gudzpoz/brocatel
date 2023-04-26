@@ -1,5 +1,6 @@
 local TablePath = require("table_path")
 local StackedEnv = require("stacked_env")
+local savedata = require("savedata")
 
 --- The brocatel module, containing the core brocatel.VM implementation.
 ---
@@ -13,7 +14,7 @@ brocatel.TablePath = TablePath
 --- @class VM
 --- @field code table the compiled brocatel scripts
 --- @field env StackedEnv the environment handle
---- @field save table save data
+--- @field savedata table save data
 --- @field gettext Gettext GNU Gettext config
 local VM = {}
 brocatel.VM = VM
@@ -60,38 +61,37 @@ end
 
 --- Initializes the VM state.
 function VM:init()
-    if self.save then
-        return
+    if not self.savedata then
+        local meta = assert(self:get_root(""))
+        local root = assert(self:get_root(meta.entry))
+        local ip = TablePath.new()
+        ip:step(root, true)
+        local save = {
+            version = meta.version,
+            current_thread = "",
+            threads = {
+                [""] = {
+                    current_coroutine = 1,
+                    coroutines = {
+                        {
+                            ip = ip,
+                            root_name = meta.entry,
+                            locals = { keys = {}, values = {} },
+                            stack = {},
+                        },
+                    },
+                    thread_locals = { keys = {}, values = {} },
+                },
+            },
+            labels = {},
+            globals = {},
+        }
+        self.savedata = save
     end
-    local meta = assert(self:get_root(""))
-    if meta.version > VM.version then
+    if self.savedata.version > VM.version then
         error("library version outdated")
     end
-    local root = assert(self:get_root(meta.entry))
-    local ip = TablePath.new()
-    ip:step(root, true)
-    local save = {
-        version = meta.version,
-        current_thread = "",
-        threads = {
-            [""] = {
-                current_coroutine = 1,
-                coroutines = {
-                    {
-                        ip = ip,
-                        root_name = meta.entry,
-                        locals = { keys = {}, values = {} },
-                        stack = {},
-                    },
-                },
-                thread_locals = { keys = {}, values = {} },
-            },
-        },
-        labels = {},
-        globals = {},
-    }
-    self.save = save
-    self.env:set_global_scope(save.globals)
+    self.env:set_global_scope(self.savedata.globals)
     self.env:set_label_lookup(function(keys) return self:lookup_label(keys) end)
     self.env:set_init(false)
 end
@@ -129,9 +129,9 @@ end
 --- @return Thread thread
 function VM:get_thread(thread_name)
     if not thread_name then
-        thread_name = self.save.current_thread
+        thread_name = self.savedata.current_thread
     end
-    return self.save.threads[thread_name]
+    return self.savedata.threads[thread_name]
 end
 
 --- @class Coroutine
@@ -368,6 +368,15 @@ function VM:set_env()
     self.env:clear()
     self.env:push(self:get_thread().thread_locals)
     self.env:push(self:get_coroutine().locals)
+end
+
+function VM:save()
+    return savedata.save(self.savedata)
+end
+
+function VM:load(s)
+    self.savedata = savedata.load(s)
+    self:init()
 end
 
 return brocatel
