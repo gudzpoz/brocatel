@@ -64,7 +64,10 @@ end
 
 --- Clears all normal scopes in the environment.
 function StackedEnv:clear()
-    self.stack = {}
+    local stack = self.stack
+    for i = #stack, 1, -1 do
+        stack[i] = nil
+    end
 end
 
 --- @param scope table

@@ -254,6 +254,7 @@ function VM:get_by_label(root_name, ...)
     return path, current
 end
 
+--- Sets the environment up.
 function VM:set_env()
     self.env:clear()
     self.env:push(self:get_thread().thread_locals)
