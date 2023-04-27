@@ -35,15 +35,16 @@ function format(node: any, builder: string[]) {
     } else {
       builder.push('{');
       let first = true;
-      Object.entries(node).filter((e) => e[1]).forEach((e) => {
-        builder.push(first ? '' : ',', e[0], '=');
-        first = false;
-        format(e[1], builder);
-      });
+      Object.entries(node).filter((e) => BrocatelFinalizer.notEmpty(e[1]))
+        .sort(BrocatelFinalizer.entryCompare).forEach((e) => {
+          builder.push(first ? '' : ',', e[0], '=');
+          first = false;
+          format(e[1], builder);
+        });
       builder.push('}');
     }
   } else {
-    throw new TypeError(`unexpected ${node}`);
+    throw new TypeError(`unexpected ${node}: ${builder.join('')}`);
   }
 }
 

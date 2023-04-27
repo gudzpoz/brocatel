@@ -1,5 +1,5 @@
 import {
-  Content, Link, Paragraph, Parent, Root,
+  Content, Link, Paragraph, Parent, PhrasingContent, Root,
 } from 'mdast';
 import { toMarkdown } from 'mdast-util-to-markdown';
 import { mdxExpressionToMarkdown, MDXTextExpression } from 'mdast-util-mdx-expression';
@@ -60,7 +60,12 @@ class AstTransformer {
   }
 
   parseBlock(block: Parent, parent: TreeNode | null): MetaArray {
-    const array: MetaArray = { meta: { labels: {} }, chilren: [], parent };
+    const array: MetaArray = {
+      meta: { labels: {} },
+      chilren: [],
+      node: block,
+      parent,
+    };
     block.children.forEach((node) => {
       switch (node.type) {
         case 'paragraph':
@@ -94,6 +99,7 @@ class AstTransformer {
         meta: {},
         chilren: [],
         parent,
+        node: para,
       };
       return empty;
     }
@@ -103,6 +109,7 @@ class AstTransformer {
     if (para.children[0].type === 'inlineCode') {
       const ifElse: IfElseNode = {
         condition: para.children[0].value,
+        node: para,
         parent,
       };
       const striped = para;
@@ -112,16 +119,46 @@ class AstTransformer {
         type: 'text',
         value: '|',
       };
+      const tags = this.extractTags(striped.children[1]);
       const text = this.toTextNode(para, parent);
+      text.tags = tags;
       text.text = text.text.substring(1).trim();
       ifElse.ifThen = {
         meta: {},
         chilren: [text],
+        node: para,
         parent: ifElse,
       };
       return ifElse;
     }
-    return this.toTextNode(para, parent);
+    const tags = this.extractTags(para.children[0]);
+    const text = this.toTextNode(para, parent);
+    text.tags = tags;
+    return text;
+  }
+
+  extractTags(node: PhrasingContent | undefined): string[] {
+    if (!node || node.type !== 'text') {
+      return [];
+    }
+    const textNode = node;
+    textNode.value = textNode.value.trimStart();
+    if (textNode.value.startsWith('\\')) {
+      textNode.value = textNode.value.substring(1).trimStart();
+      return [];
+    }
+
+    const tags = [];
+    while (textNode.value.startsWith('[')) {
+      const i = textNode.value.indexOf(']');
+      if (i === -1) {
+        this.vfile.message('possibly incomplete tag', textNode);
+        break;
+      }
+      tags.push(textNode.value.substring(1, i));
+      textNode.value = textNode.value.substring(i + 1).trimStart();
+    }
+    return tags;
   }
 
   /**
@@ -150,6 +187,7 @@ class AstTransformer {
       plural,
       values,
       parent,
+      node: para,
     };
     return textNode;
   }
@@ -173,6 +211,9 @@ class AstTransformer {
       }
       str = str.replace(k, `v${i}`);
       if (v.endsWith('?')) {
+        if (plural) {
+          this.vfile.message('multiple plural expression defined', node);
+        }
         plural = `v${i}`;
         v = v.substring(0, v.length - 1).trim();
       }
@@ -207,6 +248,7 @@ class AstTransformer {
     }
     const linkNode: LinkNode = {
       link: this.parseLinkUrl(link),
+      node: link,
       parent,
       rootName,
     };

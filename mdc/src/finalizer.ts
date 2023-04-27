@@ -29,6 +29,7 @@ class BrocatelFinalizer {
   convert(n: TreeNode): LuaArrayMember {
     const node = n;
     node.parent = null;
+    node.node = null;
     if ((node as MetaArray).meta) {
       const metaArray = node as MetaArray;
       delete metaArray.meta.label;
@@ -43,12 +44,13 @@ class BrocatelFinalizer {
     }
     if ((node as TextNode).text) {
       const text = node as TextNode;
-      if (text.plural || text.tags || text.values) {
+      if (BrocatelFinalizer.notEmpty(text.plural, text.tags, text.values)) {
         text.type = 'text';
         if (text.values) {
-          text.values = Object.fromEntries(Object.entries(text.values).map(
-            ([k, v]) => [k, { raw: `function()return(\n${v}\n)end` }],
-          )) as any;
+          text.values = Object.fromEntries(Object.entries(text.values)
+            .sort(BrocatelFinalizer.entryCompare).map(
+              ([k, v]) => [k, { raw: `function()return(\n${v}\n)end` }],
+            )) as any;
         }
         return text;
       }
@@ -73,6 +75,14 @@ class BrocatelFinalizer {
       this.vfile.fail(`internal ast error: ${Object.keys(node)}`);
     }
     return '';
+  }
+
+  static notEmpty(...objects: any[]): boolean {
+    return objects.some((o) => o && (!(o instanceof Object) || Object.keys(o).length !== 0));
+  }
+
+  static entryCompare(a: [string, any], b: [string, any]): number {
+    return a[0].localeCompare(b[0]);
   }
 }
 

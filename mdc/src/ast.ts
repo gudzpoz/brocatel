@@ -1,3 +1,5 @@
+import { Node } from 'unist';
+
 /**
  * A relative table path used only when compiling.
  */
@@ -17,6 +19,7 @@ export type LuaSnippet = string;
  */
 export interface TreeNode {
   type?: 'link' | 'func' | 'select' | 'text';
+  node: Node | null;
   parent: TreeNode | null;
 }
 

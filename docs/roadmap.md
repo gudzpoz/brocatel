@@ -22,8 +22,8 @@ Single-threaded virtual machine implementation:
 
 Markdown compiler implementation:
 
-- [ ] Plain text nodes.
-- [ ] Tagged text nodes.
+- [X] Plain text nodes.
+- [X] Tagged text nodes.
 - [ ] Links.
 - [ ] Options.
 - [ ] Function calls.
