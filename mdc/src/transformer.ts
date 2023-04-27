@@ -2,7 +2,10 @@ import {
   Content, Link, Paragraph, Parent, Root,
 } from 'mdast';
 import { toMarkdown } from 'mdast-util-to-markdown';
+import { mdxExpressionToMarkdown, MDXTextExpression } from 'mdast-util-mdx-expression';
+import { v4 as uuidv4 } from 'uuid';
 import { VFile } from 'vfile';
+
 import {
   IfElseNode,
   LinkNode, LuaSnippet, MetaArray, TextNode, TreeNode, ValueNode,
@@ -125,16 +128,58 @@ class AstTransformer {
    * Converts children of a paragraph to a text node.
    */
   toTextNode(para: Paragraph, parent: TreeNode): TextNode {
+    const references: { [id: string]: [string, MDXTextExpression] } = {};
     this.checkChildren(
       para,
-      (node) => node.type !== 'link' && node.type !== 'inlineCode',
+      (n) => {
+        const node = n;
+        if (node.type === 'mdxTextExpression') {
+          const id = uuidv4();
+          references[id] = [node.value, node];
+          node.value = id;
+        }
+        return node.type !== 'link' && node.type !== 'inlineCode';
+      },
       'links or inline code snippets in text are not supported',
     );
-    const text: TextNode = {
-      text: toMarkdown(para).trim(),
+    const [text, values, plural] = this.replaceReferences(toMarkdown(para, {
+      extensions: [mdxExpressionToMarkdown],
+    }).trim(), references);
+    const textNode: TextNode = {
+      text,
+      plural,
+      values,
       parent,
     };
-    return text;
+    return textNode;
+  }
+
+  replaceReferences(
+    s: string,
+    references: { [id: string]: [string, MDXTextExpression] },
+  ): [string, { [id: string]: string }, string] {
+    let i = 1;
+    let str = s;
+    const redirected: { [id: string]: string } = {};
+    let plural = '';
+    Object.entries(references).forEach(([k, [value, node]]) => {
+      let v = value;
+      v = v.trim();
+      if (v.length === 0) {
+        this.vfile.message('empty expression', node);
+      }
+      while (str.includes(`v${i}`)) {
+        i += 1;
+      }
+      str = str.replace(k, `v${i}`);
+      if (v.endsWith('?')) {
+        plural = `v${i}`;
+        v = v.substring(0, v.length - 1).trim();
+      }
+      redirected[`v${i}`] = v;
+      i += 1;
+    });
+    return [str, redirected, plural];
   }
 
   /**

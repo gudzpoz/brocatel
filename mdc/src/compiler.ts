@@ -8,7 +8,7 @@ import AstTransformer from './transformer';
 /**
  * Recursively converts a node into Lua table.
  *
- * There is a special node: an array containing only a string element.
+ * There is a special node: `{ raw: string_element }`.
  * The content of the string element will be dumped as is, so as to
  * generate Lua functions.
  *
@@ -19,29 +19,29 @@ function format(node: any, builder: string[]) {
   if (typeof node === 'string') {
     builder.push(JSON.stringify(node));
   } else if (node instanceof Array) {
-    if (node.length === 1 && typeof node[0] === 'string') {
-      builder.push(node[0]);
+    builder.push('{');
+    let first = true;
+    node.forEach((e) => {
+      if (!first) {
+        builder.push(',');
+      }
+      first = false;
+      format(e, builder);
+    });
+    builder.push('}');
+  } else if (node instanceof Object) {
+    if (typeof node.raw === 'string') {
+      builder.push(node.raw);
     } else {
       builder.push('{');
       let first = true;
-      node.forEach((e) => {
-        if (!first) {
-          builder.push(',');
-        }
+      Object.entries(node).filter((e) => e[1]).forEach((e) => {
+        builder.push(first ? '' : ',', e[0], '=');
         first = false;
-        format(e, builder);
+        format(e[1], builder);
       });
       builder.push('}');
     }
-  } else if (node instanceof Object) {
-    builder.push('{');
-    let first = true;
-    Object.entries(node).filter((e) => e[1]).forEach((e) => {
-      builder.push(first ? '' : ',', e[0], '=');
-      first = false;
-      format(e[1], builder);
-    });
-    builder.push('}');
   } else {
     throw new TypeError(`unexpected ${node}`);
   }

@@ -45,13 +45,22 @@ class BrocatelFinalizer {
       const text = node as TextNode;
       if (text.plural || text.tags || text.values) {
         text.type = 'text';
+        if (text.values) {
+          text.values = Object.fromEntries(Object.entries(text.values).map(
+            ([k, v]) => [k, { raw: `function()return(\n${v}\n)end` }],
+          )) as any;
+        }
         return text;
       }
       return text.text;
     }
     if ((node as IfElseNode).condition) {
       const ifElse = node as IfElseNode;
-      const block: any[] = [[`function()return(${ifElse.condition})end`]];
+      const block: any[] = [{
+        raw: ifElse.condition.startsWith('--')
+          ? 'function()end'
+          : `function()return(\n${ifElse.condition}\n)end`,
+      }];
       if (ifElse.ifThen) {
         block.push(this.convert(ifElse.ifThen));
         if (ifElse.otherwise) {

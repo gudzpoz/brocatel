@@ -1,3 +1,5 @@
+import { mdxExpressionFromMarkdown } from 'mdast-util-mdx-expression';
+import { mdxExpression } from 'micromark-extension-mdx-expression';
 import remarkParse from 'remark-parse';
 import { Processor, unified } from 'unified';
 
@@ -19,7 +21,11 @@ class BrocatelCompiler {
 
   constructor(config: CompilerConfig) {
     this.config = config;
-    this.remark = unified().use(remarkParse).use(brocatelCompile);
+    this.remark = unified().use(remarkParse).use(function mdxExpressionPlugin() {
+      const data = this.data();
+      data.fromMarkdownExtensions = [[mdxExpressionFromMarkdown]];
+      data.micromarkExtensions = [mdxExpression()];
+    }).use(brocatelCompile);
   }
 
   /**
