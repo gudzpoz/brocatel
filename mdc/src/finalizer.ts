@@ -105,7 +105,7 @@ class BrocatelFinalizer {
           iter(ifElse.ifThen);
           iter(ifElse.otherwise);
         } else if (code.lua) {
-          iter(code.args);
+          code.args.forEach(iter);
         } else if (select.select) {
           select.select.forEach(iter);
         }
@@ -178,6 +178,9 @@ class BrocatelFinalizer {
     if ((node as IfElseNode).condition) {
       return this.convertIfElse(node as IfElseNode);
     }
+    if ((node as LuaNode).lua) {
+      return this.convertLua(node as LuaNode);
+    }
     if ((node as SelectNode).select) {
       return this.convertSelect(node as SelectNode);
     }
@@ -234,6 +237,17 @@ class BrocatelFinalizer {
       }
     }
     return block;
+  }
+
+  convertLua(node: LuaNode): LuaArrayMember {
+    const lua = node;
+    lua.type = 'func';
+    if (!testLua(node.lua)) {
+      this.vfile.message('invalid lua', node.node);
+    }
+    (lua as any).func = { raw: `function(args)\n${node.lua}\nend` };
+    lua.lua = '';
+    return lua;
   }
 
   static notEmpty(...objects: any[]): boolean {

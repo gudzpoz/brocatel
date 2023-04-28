@@ -113,3 +113,10 @@ test('Lists', async () => {
     '{{},{select={{{},{function()return(\nsome\n)end,{{},"some"}}},{{},"else"}},type="select"}}',
   );
 });
+
+test('Code block', async () => {
+  assert.equal(
+    await compiler.compile('```lua\nprint()\n```\n'),
+    '{{},{func=function(args)\nprint()\nend,type="func"}}',
+  );
+});

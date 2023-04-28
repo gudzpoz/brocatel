@@ -64,7 +64,7 @@ export interface IfElseNode extends TreeNode {
  */
 export interface LuaNode extends TreeNode {
   lua: LuaSnippet,
-  args: MetaArray,
+  args: MetaArray[],
 }
 
 /**

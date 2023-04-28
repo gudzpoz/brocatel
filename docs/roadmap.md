@@ -26,8 +26,8 @@ Markdown compiler implementation:
 - [X] Tagged text nodes.
 - [ ] Links.
 - [X] Options.
-- [ ] Function calls.
-- [ ] Labels.
+- [X] Function calls.
+- [X] Labels.
 - [ ] Macros.
 
 ### `v0.3.0`

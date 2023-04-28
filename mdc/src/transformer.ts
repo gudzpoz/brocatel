@@ -1,4 +1,5 @@
 import {
+  Code,
   Content, Heading, Link, List, Paragraph, Parent, PhrasingContent, Root,
 } from 'mdast';
 import { toMarkdown } from 'mdast-util-to-markdown';
@@ -8,7 +9,7 @@ import { VFile } from 'vfile';
 
 import {
   IfElseNode,
-  LinkNode, LuaSnippet, MetaArray, ParentEdge, SelectNode, TextNode, ValueNode,
+  LinkNode, LuaNode, LuaSnippet, MetaArray, ParentEdge, SelectNode, TextNode, ValueNode,
 } from './ast';
 
 class AstTransformer {
@@ -81,6 +82,11 @@ class AstTransformer {
             this.parseSelection(node, [current, [current.children.length + 2]]),
           );
           break;
+        case 'code':
+          current.children.push(
+            this.parseCodeBlock(node, [current, [current.children.length + 2]]),
+          );
+          break;
         case 'heading': {
           while (node.depth <= headings[headings.length - 1]) {
             headings.pop();
@@ -115,6 +121,21 @@ class AstTransformer {
       return '';
     }
     return node.children[0].value;
+  }
+
+  parseCodeBlock(code: Code, parent: ParentEdge): LuaNode {
+    if (code.lang !== 'lua') {
+      this.vfile.message('unsupported code block type');
+    }
+    if (code.meta === 'global') {
+      this.globalLua.push(code.value);
+    }
+    return {
+      lua: code.meta === 'global' ? '' : code.value,
+      args: [],
+      node: code,
+      parent,
+    };
   }
 
   parseSelection(list: List, parent: ParentEdge): SelectNode {
