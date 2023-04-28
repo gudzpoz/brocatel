@@ -37,6 +37,9 @@ function format(node: any, builder: string[], labels?: boolean) {
       let first = true;
       Object.entries(node).filter((e) => BrocatelFinalizer.notEmpty(e[1]))
         .sort(BrocatelFinalizer.entryCompare).forEach((e) => {
+          if (e[0] === 'type' && !labels) {
+            return;
+          }
           builder.push(first ? '' : ',');
           if (labels) {
             builder.push('[');

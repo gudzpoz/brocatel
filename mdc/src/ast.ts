@@ -15,13 +15,13 @@ export type Path = PathSegment[];
  */
 export type LuaSnippet = string;
 
-export type ParentEdge = [TreeNode, RelativePath];
+export type ParentEdge = [ValueNode | MetaArray, RelativePath];
 
 /**
  * Nodes in the AST tree.
  */
 export interface TreeNode {
-  type?: 'link' | 'func' | 'select' | 'text';
+  type: string;
   node: Node | null;
   parent: ParentEdge | null;
 }
@@ -36,6 +36,7 @@ export interface TextValues {
  * The text node, for both plain texts and tagged ones.
  */
 export interface TextNode extends TreeNode {
+  type: 'text';
   text: string;
   tags: string[];
   plural: string;
@@ -46,6 +47,7 @@ export interface TextNode extends TreeNode {
  * A link node (relative).
  */
 export interface LinkNode extends TreeNode {
+  type: 'link';
   link: RelativePath;
   rootName?: string;
 }
@@ -54,6 +56,7 @@ export interface LinkNode extends TreeNode {
  * A if-else node.
  */
 export interface IfElseNode extends TreeNode {
+  type: 'if-else';
   condition: LuaSnippet,
   ifThen?: MetaArray,
   otherwise?: MetaArray,
@@ -63,7 +66,8 @@ export interface IfElseNode extends TreeNode {
  * A function call node.
  */
 export interface LuaNode extends TreeNode {
-  lua: LuaSnippet,
+  type: 'func';
+  func: { raw: LuaSnippet },
   args: MetaArray[],
 }
 
@@ -71,6 +75,7 @@ export interface LuaNode extends TreeNode {
  * A selection node.
  */
 export interface SelectNode extends TreeNode {
+  type: 'select';
   select: MetaArray[];
 }
 
@@ -87,6 +92,7 @@ export interface Labels {
 }
 
 export interface Metadata {
+  type: 'meta';
   /**
    * All direct labels of children.
    */
@@ -109,6 +115,22 @@ export interface Metadata {
  * Arrays with metadata.
  */
 export interface MetaArray extends TreeNode {
+  type: 'array';
   meta: Metadata;
   children: (ValueNode | MetaArray)[];
+}
+
+export function metaArray(node: Node, parent: ParentEdge | null, label?: string): MetaArray {
+  return {
+    type: 'array',
+    meta: {
+      type: 'meta',
+      labels: {},
+      refs: {},
+      label,
+    },
+    children: [],
+    node,
+    parent,
+  };
 }

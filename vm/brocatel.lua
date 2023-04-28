@@ -268,11 +268,14 @@ function VM.node_type(node)
     if t == "string" then
         return "text"
     elseif t == "table" then
-        t = node["type"]
-        if t == "text" then
+        if node.text then
             return "tagged_text"
-        elseif t == "func" or t == "select" or t == "link" then
-            return t
+        elseif node.func then
+            return "func"
+        elseif node.select then
+            return "select"
+        elseif node.link then
+            return "link"
         elseif type(node[1]) == "function" then
             return "if-else"
         end

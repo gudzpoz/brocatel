@@ -9,7 +9,7 @@ import { VFile } from 'vfile';
 
 import {
   IfElseNode,
-  LinkNode, LuaNode, LuaSnippet, MetaArray, ParentEdge, SelectNode, TextNode, ValueNode,
+  LinkNode, LuaNode, LuaSnippet, metaArray, MetaArray, ParentEdge, SelectNode, TextNode, ValueNode,
 } from './ast';
 
 class AstTransformer {
@@ -61,12 +61,7 @@ class AstTransformer {
   }
 
   parseBlock(block: Parent, parent: ParentEdge | null): MetaArray {
-    const array: MetaArray = {
-      meta: { labels: {}, refs: {} },
-      children: [],
-      node: block,
-      parent,
-    };
+    const array = metaArray(block, parent);
     // Levels of previous headings.
     const headings = [0];
     let current = array;
@@ -92,12 +87,11 @@ class AstTransformer {
             headings.pop();
             current = current.parent?.[0] as MetaArray;
           }
-          const nested: MetaArray = {
-            meta: { labels: {}, label: this.extractHeadingLabel(node), refs: {} },
-            children: [],
-            parent: [current, [current.children.length + 2]],
+          const nested = metaArray(
             node,
-          };
+            [current, [current.children.length + 2]],
+            this.extractHeadingLabel(node),
+          );
           current.children.push(nested);
           current = nested;
           headings.push(node.depth);
@@ -131,7 +125,8 @@ class AstTransformer {
       this.globalLua.push(code.value);
     }
     return {
-      lua: code.meta === 'global' ? '' : code.value,
+      type: 'func',
+      func: { raw: code.meta === 'global' ? '' : code.value },
       args: [],
       node: code,
       parent,
@@ -140,6 +135,7 @@ class AstTransformer {
 
   parseSelection(list: List, parent: ParentEdge): SelectNode {
     const node: SelectNode = {
+      type: 'select',
       node: list,
       select: [],
       parent,
@@ -164,12 +160,7 @@ class AstTransformer {
    */
   parseParagraph(para: Paragraph, parent: ParentEdge): MetaArray | ValueNode {
     if (para.children.length === 0) {
-      const empty: MetaArray = {
-        meta: { labels: {}, refs: {} },
-        children: [],
-        parent,
-        node: para,
-      };
+      const empty = metaArray(para, parent);
       return empty;
     }
     if (para.children.length === 1 && para.children[0].type === 'link') {
@@ -179,6 +170,7 @@ class AstTransformer {
     }
     if (para.children[0].type === 'inlineCode') {
       const ifElse: IfElseNode = {
+        type: 'if-else',
         condition: para.children[0].value,
         node: para,
         parent,
@@ -193,12 +185,8 @@ class AstTransformer {
       const tags = this.extractTags(striped.children[1]);
       const text = this.toTextNode(para, tags, parent);
       text.text = text.text.substring(1).trim();
-      ifElse.ifThen = {
-        meta: { labels: {}, refs: {} },
-        children: [text],
-        node: para,
-        parent: [ifElse, [1]],
-      };
+      ifElse.ifThen = metaArray(para, [ifElse, [1]]);
+      ifElse.ifThen.children.push(text);
       return ifElse;
     }
     const tags = this.extractTags(para.children[0]);
@@ -252,6 +240,7 @@ class AstTransformer {
       extensions: [mdxExpressionToMarkdown],
     }).trim(), references);
     const textNode: TextNode = {
+      type: 'text',
       text,
       tags,
       plural,
@@ -317,6 +306,7 @@ class AstTransformer {
       rootName = rootName.substring(0, rootName.length - 3);
     }
     const linkNode: LinkNode = {
+      type: 'link',
       link: this.parseLinkUrl(link),
       node: link,
       parent,

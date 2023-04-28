@@ -3,14 +3,15 @@ import {
   IfElseNode,
   LinkNode,
   LuaNode,
-  MetaArray, Metadata, Path, SelectNode, TextNode, TreeNode, ValueNode,
+  MetaArray, Metadata, Path, SelectNode, TextNode, ValueNode,
 } from './ast';
 import { testLua } from './lua';
 import AstTransformer from './transformer';
 
 // It does not seem possible to do LuaMetaArray = [Metadata, ..Array<LuaArrayMember>].
-export type LuaArrayMember = LuaMetaArray | ValueNode | Metadata | string;
-export type LuaMetaArray = LuaArrayMember[];
+export type LuaArrayComplexMember = LuaMetaArray | ValueNode;
+export type LuaArrayMember = LuaArrayComplexMember | string;
+export type LuaMetaArray = (LuaArrayMember | Metadata)[];
 
 /**
  * Transforms the AST into out Lua format.
@@ -38,10 +39,10 @@ class BrocatelFinalizer {
 
   generateMeta() {
     this.iterAllNodes((node) => {
-      if (!node.meta) {
+      const array = node;
+      if (array instanceof Array || array.type !== 'array') {
         return;
       }
-      const array = node as MetaArray;
       if (!array.meta.label) {
         return;
       }
@@ -51,25 +52,31 @@ class BrocatelFinalizer {
       }
       let parent = array.parent[0];
       const path = array.parent[1];
-      while (!(parent as MetaArray).meta?.label) {
+      while (parent.type !== 'array' || !parent.meta.label) {
         if (!parent.parent) {
+          if (parent.type !== 'array') {
+            this.vfile.message('unexpected non-array root node', parent.node);
+            return;
+          }
           break;
         }
         path.push(...parent.parent[1]);
         [parent] = parent.parent;
       }
-      const knot = parent as MetaArray;
-      if (knot.meta.labels[array.meta.label]) {
-        this.vfile.message('duplicate labels directly under the same node', knot.node);
+      if (parent.meta.labels[array.meta.label]) {
+        this.vfile.message('duplicate labels directly under the same node', parent.node);
       }
-      knot.meta.labels[array.meta.label] = path.reverse();
-      knot.meta.refs[array.meta.label] = array;
-      array.meta.upper = knot;
+      parent.meta.labels[array.meta.label] = path.reverse();
+      parent.meta.refs[array.meta.label] = array;
+      array.meta.upper = parent;
     });
   }
 
   cleanCyclicRefs(root: any) {
     this.iterAllNodes((e) => {
+      if (e instanceof Array) {
+        return;
+      }
       if (e.node) {
         e.node = null;
       }
@@ -79,40 +86,37 @@ class BrocatelFinalizer {
     }, root);
   }
 
-  iterAllNodes(func: (node: any) => void, root?: any) {
-    const iter = (node?: ValueNode | MetaArray) => {
+  iterAllNodes(func: (node: MetaArray | LuaArrayComplexMember) => void, root?: any) {
+    const iter = (node?: MetaArray | Metadata | LuaArrayComplexMember) => {
       if (!node) {
         return;
       }
-      func(node);
       if (node instanceof Array) {
-        // Converted MetaArray
-        let first = true;
-        node.forEach((e) => {
-          if (first) {
-            first = false;
-          } else {
-            iter(e);
-          }
-        });
+        // Converted MetaArray, skipping the first item (meta info)
+        func(node);
+        node.forEach((e, i) => i && typeof e !== 'string' && iter(e));
         return;
       }
-      if (!(node as MetaArray).meta) {
-        const ifElse = node as IfElseNode;
-        const code = node as LuaNode;
-        const select = node as SelectNode;
-        if (ifElse.condition) {
-          iter(ifElse.ifThen);
-          iter(ifElse.otherwise);
-        } else if (code.lua) {
-          code.args.forEach(iter);
-        } else if (select.select) {
-          select.select.forEach(iter);
-        }
-        return;
+      switch (node.type) {
+        case 'meta':
+          return;
+        case 'array':
+          node.children.forEach(iter);
+          break;
+        case 'if-else':
+          iter(node.ifThen);
+          iter(node.otherwise);
+          break;
+        case 'func':
+          node.args.forEach(iter);
+          break;
+        case 'select':
+          node.select.forEach(iter);
+          break;
+        default:
+          break;
       }
-      const array = node as MetaArray;
-      array.children.forEach(iter);
+      func(node);
     };
     iter(root || this.root);
   }
@@ -125,14 +129,14 @@ class BrocatelFinalizer {
         return;
       }
       let parent = link.parent[0];
-      while (!(parent as MetaArray).meta?.labels[link.link[0]]) {
+      while (parent.type !== 'array' || !parent.meta.labels[link.link[0]]) {
         if (!parent.parent) {
           this.vfile.message(`link not found: ${link.link.join('/')}`, link.node);
           return;
         }
         [parent] = parent.parent;
       }
-      link.link = this.resolveLink(parent as MetaArray, link);
+      link.link = this.resolveLink(parent, link);
     });
     this.unresolved = [];
   }
@@ -163,41 +167,34 @@ class BrocatelFinalizer {
     return abs;
   }
 
-  convert(n: TreeNode): LuaArrayMember {
+  // eslint-disable-next-line consistent-return
+  convert(n: ValueNode | MetaArray): LuaArrayMember {
     const node = n;
-    if ((node as MetaArray).meta) {
-      return this.convertMetaArray(node as MetaArray);
+    switch (node.type) {
+      case 'array':
+        return this.convertMetaArray(node);
+      case 'link':
+        return node;
+      case 'text':
+        return this.convertText(node);
+      case 'if-else':
+        return this.convertIfElse(node);
+      case 'func':
+        return this.convertLua(node);
+      case 'select':
+        return this.convertSelect(node);
+      default:
+        this.vfile.fail(`internal ast error: ${Object.keys(node)}`);
     }
-    if ((node as LinkNode).link) {
-      node.type = 'link';
-      return node as LinkNode;
-    }
-    if ((node as TextNode).text) {
-      return this.convertText(node as TextNode);
-    }
-    if ((node as IfElseNode).condition) {
-      return this.convertIfElse(node as IfElseNode);
-    }
-    if ((node as LuaNode).lua) {
-      return this.convertLua(node as LuaNode);
-    }
-    if ((node as SelectNode).select) {
-      return this.convertSelect(node as SelectNode);
-    }
-    if (node) {
-      this.vfile.fail(`internal ast error: ${Object.keys(node)}`);
-    }
-    return '';
   }
 
   convertSelect(node: SelectNode): LuaArrayMember {
     const select = node;
-    select.type = 'select';
     select.select = select.select.map((opt) => this.convertMetaArray(opt) as any);
     return select;
   }
 
-  convertMetaArray(node: MetaArray) {
+  convertMetaArray(node: MetaArray): LuaMetaArray {
     const metaArray = node;
     delete metaArray.meta.label;
     delete metaArray.meta.upper;
@@ -208,7 +205,6 @@ class BrocatelFinalizer {
   convertText(node: TextNode) {
     const text = node;
     if (BrocatelFinalizer.notEmpty(text.plural, text.tags, text.values)) {
-      text.type = 'text';
       if (text.values) {
         text.values = Object.fromEntries(Object.entries(text.values)
           .sort(BrocatelFinalizer.entryCompare).map(([k, v]) => {
@@ -242,11 +238,10 @@ class BrocatelFinalizer {
   convertLua(node: LuaNode): LuaArrayMember {
     const lua = node;
     lua.type = 'func';
-    if (!testLua(node.lua)) {
+    if (!testLua(node.func.raw)) {
       this.vfile.message('invalid lua', node.node);
     }
-    (lua as any).func = { raw: `function(args)\n${node.lua}\nend` };
-    lua.lua = '';
+    lua.func.raw = `function(args)\n${node.func.raw}\nend`;
     return lua;
   }
 

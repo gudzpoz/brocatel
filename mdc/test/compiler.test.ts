@@ -13,11 +13,11 @@ test('Simplest plain text', async () => {
 test('Tagged text', async () => {
   assert.equal(
     await compiler.compile('[a] [b] c [d] e'),
-    '{{},{tags={"a","b"},text="c \\\\[d] e",type="text"}}',
+    '{{},{tags={"a","b"},text="c \\\\[d] e"}}',
   );
   assert.equal(
     await compiler.compile('\\[a] [b] c [d] e'),
-    '{{},{tags={"a","b"},text="c \\\\[d] e",type="text"}}',
+    '{{},{tags={"a","b"},text="c \\\\[d] e"}}',
   );
   assert.equal(
     await compiler.compile('\\\\[a] [b] c [d] e'),
@@ -28,11 +28,11 @@ test('Tagged text', async () => {
 test('Text with values', async () => {
   assert.equal(
     await compiler.compile('The {count} Names of God'),
-    '{{},{text="The {v1} Names of God",type="text",values={v1=function()return(\ncount\n)end}}}',
+    '{{},{text="The {v1} Names of God",values={v1=function()return(\ncount\n)end}}}',
   );
   assert.equal(
     await compiler.compile('The {count?} Names of God'),
-    '{{},{plural="v1",text="The {v1} Names of God",type="text",values={v1=function()return(\ncount\n)end}}}',
+    '{{},{plural="v1",text="The {v1} Names of God",values={v1=function()return(\ncount\n)end}}}',
   );
 });
 
@@ -68,7 +68,7 @@ test('Headings', async () => {
 });
 
 test('Links', async () => {
-  assert.equal(await compiler.compile('[](A)\n# A'), '{{labels={["A"]={3}}},{link={3},type="link"},{{}}}');
+  assert.equal(await compiler.compile('[](A)\n# A'), '{{labels={["A"]={3}}},{link={3}},{{}}}');
   assert.equal(
     await compiler.compile('# A\n## B\n### C\n#### D\n[](E|F)\n##### E\n###### F'),
     `{
@@ -81,7 +81,7 @@ test('Links', async () => {
             {labels={["D"]={2}}},
             {
               {labels={["E"]={3}}},
-              {link={2,2,2,2,3,2},type="link"},
+              {link={2,2,2,2,3,2}},
               {
                 {labels={["F"]={2}}},
                 {{}}
@@ -96,27 +96,26 @@ test('Links', async () => {
 });
 
 test('Lists', async () => {
-  assert.equal(await compiler.compile('- a\n- b'), '{{},{select={{{},"a"},{{},"b"}},type="select"}}');
+  assert.equal(await compiler.compile('- a\n- b'), '{{},{select={{{},"a"},{{},"b"}}}}');
   assert.equal(
     await compiler.compile('- # A\n- [](A)'),
     `{
       {labels={["A"]={2,"select",1,2}}},
       {select={
         {{},{{}}},
-        {{},{link={2,"select",1,2},type="link"}}},
-        type="select"
+        {{},{link={2,"select",1,2}}}}
       }
     }`.replace(/--.+/g, '').replace(/ |\n/g, ''),
   );
   assert.equal(
     await compiler.compile('- `some` some\n- else'),
-    '{{},{select={{{},{function()return(\nsome\n)end,{{},"some"}}},{{},"else"}},type="select"}}',
+    '{{},{select={{{},{function()return(\nsome\n)end,{{},"some"}}},{{},"else"}}}}',
   );
 });
 
 test('Code block', async () => {
   assert.equal(
     await compiler.compile('```lua\nprint()\n```\n'),
-    '{{},{func=function(args)\nprint()\nend,type="func"}}',
+    '{{},{func=function(args)\nprint()\nend}}',
   );
 });

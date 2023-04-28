@@ -103,10 +103,10 @@ local code = [[
                     return a > 6
                 end,
                 { {}, "Hello" },
-                { {}, { type = "link", link = { 2 } } }
+                { {}, { link = { 2 } } }
             },
             "Hi",
-            { type = "link", link = {}, root_name = "file2" }
+            { link = {}, root_name = "file2" }
         },
         file2 = { {}, "End" },
     }
@@ -215,7 +215,6 @@ vm = brocatel.VM.new({
         { { labels = { first = { 2 } } }, { {} } },
         "Hi",
         {
-            type = "link",
             link = {},
         },
     }
@@ -230,7 +229,7 @@ assert(TablePath.from(results):equals(
 local _, line = vm:lookup_label({ "first" })
 assert(line == "Hello")
 _, line = vm:lookup_label({ "main", "last" })
-assert(line.type == "link")
+assert(line.link)
 _, line = vm:lookup_label({ "curious", "first" })
 assert(#line == 1)
 assert(#line[1] == 0)
@@ -243,12 +242,11 @@ vm = brocatel.VM.new({
         {},
         { function() call_count = call_count + 1 end },
         {
-            type = "func",
             func = function(args)
                 call_count = call_count + 1
                 assert(args:equals(TablePath.from({ 3, "args" })))
             end,
-            args = { {} },
+            args = {},
         },
         "Hi",
     }
@@ -267,7 +265,6 @@ vm = brocatel.VM.new({
     main = {
         {},
         {
-            type = "select",
             select = {
                 {},
                 { {}, "Selection #1", "Result #1" },
