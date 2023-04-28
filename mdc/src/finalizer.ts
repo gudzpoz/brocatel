@@ -3,7 +3,7 @@ import {
   IfElseNode,
   LinkNode,
   LuaNode,
-  MetaArray, Metadata, SelectNode, TextNode, TreeNode, ValueNode,
+  MetaArray, Metadata, Path, SelectNode, TextNode, TreeNode, ValueNode,
 } from './ast';
 import AstTransformer from './transformer';
 
@@ -71,24 +71,60 @@ class BrocatelFinalizer {
         [parent] = parent.parent;
       }
       const knot = parent as MetaArray;
-      if (!knot.meta.labels) {
-        knot.meta.labels = {};
-      }
       if (knot.meta.labels[array.meta.label]) {
         this.vfile.message('duplicate labels directly under the same node', knot.node);
       }
       knot.meta.labels[array.meta.label] = path.reverse();
+      knot.meta.refs[array.meta.label] = array;
+      array.meta.upper = knot;
     };
     iter(this.root);
   }
 
   resolveAll() {
-    this.unresolved.forEach((link) => {
+    this.unresolved.forEach((l) => {
+      const link = l;
       if (!link.parent) {
         this.vfile.message(`internal error: deattached link node ${link.link.join('/')}`, link.node);
+        return;
       }
+      let parent = link.parent[0];
+      while (!(parent as MetaArray).meta.labels[link.link[0]]) {
+        if (!parent.parent) {
+          this.vfile.message(`link not found: ${link.link.join('/')}`, link.node);
+          return;
+        }
+        [parent] = parent.parent;
+      }
+      link.link = this.resolveLink(parent as MetaArray, link);
     });
     this.unresolved = [];
+  }
+
+  resolveLink(base: MetaArray, link: LinkNode): Path {
+    let parent = base;
+    const abs: Path = [];
+    while (parent.parent) {
+      if (!parent.meta.label || !parent.meta.upper) {
+        this.vfile.message('node with incomplete meta info', parent.node);
+        return abs;
+      }
+      const { label } = parent.meta;
+      parent = parent.meta.upper;
+      abs.unshift(...parent.meta.labels[label]);
+    }
+    let current = base;
+    link.link.forEach((seg) => {
+      if (!current) {
+        return;
+      }
+      if (current.meta.labels[seg] && current.meta.refs[seg]) {
+        this.vfile.message(`link not found at ${seg}: ${link.link.join('/')}`, current.node);
+      }
+      abs.push(...current.meta.labels[seg]);
+      current = current.meta.refs[seg];
+    });
+    return abs;
   }
 
   convert(n: TreeNode): LuaArrayMember {
@@ -98,9 +134,8 @@ class BrocatelFinalizer {
     if ((node as MetaArray).meta) {
       const metaArray = node as MetaArray;
       delete metaArray.meta.label;
-      if (metaArray.meta.labels && Object.keys(metaArray.meta.labels).length === 0) {
-        delete metaArray.meta.labels;
-      }
+      delete metaArray.meta.upper;
+      metaArray.meta.refs = {};
       return [metaArray.meta, ...metaArray.chilren.map((e) => this.convert(e))];
     }
     if ((node as LinkNode).link) {

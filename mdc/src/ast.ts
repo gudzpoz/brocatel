@@ -37,9 +37,9 @@ export interface TextValues {
  */
 export interface TextNode extends TreeNode {
   text: string;
-  tags?: string[];
-  plural?: string;
-  values?: TextValues;
+  tags: string[];
+  plural: string;
+  values: TextValues;
 }
 
 /**
@@ -64,7 +64,7 @@ export interface IfElseNode extends TreeNode {
  */
 export interface LuaNode extends TreeNode {
   lua: LuaSnippet,
-  args?: MetaArray,
+  args: MetaArray,
 }
 
 /**
@@ -90,7 +90,15 @@ export interface Metadata {
   /**
    * All direct labels of children.
    */
-  labels?: Labels;
+  labels: Labels;
+  /**
+   * References, used to look up children by labels.
+   */
+  refs: { [label: string]: MetaArray };
+  /**
+   * Upper node where the label is stored.
+   */
+  upper?: MetaArray;
   /**
    * Label for the current node, temporary.
    */

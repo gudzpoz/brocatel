@@ -37,24 +37,24 @@ test('Text with values', async () => {
 });
 
 test('Headings', async () => {
-  assert.equal(await compiler.compile('# Heading 1'), '{{labels={["Heading 1"]={1}}},{{}}}');
+  assert.equal(await compiler.compile('# Heading 1'), '{{labels={["Heading 1"]={2}}},{{}}}');
   assert.equal(
     await compiler.compile('# A\n## B\n### C\n### D\n## E\n# F'),
     `
     {
       {labels={
-        ["A"]={1},
-        ["F"]={2}
+        ["A"]={2},
+        ["F"]={3}
       }},
       {               -- A
         {labels={
-          ["B"]={1},
-          ["E"]={2}
+          ["B"]={2},
+          ["E"]={3}
         }},
         {             -- B
           {labels={
-            ["C"]={1},
-            ["D"]={2}
+            ["C"]={2},
+            ["D"]={3}
           }},
           {{}},       -- C
           {{}}        -- D
@@ -62,6 +62,34 @@ test('Headings', async () => {
         {{}}          -- E
       },
       {{}}            -- F
+    }
+    `.replace(/--.+/g, '').replace(/ |\n/g, ''),
+  );
+});
+
+test('Links', async () => {
+  assert.equal(await compiler.compile('[](A)\n# A'), '{{labels={["A"]={3}}},{link={3},type="link"},{{}}}');
+  assert.equal(
+    await compiler.compile('# A\n## B\n### C\n#### D\n[](E|F)\n##### E\n###### F'),
+    `{
+      {labels={["A"]={2}}},
+      {
+        {labels={["B"]={2}}},
+        {
+          {labels={["C"]={2}}},
+          {
+            {labels={["D"]={2}}},
+            {
+              {labels={["E"]={3}}},
+              {link={2,2,2,2,3,2},type="link"},
+              {
+                {labels={["F"]={2}}},
+                {{}}
+              }
+            }
+          }
+        }
+      }
     }
     `.replace(/--.+/g, '').replace(/ |\n/g, ''),
   );

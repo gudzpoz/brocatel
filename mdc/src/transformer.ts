@@ -61,7 +61,7 @@ class AstTransformer {
 
   parseBlock(block: Parent, parent: ParentEdge | null): MetaArray {
     const array: MetaArray = {
-      meta: { labels: {} },
+      meta: { labels: {}, refs: {} },
       chilren: [],
       node: block,
       parent,
@@ -72,7 +72,7 @@ class AstTransformer {
     block.children.forEach((node) => {
       switch (node.type) {
         case 'paragraph':
-          current.chilren.push(this.parseParagraph(node, [current, [current.chilren.length + 1]]));
+          current.chilren.push(this.parseParagraph(node, [current, [current.chilren.length + 2]]));
           break;
         case 'heading': {
           while (node.depth <= headings[headings.length - 1]) {
@@ -80,9 +80,9 @@ class AstTransformer {
             current = current.parent?.[0] as MetaArray;
           }
           const nested: MetaArray = {
-            meta: { labels: {}, label: this.extractHeadingLabel(node) },
+            meta: { labels: {}, label: this.extractHeadingLabel(node), refs: {} },
             chilren: [],
-            parent: [current, [current.chilren.length + 1]],
+            parent: [current, [current.chilren.length + 2]],
             node,
           };
           current.chilren.push(nested);
@@ -127,7 +127,7 @@ class AstTransformer {
   parseParagraph(para: Paragraph, parent: ParentEdge): MetaArray | ValueNode {
     if (para.children.length === 0) {
       const empty: MetaArray = {
-        meta: {},
+        meta: { labels: {}, refs: {} },
         chilren: [],
         parent,
         node: para,
@@ -153,11 +153,10 @@ class AstTransformer {
         value: '|',
       };
       const tags = this.extractTags(striped.children[1]);
-      const text = this.toTextNode(para, parent);
-      text.tags = tags;
+      const text = this.toTextNode(para, tags, parent);
       text.text = text.text.substring(1).trim();
       ifElse.ifThen = {
-        meta: {},
+        meta: { labels: {}, refs: {} },
         chilren: [text],
         node: para,
         parent: [ifElse, [1]],
@@ -165,8 +164,7 @@ class AstTransformer {
       return ifElse;
     }
     const tags = this.extractTags(para.children[0]);
-    const text = this.toTextNode(para, parent);
-    text.tags = tags;
+    const text = this.toTextNode(para, tags, parent);
     return text;
   }
 
@@ -197,7 +195,7 @@ class AstTransformer {
   /**
    * Converts children of a paragraph to a text node.
    */
-  toTextNode(para: Paragraph, parent: ParentEdge): TextNode {
+  toTextNode(para: Paragraph, tags: string[], parent: ParentEdge): TextNode {
     const references: { [id: string]: [string, MDXTextExpression] } = {};
     this.checkChildren(
       para,
@@ -217,6 +215,7 @@ class AstTransformer {
     }).trim(), references);
     const textNode: TextNode = {
       text,
+      tags,
       plural,
       values,
       parent,
