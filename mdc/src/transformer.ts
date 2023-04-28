@@ -1,5 +1,5 @@
 import {
-  Content, Link, Paragraph, Parent, PhrasingContent, Root,
+  Content, Heading, Link, Paragraph, Parent, PhrasingContent, Root,
 } from 'mdast';
 import { toMarkdown } from 'mdast-util-to-markdown';
 import { mdxExpressionToMarkdown, MDXTextExpression } from 'mdast-util-mdx-expression';
@@ -8,7 +8,7 @@ import { VFile } from 'vfile';
 
 import {
   IfElseNode,
-  LinkNode, LuaSnippet, MetaArray, TextNode, TreeNode, ValueNode,
+  LinkNode, LuaSnippet, MetaArray, ParentEdge, TextNode, ValueNode,
 } from './ast';
 
 class AstTransformer {
@@ -59,24 +59,55 @@ class AstTransformer {
     }
   }
 
-  parseBlock(block: Parent, parent: TreeNode | null): MetaArray {
+  parseBlock(block: Parent, parent: ParentEdge | null): MetaArray {
     const array: MetaArray = {
       meta: { labels: {} },
       chilren: [],
       node: block,
       parent,
     };
+    // Levels of previous headings.
+    const headings = [0];
+    let current = array;
     block.children.forEach((node) => {
       switch (node.type) {
         case 'paragraph':
-          array.chilren.push(this.parseParagraph(node, array));
+          current.chilren.push(this.parseParagraph(node, [current, [current.chilren.length + 1]]));
           break;
+        case 'heading': {
+          while (node.depth <= headings[headings.length - 1]) {
+            headings.pop();
+            current = current.parent?.[0] as MetaArray;
+          }
+          const nested: MetaArray = {
+            meta: { labels: {}, label: this.extractHeadingLabel(node) },
+            chilren: [],
+            parent: [current, [current.chilren.length + 1]],
+            node,
+          };
+          current.chilren.push(nested);
+          current = nested;
+          headings.push(node.depth);
+          break;
+        }
         default:
           this.vfile.message(`unsupported markdown type: ${node.type}`, node);
           break;
       }
     });
     return array;
+  }
+
+  extractHeadingLabel(node: Heading) {
+    if (node.children.length === 0) {
+      this.vfile.message('unexpected empty heading', node);
+      return '';
+    }
+    if (node.children.length > 1 || node.children[0].type !== 'text') {
+      this.vfile.message('unexpected complex heading', node);
+      return '';
+    }
+    return node.children[0].value;
   }
 
   /**
@@ -93,7 +124,7 @@ class AstTransformer {
    * @param parent the parent
    * @returns converted
    */
-  parseParagraph(para: Paragraph, parent: TreeNode): MetaArray | ValueNode {
+  parseParagraph(para: Paragraph, parent: ParentEdge): MetaArray | ValueNode {
     if (para.children.length === 0) {
       const empty: MetaArray = {
         meta: {},
@@ -104,7 +135,9 @@ class AstTransformer {
       return empty;
     }
     if (para.children.length === 1 && para.children[0].type === 'link') {
-      return this.parseLink(para.children[0], parent);
+      const link = this.parseLink(para.children[0], parent);
+      this.links.push(link);
+      return link;
     }
     if (para.children[0].type === 'inlineCode') {
       const ifElse: IfElseNode = {
@@ -127,7 +160,7 @@ class AstTransformer {
         meta: {},
         chilren: [text],
         node: para,
-        parent: ifElse,
+        parent: [ifElse, [1]],
       };
       return ifElse;
     }
@@ -164,7 +197,7 @@ class AstTransformer {
   /**
    * Converts children of a paragraph to a text node.
    */
-  toTextNode(para: Paragraph, parent: TreeNode): TextNode {
+  toTextNode(para: Paragraph, parent: ParentEdge): TextNode {
     const references: { [id: string]: [string, MDXTextExpression] } = {};
     this.checkChildren(
       para,
@@ -233,7 +266,7 @@ class AstTransformer {
    * @param parent the parent
    * @returns a link node
    */
-  parseLink(link: Link, parent: TreeNode): LinkNode {
+  parseLink(link: Link, parent: ParentEdge): LinkNode {
     let rootName = link.title || undefined;
     if (!rootName && link.children.length > 0) {
       const para: Paragraph = {

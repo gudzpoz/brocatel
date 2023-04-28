@@ -15,8 +15,8 @@ import AstTransformer from './transformer';
  * @param node the node
  * @param builder the string builder
  */
-function format(node: any, builder: string[]) {
-  if (typeof node === 'string') {
+function format(node: any, builder: string[], labels?: boolean) {
+  if (typeof node === 'string' || typeof node === 'number') {
     builder.push(JSON.stringify(node));
   } else if (node instanceof Array) {
     builder.push('{');
@@ -37,9 +37,17 @@ function format(node: any, builder: string[]) {
       let first = true;
       Object.entries(node).filter((e) => BrocatelFinalizer.notEmpty(e[1]))
         .sort(BrocatelFinalizer.entryCompare).forEach((e) => {
-          builder.push(first ? '' : ',', e[0], '=');
+          builder.push(first ? '' : ',');
+          if (labels) {
+            builder.push('[');
+            format(e[0], builder);
+            builder.push(']');
+          } else {
+            builder.push(e[0]);
+          }
+          builder.push('=');
           first = false;
-          format(e[1], builder);
+          format(e[1], builder, e[0] === 'labels');
         });
       builder.push('}');
     }
@@ -56,7 +64,7 @@ const attachBrocatelCompiler: Plugin = function plugin() {
   }
   this.Compiler = (root: Root, vfile: VFile) => {
     const transformer = new AstTransformer(root, vfile);
-    const finalizer = new BrocatelFinalizer(transformer.transform(), vfile);
+    const finalizer = new BrocatelFinalizer(transformer.transform(), transformer, vfile);
     return compile(finalizer.finalize());
   };
 };

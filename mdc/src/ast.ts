@@ -1,18 +1,21 @@
 import { Node } from 'unist';
 
+export type PathSegment = number | string;
 /**
  * A relative table path used only when compiling.
  */
-export type RelativePath = (number | string)[];
+export type RelativePath = PathSegment[];
 /**
  * Compiled absolute path.
  */
-export type Path = (number | string)[];
+export type Path = PathSegment[];
 
 /**
  * Lua scripts.
  */
 export type LuaSnippet = string;
+
+export type ParentEdge = [TreeNode, RelativePath];
 
 /**
  * Nodes in the AST tree.
@@ -20,7 +23,7 @@ export type LuaSnippet = string;
 export interface TreeNode {
   type?: 'link' | 'func' | 'select' | 'text';
   node: Node | null;
-  parent: TreeNode | null;
+  parent: ParentEdge | null;
 }
 
 /**

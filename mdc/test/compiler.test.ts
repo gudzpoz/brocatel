@@ -35,3 +35,34 @@ test('Text with values', async () => {
     '{{},{plural="v1",text="The {v1} Names of God",type="text",values={v1=function()return(\ncount\n)end}}}',
   );
 });
+
+test('Headings', async () => {
+  assert.equal(await compiler.compile('# Heading 1'), '{{labels={["Heading 1"]={1}}},{{}}}');
+  assert.equal(
+    await compiler.compile('# A\n## B\n### C\n### D\n## E\n# F'),
+    `
+    {
+      {labels={
+        ["A"]={1},
+        ["F"]={2}
+      }},
+      {               -- A
+        {labels={
+          ["B"]={1},
+          ["E"]={2}
+        }},
+        {             -- B
+          {labels={
+            ["C"]={1},
+            ["D"]={2}
+          }},
+          {{}},       -- C
+          {{}}        -- D
+        },
+        {{}}          -- E
+      },
+      {{}}            -- F
+    }
+    `.replace(/--.+/g, '').replace(/ |\n/g, ''),
+  );
+});

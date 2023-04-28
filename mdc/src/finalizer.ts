@@ -2,8 +2,10 @@ import { VFile } from 'vfile';
 import {
   IfElseNode,
   LinkNode,
-  MetaArray, Metadata, TextNode, TreeNode, ValueNode,
+  LuaNode,
+  MetaArray, Metadata, SelectNode, TextNode, TreeNode, ValueNode,
 } from './ast';
+import AstTransformer from './transformer';
 
 // It does not seem possible to do LuaMetaArray = [Metadata, ..Array<LuaArrayMember>].
 export type LuaArrayMember = LuaMetaArray | ValueNode | Metadata | string;
@@ -17,13 +19,76 @@ class BrocatelFinalizer {
 
   vfile: VFile;
 
-  constructor(root: MetaArray, vfile: VFile) {
+  unresolved: LinkNode[];
+
+  constructor(root: MetaArray, transformer: AstTransformer, vfile: VFile) {
+    this.unresolved = transformer.links;
     this.root = root;
     this.vfile = vfile;
   }
 
   finalize() {
+    this.generateMeta();
+    this.resolveAll();
     return this.convert(this.root);
+  }
+
+  generateMeta() {
+    const iter = (node?: ValueNode | MetaArray) => {
+      if (!node) {
+        return;
+      }
+      if (!(node as MetaArray).meta) {
+        const ifElse = node as IfElseNode;
+        const code = node as LuaNode;
+        const select = node as SelectNode;
+        if (ifElse.condition) {
+          iter(ifElse.ifThen);
+          iter(ifElse.otherwise);
+        } else if (code.lua) {
+          iter(code.args);
+        } else if (select.options) {
+          select.options.forEach(iter);
+        }
+        return;
+      }
+      const array = node as MetaArray;
+      array.chilren.forEach(iter);
+      if (!array.meta.label) {
+        return;
+      }
+      if (!array.parent) {
+        this.vfile.message('unexpected root label', array.node);
+        return;
+      }
+      let parent = array.parent[0];
+      const path = array.parent[1];
+      while (!(parent as MetaArray).meta?.label) {
+        if (!parent.parent) {
+          break;
+        }
+        path.push(...parent.parent[1]);
+        [parent] = parent.parent;
+      }
+      const knot = parent as MetaArray;
+      if (!knot.meta.labels) {
+        knot.meta.labels = {};
+      }
+      if (knot.meta.labels[array.meta.label]) {
+        this.vfile.message('duplicate labels directly under the same node', knot.node);
+      }
+      knot.meta.labels[array.meta.label] = path.reverse();
+    };
+    iter(this.root);
+  }
+
+  resolveAll() {
+    this.unresolved.forEach((link) => {
+      if (!link.parent) {
+        this.vfile.message(`internal error: deattached link node ${link.link.join('/')}`, link.node);
+      }
+    });
+    this.unresolved = [];
   }
 
   convert(n: TreeNode): LuaArrayMember {
