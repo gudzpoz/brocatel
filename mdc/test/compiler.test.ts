@@ -94,3 +94,22 @@ test('Links', async () => {
     `.replace(/--.+/g, '').replace(/ |\n/g, ''),
   );
 });
+
+test('Lists', async () => {
+  assert.equal(await compiler.compile('- a\n- b'), '{{},{select={{{},"a"},{{},"b"}},type="select"}}');
+  assert.equal(
+    await compiler.compile('- # A\n- [](A)'),
+    `{
+      {labels={["A"]={2,"select",1,2}}},
+      {select={
+        {{},{{}}},
+        {{},{link={2,"select",1,2},type="link"}}},
+        type="select"
+      }
+    }`.replace(/--.+/g, '').replace(/ |\n/g, ''),
+  );
+  assert.equal(
+    await compiler.compile('- `some` some\n- else'),
+    '{{},{select={{{},{function()return(\nsome\n)end,{{},"some"}}},{{},"else"}},type="select"}}',
+  );
+});

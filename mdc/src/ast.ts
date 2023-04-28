@@ -71,7 +71,7 @@ export interface LuaNode extends TreeNode {
  * A selection node.
  */
 export interface SelectNode extends TreeNode {
-  options: MetaArray[];
+  select: MetaArray[];
 }
 
 /**
@@ -110,5 +110,5 @@ export interface Metadata {
  */
 export interface MetaArray extends TreeNode {
   meta: Metadata;
-  chilren: (ValueNode | MetaArray)[];
+  children: (ValueNode | MetaArray)[];
 }

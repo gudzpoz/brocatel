@@ -1,5 +1,5 @@
 import {
-  Content, Heading, Link, Paragraph, Parent, PhrasingContent, Root,
+  Content, Heading, Link, List, Paragraph, Parent, PhrasingContent, Root,
 } from 'mdast';
 import { toMarkdown } from 'mdast-util-to-markdown';
 import { mdxExpressionToMarkdown, MDXTextExpression } from 'mdast-util-mdx-expression';
@@ -8,7 +8,7 @@ import { VFile } from 'vfile';
 
 import {
   IfElseNode,
-  LinkNode, LuaSnippet, MetaArray, ParentEdge, TextNode, ValueNode,
+  LinkNode, LuaSnippet, MetaArray, ParentEdge, SelectNode, TextNode, ValueNode,
 } from './ast';
 
 class AstTransformer {
@@ -62,7 +62,7 @@ class AstTransformer {
   parseBlock(block: Parent, parent: ParentEdge | null): MetaArray {
     const array: MetaArray = {
       meta: { labels: {}, refs: {} },
-      chilren: [],
+      children: [],
       node: block,
       parent,
     };
@@ -72,7 +72,14 @@ class AstTransformer {
     block.children.forEach((node) => {
       switch (node.type) {
         case 'paragraph':
-          current.chilren.push(this.parseParagraph(node, [current, [current.chilren.length + 2]]));
+          current.children.push(
+            this.parseParagraph(node, [current, [current.children.length + 2]]),
+          );
+          break;
+        case 'list':
+          current.children.push(
+            this.parseSelection(node, [current, [current.children.length + 2]]),
+          );
           break;
         case 'heading': {
           while (node.depth <= headings[headings.length - 1]) {
@@ -81,11 +88,11 @@ class AstTransformer {
           }
           const nested: MetaArray = {
             meta: { labels: {}, label: this.extractHeadingLabel(node), refs: {} },
-            chilren: [],
-            parent: [current, [current.chilren.length + 2]],
+            children: [],
+            parent: [current, [current.children.length + 2]],
             node,
           };
-          current.chilren.push(nested);
+          current.children.push(nested);
           current = nested;
           headings.push(node.depth);
           break;
@@ -110,6 +117,16 @@ class AstTransformer {
     return node.children[0].value;
   }
 
+  parseSelection(list: List, parent: ParentEdge): SelectNode {
+    const node: SelectNode = {
+      node: list,
+      select: [],
+      parent,
+    };
+    node.select = list.children.map((item, i) => this.parseBlock(item, [node, [i + 1, 'select']]));
+    return node;
+  }
+
   /**
    * Converts a mdast paragraph to our own AST.
    *
@@ -128,7 +145,7 @@ class AstTransformer {
     if (para.children.length === 0) {
       const empty: MetaArray = {
         meta: { labels: {}, refs: {} },
-        chilren: [],
+        children: [],
         parent,
         node: para,
       };
@@ -157,7 +174,7 @@ class AstTransformer {
       text.text = text.text.substring(1).trim();
       ifElse.ifThen = {
         meta: { labels: {}, refs: {} },
-        chilren: [text],
+        children: [text],
         node: para,
         parent: [ifElse, [1]],
       };

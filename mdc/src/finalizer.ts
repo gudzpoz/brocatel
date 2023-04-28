@@ -5,6 +5,7 @@ import {
   LuaNode,
   MetaArray, Metadata, Path, SelectNode, TextNode, TreeNode, ValueNode,
 } from './ast';
+import { testLua } from './lua';
 import AstTransformer from './transformer';
 
 // It does not seem possible to do LuaMetaArray = [Metadata, ..Array<LuaArrayMember>].
@@ -30,30 +31,17 @@ class BrocatelFinalizer {
   finalize() {
     this.generateMeta();
     this.resolveAll();
-    return this.convert(this.root);
+    const root = this.convert(this.root);
+    this.cleanCyclicRefs(root);
+    return root;
   }
 
   generateMeta() {
-    const iter = (node?: ValueNode | MetaArray) => {
-      if (!node) {
-        return;
-      }
-      if (!(node as MetaArray).meta) {
-        const ifElse = node as IfElseNode;
-        const code = node as LuaNode;
-        const select = node as SelectNode;
-        if (ifElse.condition) {
-          iter(ifElse.ifThen);
-          iter(ifElse.otherwise);
-        } else if (code.lua) {
-          iter(code.args);
-        } else if (select.options) {
-          select.options.forEach(iter);
-        }
+    this.iterAllNodes((node) => {
+      if (!node.meta) {
         return;
       }
       const array = node as MetaArray;
-      array.chilren.forEach(iter);
       if (!array.meta.label) {
         return;
       }
@@ -77,8 +65,56 @@ class BrocatelFinalizer {
       knot.meta.labels[array.meta.label] = path.reverse();
       knot.meta.refs[array.meta.label] = array;
       array.meta.upper = knot;
+    });
+  }
+
+  cleanCyclicRefs(root: any) {
+    this.iterAllNodes((e) => {
+      if (e.node) {
+        e.node = null;
+      }
+      if (e.parent) {
+        e.parent = null;
+      }
+    }, root);
+  }
+
+  iterAllNodes(func: (node: any) => void, root?: any) {
+    const iter = (node?: ValueNode | MetaArray) => {
+      if (!node) {
+        return;
+      }
+      func(node);
+      if (node instanceof Array) {
+        // Converted MetaArray
+        let first = true;
+        node.forEach((e) => {
+          if (first) {
+            first = false;
+          } else {
+            iter(e);
+          }
+        });
+        return;
+      }
+      if (!(node as MetaArray).meta) {
+        const ifElse = node as IfElseNode;
+        const code = node as LuaNode;
+        const select = node as SelectNode;
+        if (ifElse.condition) {
+          iter(ifElse.ifThen);
+          iter(ifElse.otherwise);
+        } else if (code.lua) {
+          iter(code.args);
+        } else if (select.select) {
+          select.select.forEach(iter);
+        }
+        return;
+      }
+      const array = node as MetaArray;
+      array.children.forEach(iter);
     };
-    iter(this.root);
+    iter(root || this.root);
   }
 
   resolveAll() {
@@ -89,7 +125,7 @@ class BrocatelFinalizer {
         return;
       }
       let parent = link.parent[0];
-      while (!(parent as MetaArray).meta.labels[link.link[0]]) {
+      while (!(parent as MetaArray).meta?.labels[link.link[0]]) {
         if (!parent.parent) {
           this.vfile.message(`link not found: ${link.link.join('/')}`, link.node);
           return;
@@ -129,52 +165,75 @@ class BrocatelFinalizer {
 
   convert(n: TreeNode): LuaArrayMember {
     const node = n;
-    node.parent = null;
-    node.node = null;
     if ((node as MetaArray).meta) {
-      const metaArray = node as MetaArray;
-      delete metaArray.meta.label;
-      delete metaArray.meta.upper;
-      metaArray.meta.refs = {};
-      return [metaArray.meta, ...metaArray.chilren.map((e) => this.convert(e))];
+      return this.convertMetaArray(node as MetaArray);
     }
     if ((node as LinkNode).link) {
       node.type = 'link';
       return node as LinkNode;
     }
     if ((node as TextNode).text) {
-      const text = node as TextNode;
-      if (BrocatelFinalizer.notEmpty(text.plural, text.tags, text.values)) {
-        text.type = 'text';
-        if (text.values) {
-          text.values = Object.fromEntries(Object.entries(text.values)
-            .sort(BrocatelFinalizer.entryCompare).map(
-              ([k, v]) => [k, { raw: `function()return(\n${v}\n)end` }],
-            )) as any;
-        }
-        return text;
-      }
-      return text.text;
+      return this.convertText(node as TextNode);
     }
     if ((node as IfElseNode).condition) {
-      const ifElse = node as IfElseNode;
-      const block: any[] = [{
-        raw: ifElse.condition.startsWith('--')
-          ? 'function()end'
-          : `function()return(\n${ifElse.condition}\n)end`,
-      }];
-      if (ifElse.ifThen) {
-        block.push(this.convert(ifElse.ifThen));
-        if (ifElse.otherwise) {
-          block.push(this.convert(ifElse.otherwise));
-        }
-      }
-      return block;
+      return this.convertIfElse(node as IfElseNode);
+    }
+    if ((node as SelectNode).select) {
+      return this.convertSelect(node as SelectNode);
     }
     if (node) {
       this.vfile.fail(`internal ast error: ${Object.keys(node)}`);
     }
     return '';
+  }
+
+  convertSelect(node: SelectNode): LuaArrayMember {
+    const select = node;
+    select.type = 'select';
+    select.select = select.select.map((opt) => this.convertMetaArray(opt) as any);
+    return select;
+  }
+
+  convertMetaArray(node: MetaArray) {
+    const metaArray = node;
+    delete metaArray.meta.label;
+    delete metaArray.meta.upper;
+    metaArray.meta.refs = {};
+    return [metaArray.meta, ...metaArray.children.map((e) => this.convert(e))];
+  }
+
+  convertText(node: TextNode) {
+    const text = node;
+    if (BrocatelFinalizer.notEmpty(text.plural, text.tags, text.values)) {
+      text.type = 'text';
+      if (text.values) {
+        text.values = Object.fromEntries(Object.entries(text.values)
+          .sort(BrocatelFinalizer.entryCompare).map(([k, v]) => {
+            const raw = `function()return(\n${v}\n)end`;
+            if (!testLua(`return ${raw}`)) {
+              this.vfile.message(`invalid lua: ${v}`, text.node);
+            }
+            return [k, { raw }];
+          })) as any;
+      }
+      return text;
+    }
+    return text.text;
+  }
+
+  convertIfElse(ifElse: IfElseNode) {
+    const block: any[] = [{
+      raw: ifElse.condition.startsWith('--')
+        ? 'function()end'
+        : `function()return(\n${ifElse.condition}\n)end`,
+    }];
+    if (ifElse.ifThen) {
+      block.push(this.convert(ifElse.ifThen));
+      if (ifElse.otherwise) {
+        block.push(this.convert(ifElse.otherwise));
+      }
+    }
+    return block;
   }
 
   static notEmpty(...objects: any[]): boolean {
