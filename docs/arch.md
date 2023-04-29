@@ -87,7 +87,7 @@ There are several kinds of values in the compiled Lua table tree.
   yield as is.
 
 - **tagged text**: Texts that either are tagged or contain dynamic texts.
-  `type` and `text` are required while all other fields may be `nil`.
+  Only the `text` field is required.
 
   ```lua
   -- [blue] [red] some raw text with _**mark-ups**_ preserved as is, visit counters {count()?}
@@ -105,11 +105,10 @@ There are several kinds of values in the compiled Lua table tree.
   The runtime will do the interpolation, possibly pass the input to a gettext backend (invoking `ngettext`) and
   return the final result.
 
-- **function call**: Function calls from which all scripting logic is built.
+- **function call**: Function calls from which all scripting logic is built. Required field: `func`.
 
   ```lua
   FunctionCall_TypeI = {
-    type = "func",
     func = function() return true end,
     args = ArrayOfParameters,
   }
@@ -122,11 +121,10 @@ There are several kinds of values in the compiled Lua table tree.
 
   `ArrayOfParameters` is just an *array*. And `FunctionCall_TypeII` is just a syntactic sugar for if-else statements.
 
-- **select**: A list of options.
+- **select**: A list of options. Required field: `select`.
 
   ```lua
   Select = {
-    type = "select",
     select = {
       { {}, "Option One", "Outcome #1" },
       { {}, { function() has_item() end, "Use Item" }, "Item Used" },
@@ -134,11 +132,10 @@ There are several kinds of values in the compiled Lua table tree.
   }
   ```
 
-- **link**: Absolute paths (like JSONPath) to certain values.
+- **link**: Absolute paths (like JSONPath) to certain values. Required field: `link`.
 
   ```lua
   Link = {
-    type = "link",
     link = { 1, 1, "list", 1 },
     root_name = "root_name",  -- Optional
   }
@@ -187,8 +184,8 @@ This section should help explaining why things are so.
    freely (at least without the use of the `debug` module). Therefore, the only way we can bind an environment
    to a function while maintaining compatibility through Lua 5.x is when it is loaded with `load`.
    So, throughout the VM lifetime, we have to reuse the same environment instance, requiring us to make
-   heavy use of the `__index` and `__newindex` meta-methods. (Thanks to them, we are precisely achieve what
-   we want (with quite a bit of work) described below.)
+   heavy use of the `__index` and `__newindex` meta-methods. (Thanks to them, we can precisely achieve what
+   we want (with quite a bit of work) as is described below.)
 
 2. Variables belong to different scopes, which can differ in their expected behaviors. For example, you don't
    want to save the Lua `_VERSION` string.
