@@ -81,9 +81,9 @@ test('Headings', async () => {
 test('Links', async () => {
   await assertThrows(() => compiler.compileToString('[](A)'), 'link not found: A');
   assert.equal(await compiler.compileToString('[](A)\n# A'), '{{labels={A={3}}},{link={3}},{{}}}');
-  assert.equal(
-    await compiler.compileToString('# A\n## B\n### C\n#### D\n[](E|F)\n##### E\n###### F'),
-    `{
+  assert.equal(await compiler.compileToString('[](type)\n# type'), '{{labels={type={3}}},{link={3}},{{}}}');
+  const serialized = `
+    {
       {labels={A={2}}},
       {
         {labels={B={2}}},
@@ -103,7 +103,14 @@ test('Links', async () => {
         }
       }
     }
-    `.replace(/--.+/g, '').replace(/ |\n/g, ''),
+    `.replace(/--.+/g, '').replace(/ |\n/g, '');
+  assert.equal(
+    await compiler.compileToString('# A\n## B\n### C\n#### D\n[](E|F)\n##### E\n###### F'),
+    serialized,
+  );
+  assert.equal(
+    await compiler.compileToString('# A\n## B\n### C\n#### D\n[](F)\n##### E\n###### F'),
+    serialized,
   );
 });
 

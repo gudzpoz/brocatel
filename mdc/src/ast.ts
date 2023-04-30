@@ -98,6 +98,10 @@ export interface Metadata {
    */
   labels: Labels;
   /**
+   * All direct/indirect labels of children.
+   */
+  children: { [label: string]: Path[] };
+  /**
    * References, used to look up children by labels.
    */
   refs: { [label: string]: MetaArray };
@@ -126,6 +130,7 @@ export function metaArray(node: Node, parent: ParentEdge | null, label?: string)
     meta: {
       type: 'meta',
       labels: {},
+      children: {},
       refs: {},
       label,
     },

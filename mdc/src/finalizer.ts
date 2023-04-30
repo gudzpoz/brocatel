@@ -3,7 +3,7 @@ import {
   IfElseNode,
   LinkNode,
   LuaNode,
-  MetaArray, Metadata, Path, SelectNode, TextNode, ValueNode,
+  MetaArray, Metadata, Path, RelativePath, SelectNode, TextNode, ValueNode,
 } from './ast';
 import { allEmpty, detectLuaErrors } from './lua';
 import AstTransformer from './transformer';
@@ -46,30 +46,36 @@ class BrocatelFinalizer {
       if (!array.meta.label) {
         return;
       }
-      if (!array.parent) {
-        this.vfile.message('unexpected root label', array.node);
-        return;
-      }
-      let parent = array.parent[0];
-      const path = array.parent[1];
-      while (parent.type !== 'array' || !parent.meta.label) {
-        if (!parent.parent) {
-          if (parent.type !== 'array') {
-            this.vfile.message('unexpected non-array root node', parent.node);
-            return;
-          }
-          break;
-        }
-        path.push(...parent.parent[1]);
-        [parent] = parent.parent;
-      }
-      if (parent.meta.labels[array.meta.label]) {
-        this.vfile.message('duplicate labels directly under the same node', parent.node);
-      }
-      parent.meta.labels[array.meta.label] = path.reverse();
-      parent.meta.refs[array.meta.label] = array;
-      array.meta.upper = parent;
+      this.registerLabel(array, array.meta.label);
     });
+  }
+
+  registerLabel(node: MetaArray, label: string) {
+    const array = node;
+    const path: RelativePath = [];
+    let registered = false;
+    let edge = array.parent;
+    while (edge) {
+      const parent = edge[0];
+      path.push(...edge[1]);
+      if (parent.type === 'array') {
+        if (!registered && (parent.meta.label || !parent.parent)) {
+          if (parent.meta.labels[label]) {
+            this.vfile.message('duplicate labels directly under the same node', parent.node);
+          }
+          parent.meta.labels[label] = path.slice().reverse();
+          parent.meta.refs[label] = array;
+          array.meta.upper = parent;
+          registered = true;
+        }
+        if (parent.meta.children[label]) {
+          parent.meta.children[label].push(path.slice().reverse());
+        } else {
+          parent.meta.children[label] = [path.slice().reverse()];
+        }
+      }
+      edge = parent.parent;
+    }
   }
 
   cleanCyclicRefs(root: any) {
@@ -131,6 +137,13 @@ class BrocatelFinalizer {
       let parent = link.parent[0];
       while (parent.type !== 'array' || !parent.meta.labels[link.link[0]]) {
         if (!parent.parent) {
+          if (link.link.length === 1) {
+            const path = this.tryResolveUniqueLink(link);
+            if (path) {
+              link.link = path;
+              return;
+            }
+          }
           this.vfile.message(`link not found: ${link.link.join('/')}`, link.node);
           return;
         }
@@ -139,6 +152,22 @@ class BrocatelFinalizer {
       link.link = this.resolveLink(parent, link);
     });
     this.unresolved = [];
+  }
+
+  tryResolveUniqueLink(link: LinkNode) {
+    let edge = link.parent;
+    while (edge) {
+      const parent = edge[0];
+      if (parent.type === 'array' && parent.meta.children[link.link[0]]?.length === 1) {
+        const path = this.resolveLink(parent, {
+          type: 'link', link: [], node: link.node, parent: null,
+        });
+        path.push(...parent.meta.children[link.link[0]][0]);
+        return path;
+      }
+      edge = parent.parent;
+    }
+    return null;
   }
 
   resolveLink(base: MetaArray, link: LinkNode): Path {
@@ -199,6 +228,7 @@ class BrocatelFinalizer {
     delete metaArray.meta.label;
     delete metaArray.meta.upper;
     metaArray.meta.refs = {};
+    metaArray.meta.children = {};
     return [metaArray.meta, ...metaArray.children.map((e) => this.convert(e))];
   }
 
