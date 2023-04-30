@@ -101,7 +101,7 @@ export function convertValue(root: any, special: boolean = false): string {
         builder.push('{');
         let entries = Object.entries(value);
         if (special) {
-          entries = entries.filter(([k, v]) => k !== 'type' && !allEmpty(v));
+          entries = entries.filter(([k, v]) => !(k === 'type' && typeof v === 'string') && !allEmpty(v));
         }
         // To provide reproducible serialization (while maybe locale-dependent).
         entries = entries.sort(entryCompare);
