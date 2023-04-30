@@ -5,7 +5,7 @@ import {
   LuaNode,
   MetaArray, Metadata, Path, SelectNode, TextNode, ValueNode,
 } from './ast';
-import { detectLuaErrors } from './lua';
+import { allEmpty, detectLuaErrors } from './lua';
 import AstTransformer from './transformer';
 
 // It does not seem possible to do LuaMetaArray = [Metadata, ..Array<LuaArrayMember>].
@@ -204,10 +204,10 @@ class BrocatelFinalizer {
 
   convertText(node: TextNode) {
     const text = node;
-    if (BrocatelFinalizer.notEmpty(text.plural, text.tags, text.values)) {
+    if (!allEmpty(text.plural, text.tags, text.values)) {
       if (text.values) {
         text.values = Object.fromEntries(Object.entries(text.values)
-          .sort(BrocatelFinalizer.entryCompare).map(([k, v]) => {
+          .map(([k, v]) => {
             const raw = `function()return(\n${v}\n)end`;
             const error = detectLuaErrors(`return (\n${raw}\n)`);
             if (error) {
@@ -245,14 +245,6 @@ class BrocatelFinalizer {
     }
     lua.func.raw = `function(args)\n${node.func.raw}\nend`;
     return lua;
-  }
-
-  static notEmpty(...objects: any[]): boolean {
-    return objects.some((o) => o && (!(o instanceof Object) || Object.keys(o).length !== 0));
-  }
-
-  static entryCompare(a: [string, any], b: [string, any]): number {
-    return a[0].localeCompare(b[0]);
   }
 }
 

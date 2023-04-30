@@ -54,18 +54,18 @@ test('Headings', async () => {
     `
     {
       {labels={
-        ["A"]={2},
-        ["F"]={3}
+        A={2},
+        F={3}
       }},
       {               -- A
         {labels={
-          ["B"]={2},
-          ["E"]={3}
+          B={2},
+          E={3}
         }},
         {             -- B
           {labels={
-            ["C"]={2},
-            ["D"]={3}
+            C={2},
+            D={3}
           }},
           {{}},       -- C
           {{}}        -- D
@@ -80,22 +80,22 @@ test('Headings', async () => {
 
 test('Links', async () => {
   await assertThrows(() => compiler.compileToString('[](A)'), 'link not found: A');
-  assert.equal(await compiler.compileToString('[](A)\n# A'), '{{labels={["A"]={3}}},{link={3}},{{}}}');
+  assert.equal(await compiler.compileToString('[](A)\n# A'), '{{labels={A={3}}},{link={3}},{{}}}');
   assert.equal(
     await compiler.compileToString('# A\n## B\n### C\n#### D\n[](E|F)\n##### E\n###### F'),
     `{
-      {labels={["A"]={2}}},
+      {labels={A={2}}},
       {
-        {labels={["B"]={2}}},
+        {labels={B={2}}},
         {
-          {labels={["C"]={2}}},
+          {labels={C={2}}},
           {
-            {labels={["D"]={2}}},
+            {labels={D={2}}},
             {
-              {labels={["E"]={3}}},
+              {labels={E={3}}},
               {link={2,2,2,2,3,2}},
               {
-                {labels={["F"]={2}}},
+                {labels={F={2}}},
                 {{}}
               }
             }
@@ -112,7 +112,7 @@ test('Lists', async () => {
   assert.equal(
     await compiler.compileToString('- # A\n- [](A)'),
     `{
-      {labels={["A"]={2,"select",1,2}}},
+      {labels={A={2,"select",1,2}}},
       {select={
         {{},{{}}},
         {{},{link={2,"select",1,2}}}}
