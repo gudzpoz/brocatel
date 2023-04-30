@@ -1,9 +1,10 @@
 import {
+  Blockquote,
   Code,
   Content, Heading, Link, List, Paragraph, Parent, PhrasingContent, Root,
 } from 'mdast';
 import { toMarkdown } from 'mdast-util-to-markdown';
-import { directiveToMarkdown } from 'mdast-util-directive';
+import { ContainerDirective, directiveToMarkdown } from 'mdast-util-directive';
 import { mdxExpressionToMarkdown, MDXTextExpression } from 'mdast-util-mdx-expression';
 import { v4 as uuidv4 } from 'uuid';
 import { VFile } from 'vfile';
@@ -12,6 +13,9 @@ import {
   IfElseNode,
   LinkNode, LuaNode, LuaSnippet, metaArray, MetaArray, ParentEdge, SelectNode, TextNode, ValueNode,
 } from './ast';
+import { runLua, wrap } from './lua';
+
+import builtInMacros from './macros/builtin.lua?raw';
 
 class AstTransformer {
   root: Root;
@@ -33,12 +37,18 @@ class AstTransformer {
    */
   globalLua: LuaSnippet[];
 
+  /**
+   * Macro Lua snippets.
+   */
+  macros: LuaSnippet[];
+
   constructor(root: Root, vfile: VFile) {
     this.root = root;
     this.vfile = vfile;
     this.dependencies = new Set<string>();
     this.links = [];
     this.globalLua = [];
+    this.macros = [];
 
     this.vfile.data.dependencies = this.dependencies;
     this.vfile.data.links = this.links;
@@ -83,6 +93,16 @@ class AstTransformer {
             this.parseCodeBlock(node, [current, [current.children.length + 2]]),
           );
           break;
+        case 'blockquote':
+          current.children.push(
+            this.parseBlockquote(node, [current, [current.children.length + 2]]),
+          );
+          break;
+        case 'containerDirective':
+          current.children.push(
+            this.parseDirective(node, [current, [current.children.length + 2]]),
+          );
+          break;
         case 'heading': {
           while (node.depth <= headings[headings.length - 1]) {
             headings.pop();
@@ -106,6 +126,53 @@ class AstTransformer {
     return array;
   }
 
+  parseDirective(node: ContainerDirective, parent: ParentEdge): ValueNode | MetaArray {
+    if (!node.name) {
+      return this.parseBlock(node, parent);
+    }
+    const codes = [builtInMacros as string];
+    codes.push(...this.macros);
+    codes.push(`return ${node.name}(arg)`);
+    return this.parseBlockquote(
+      runLua(node, codes, { to_markdown: wrap((n: any) => this.toMarkdown(n)) }),
+      parent,
+    );
+  }
+
+  parseBlockquote(node: Blockquote, parent: ParentEdge): ValueNode | MetaArray {
+    if (node.data?.if) {
+      const ifElse: IfElseNode = {
+        type: 'if-else',
+        condition: node.data.if as string,
+        node,
+        parent,
+      };
+      ifElse.ifThen = this.parseBlock(node.children[0] as Blockquote, [ifElse, [2]]);
+      if (node.children.length > 1) {
+        ifElse.otherwise = this.parseBlock(node.children[1] as Blockquote, [ifElse, [3]]);
+      }
+      return ifElse;
+    }
+    if (node.data?.func) {
+      const funcNode: LuaNode = {
+        type: 'func',
+        func: { raw: node.data.func as string },
+        args: [],
+        node,
+        parent,
+      };
+      node.children.forEach((n) => {
+        const block: Parent = {
+          type: 'blockquote',
+          children: [n],
+        };
+        funcNode.args.push(this.parseBlock(block, [funcNode, [funcNode.args.length + 1, 'args']]));
+      });
+      return funcNode;
+    }
+    return this.parseBlock(node, parent);
+  }
+
   extractHeadingLabel(node: Heading) {
     if (node.children.length === 0) {
       this.vfile.message('unexpected empty heading', node);
@@ -122,12 +189,19 @@ class AstTransformer {
     if (code.lang !== 'lua') {
       this.vfile.message('unsupported code block type');
     }
+    let snippet;
     if (code.meta === 'global') {
       this.globalLua.push(code.value);
+      snippet = '';
+    } else if (code.meta === 'macro') {
+      this.macros.push(code.value);
+      snippet = '';
+    } else {
+      snippet = code.value;
     }
     return {
       type: 'func',
-      func: { raw: code.meta === 'global' ? '' : code.value },
+      func: { raw: snippet || 'true' },
       args: [],
       node: code,
       parent,

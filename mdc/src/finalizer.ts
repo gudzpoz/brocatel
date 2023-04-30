@@ -274,6 +274,7 @@ class BrocatelFinalizer {
       this.vfile.message(error, node.node);
     }
     lua.func.raw = `function(args)\n${node.func.raw}\nend`;
+    lua.args = lua.args.map((arg) => this.convertMetaArray(arg)) as any;
     return lua;
   }
 }

@@ -140,3 +140,63 @@ test('Code blocks', async () => {
     '{{},{func=function(args)\nprint()\nend}}',
   );
 });
+
+test('Directives', async () => {
+  assert.equal(
+    await compiler.compileToString(':::loop[id]\n- Hello\n:::\n'),
+    `{
+      {labels={id={2,2}}},
+      {
+        {},
+        {
+          {},
+          {
+            {},
+            {select={
+              {{},"Hello"}
+            }}
+          },
+          {link={2,2}}
+        }
+      }
+    }`.replace(/--.+/g, '').replace(/ |\n/g, ''),
+  );
+  assert.equal(
+    await compiler.compileToString(
+      `
+:::when[true]
+- True.
+- False.
+:::
+      `,
+    ),
+    '{{},{function()return(\ntrue\n)end,{{},"True."},{{},"False."}}}',
+  );
+  assert.equal(
+    await compiler.compileToString(':::when[true]\n- True.\n:::'),
+    '{{},{function()return(\ntrue\n)end,{{},"True."}}}',
+  );
+  assert.equal(
+    (await compiler.compileToString(
+      `
+:::switch
+- \`count == 1\`
+
+  One.
+
+- \`count == 2\`
+
+  Two.
+
+- \`count == 3\`
+
+  Three.
+:::
+      `,
+    )).replace(/\s/g, ''),
+    '{{},{args={{{},{{},"One."}},{{},{{},"Two."}},{{},{{},"Three."}}},'
+    + 'func=function(args)if(count==1)thenreturnip:set(args:resolve(1))end'
+    + 'if(count==2)thenreturnip:set(args:resolve(2))end'
+    + 'if(count==3)thenreturnip:set(args:resolve(3))endend}}',
+  );
+});

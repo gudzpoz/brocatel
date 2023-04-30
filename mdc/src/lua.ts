@@ -20,6 +20,7 @@ export function detectLuaErrors(code: string): Error | null {
 function convertLuaValue(L: any, index: number): any {
   switch (lua.lua_type(L, index)) {
     case lua.LUA_TTABLE: {
+      lua.lua_checkstack(L, 2);
       const i = lua.lua_absindex(L, index);
       const table = lauxlib.luaL_len(L, i) !== 0 ? [] : ({} as { [key: string]: any });
       lua.lua_pushnil(L);
@@ -128,16 +129,39 @@ export function convertValue(root: any, special: boolean = false): string {
  *
  * @returns what the last snippet returns
  */
-export function runLua(arg: any, ...codes: string[]): any {
+export function runLua(
+  arg: any,
+  codes: string[],
+  functions?: { [name: string]: (L: any) => number },
+): any {
   const L = lauxlib.luaL_newstate();
   lualib.luaL_openlibs(L);
+  if (functions) {
+    Object.entries(functions).forEach(([k, v]) => {
+      lua.lua_pushjsfunction(L, v);
+      lua.lua_setglobal(L, to_luastring(k));
+    });
+  }
   if (lauxlib.luaL_dostring(L, to_luastring(`arg = ${convertValue(arg)}`)) !== lua.LUA_OK) {
     throw new Error(`unable to serialize ${arg}`);
   }
   codes.forEach((code) => {
     if (lauxlib.luaL_dostring(L, to_luastring(code)) !== lua.LUA_OK) {
-      throw new Error(lua.lua_tojsstring(L, -1));
+      throw new Error(`error running ${code}: ${lua.lua_tojsstring(L, -1)}`);
     }
   });
   return convertLuaValue(L, -1);
+}
+
+export function wrap(f: Function) {
+  return function unwrap(L: any) {
+    const args: any[] = [];
+    for (let i = 1; i <= lua.lua_gettop(L); i += 1) {
+      args.push(convertLuaValue(L, i));
+    }
+    lua.lua_settop(L, 0);
+    const result = f.call(null, ...args);
+    lauxlib.luaL_dostring(L, to_luastring(`return ${convertValue(result)}`));
+    return 1;
+  };
 }
