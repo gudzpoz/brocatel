@@ -1,11 +1,11 @@
 import fengari from 'fengari';
 
-export function testLua(lua: string): string {
+export function detectLuaErrors(lua: string): Error | null {
   const L = fengari.lauxlib.luaL_newstate();
   if (fengari.lauxlib.luaL_loadstring(L, fengari.to_luastring(lua)) === fengari.lua.LUA_OK) {
-    return lua;
+    return null;
   }
-  throw new SyntaxError(fengari.lua.lua_tojsstring(L, -1));
+  return new SyntaxError(fengari.lua.lua_tojsstring(L, -1));
 }
 
 export function runLua(lua: string) {

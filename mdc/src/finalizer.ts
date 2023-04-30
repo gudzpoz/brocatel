@@ -5,7 +5,7 @@ import {
   LuaNode,
   MetaArray, Metadata, Path, SelectNode, TextNode, ValueNode,
 } from './ast';
-import { testLua } from './lua';
+import { detectLuaErrors } from './lua';
 import AstTransformer from './transformer';
 
 // It does not seem possible to do LuaMetaArray = [Metadata, ..Array<LuaArrayMember>].
@@ -158,7 +158,7 @@ class BrocatelFinalizer {
       if (!current) {
         return;
       }
-      if (current.meta.labels[seg] && current.meta.refs[seg]) {
+      if (!current.meta.labels[seg] || !current.meta.refs[seg]) {
         this.vfile.message(`link not found at ${seg}: ${link.link.join('/')}`, current.node);
       }
       abs.push(...current.meta.labels[seg]);
@@ -209,8 +209,9 @@ class BrocatelFinalizer {
         text.values = Object.fromEntries(Object.entries(text.values)
           .sort(BrocatelFinalizer.entryCompare).map(([k, v]) => {
             const raw = `function()return(\n${v}\n)end`;
-            if (!testLua(`return ${raw}`)) {
-              this.vfile.message(`invalid lua: ${v}`, text.node);
+            const error = detectLuaErrors(`return (\n${raw}\n)`);
+            if (error) {
+              this.vfile.message(error, text.node);
             }
             return [k, { raw }];
           })) as any;
@@ -238,8 +239,9 @@ class BrocatelFinalizer {
   convertLua(node: LuaNode): LuaArrayMember {
     const lua = node;
     lua.type = 'func';
-    if (!testLua(node.func.raw)) {
-      this.vfile.message('invalid lua', node.node);
+    const error = detectLuaErrors(node.func.raw);
+    if (error) {
+      this.vfile.message(error, node.node);
     }
     lua.func.raw = `function(args)\n${node.func.raw}\nend`;
     return lua;

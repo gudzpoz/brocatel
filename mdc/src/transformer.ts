@@ -3,6 +3,7 @@ import {
   Content, Heading, Link, List, Paragraph, Parent, PhrasingContent, Root,
 } from 'mdast';
 import { toMarkdown } from 'mdast-util-to-markdown';
+import { directiveToMarkdown } from 'mdast-util-directive';
 import { mdxExpressionToMarkdown, MDXTextExpression } from 'mdast-util-mdx-expression';
 import { v4 as uuidv4 } from 'uuid';
 import { VFile } from 'vfile';
@@ -236,9 +237,7 @@ class AstTransformer {
       },
       'links or inline code snippets in text are not supported',
     );
-    const [text, values, plural] = this.replaceReferences(toMarkdown(para, {
-      extensions: [mdxExpressionToMarkdown],
-    }).trim(), references);
+    const [text, values, plural] = this.replaceReferences(this.toMarkdown(para), references);
     const textNode: TextNode = {
       type: 'text',
       text,
@@ -299,7 +298,7 @@ class AstTransformer {
         type: 'paragraph',
         children: link.children,
       };
-      rootName = toMarkdown(para);
+      rootName = this.toMarkdown(para);
     }
     if (rootName) {
       rootName.toLowerCase().endsWith('.md');
@@ -341,6 +340,17 @@ class AstTransformer {
       finalized.push(token);
     }
     return finalized;
+  }
+
+  toMarkdown(node: Content): string {
+    try {
+      return toMarkdown(node, {
+        extensions: [directiveToMarkdown, mdxExpressionToMarkdown],
+      }).trim();
+    } catch (e) {
+      this.vfile.message(e as Error, node);
+      return '';
+    }
   }
 }
 
