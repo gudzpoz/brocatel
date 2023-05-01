@@ -91,6 +91,7 @@ function VM:init()
     if self.savedata.version > VM.version then
         error("library version outdated")
     end
+    self.env:get_lua_env().ip = self:get_coroutine().ip
     self.env:set_global_scope(self.savedata.globals)
     self.env:set_label_lookup(function(keys) return self:lookup_label(keys) end)
     self.env:set_init(false)
@@ -202,6 +203,7 @@ function VM:fetch_and_next(input, ip)
     elseif node_type == "tagged_text" then
         local values = node.values
         local computed = {}
+        ip:step(root)
         if values then
             self:set_env()
             for k, v in pairs(values) do
@@ -239,21 +241,28 @@ function VM:fetch_and_next(input, ip)
             return nil, true
         end
         local selectables = {}
-        for i = 2, #select do
+        local count = 0
+        for i = 1, #select do
             local option_node = assert(ip:resolve("select", i, 2):get(root))
             if self.node_type(option_node) == "if-else" and #option_node <= 2 then
                 self:set_env()
-                ip:resolve(option_node[1]() and 2 or 3)
+                ip:resolve(option_node[1]() and 2 or 3, 2)
                 if ip:get(root) then
                     local line, tags = self:next()
                     selectables[i] = { line, tags }
+                    count = count + 1
                 end
             else
                 local line, tags = self:next()
                 selectables[i] = { line, tags }
+                count = count + 1
             end
             co.root_name = base_root
             ip:set(base)
+        end
+        if count == 0 then
+            ip:step(root)
+            return nil, true
         end
         return selectables, true
     end
@@ -354,6 +363,9 @@ function VM:lookup_label(labels)
             return nil, nil
         end
         local relative = current[1].labels[label]
+        if not relative then
+            return nil, nil
+        end
         path:resolve(relative)
         current = TablePath.from(relative):get(current)
     end
@@ -380,6 +392,20 @@ end
 function VM:load(s)
     self.savedata = savedata.load(s)
     self:init()
+end
+
+--- @param content string the compile brocatel chunk
+--- @param save string|nil the savedata content
+--- @return VM vm
+function brocatel.load_vm(content, save)
+    local env = StackedEnv.new()
+    env:set_lua_env(_G)
+    local chunk = savedata.load_with_env(env.env, content)()
+    local vm = VM.new(chunk, env)
+    if save then
+        VM:load(save)
+    end
+    return vm
 end
 
 return brocatel

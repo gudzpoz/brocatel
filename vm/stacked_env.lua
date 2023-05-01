@@ -41,6 +41,11 @@ function StackedEnv:set_init(init)
     self.init = init
 end
 
+--- @return table env the Lua environment
+function StackedEnv:get_lua_env()
+    return self.lua
+end
+
 --- @param env table the Lua environment
 function StackedEnv:set_lua_env(env)
     self.lua = env
@@ -98,16 +103,18 @@ function Label.new(path, labeler)
     if not label then
         return nil
     end
+    rawset(label, LABEL_PATH_INDEX, path)
+    rawset(label, LABELER_INDEX, labeler)
     setmetatable(label, Label)
     return label
 end
 function Label:__index(key)
     local path = {}
-    for i, v in ipairs(self[LABEL_PATH_INDEX]) do
+    for i, v in ipairs(rawget(self, LABEL_PATH_INDEX)) do
         path[i] = v
     end
     path[#path + 1] = key
-    local labeler = self[LABELER_INDEX]
+    local labeler = rawget(self, LABELER_INDEX)
     return Label.new(path, labeler)
 end
 function Label.__newindex()

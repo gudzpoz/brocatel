@@ -108,14 +108,21 @@ end
 --- @param s string
 --- @return table loaded
 function savedata.load(s)
+    return savedata.load_with_env({}, s)()
+end
+
+--- @param env table the environment
+--- @param s string code
+--- @return function
+function savedata.load_with_env(env, s)
     local chunk
     if setfenv then
         chunk = assert(loadstring(s))
-        setfenv(chunk, {})
+        setfenv(chunk, env)
     else
-        chunk = assert(load(s, nil, nil, {}))
+        chunk = assert(load(s, nil, nil, env))
     end
-    return chunk()
+    return chunk
 end
 
 return savedata
