@@ -14,6 +14,12 @@ import { convertValue } from './lua';
  * Configurations.
  */
 interface CompilerConfig {
+  /**
+   * Requiring correct Markdown paragraphs.
+   *
+   * AutoNewLine adds line breaks, allowing the Markdown file to be more compact.
+   */
+  noAutoNewLine?: boolean;
 }
 
 /**
@@ -82,7 +88,17 @@ class BrocatelCompiler {
    * @param content Markdown
    */
   async compile(content: string): Promise<VFile> {
-    return this.remark.process(content);
+    let preprocessed = content.replace(/\r\n/g, '\n');
+    if (!this.config.noAutoNewLine) {
+      preprocessed = content
+        .replace(/\s+/g, (s) => {
+          if (s.startsWith('\n') && !s.includes('\n', 1)) {
+            return `\n${s}`;
+          }
+          return s;
+        });
+    }
+    return this.remark.process(preprocessed);
   }
 
   /**

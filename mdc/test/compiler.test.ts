@@ -16,8 +16,12 @@ async function assertThrows(func: () => Promise<any>, ...messages: string[]) {
 
 test('Simplest plain text', async () => {
   assert.equal(await compiler.compileToString('hello'), '{{},"hello"}');
-  assert.equal(await compiler.compileToString('hello\nhello'), '{{},"hello\\nhello"}');
+  assert.equal(await compiler.compileToString('hello\nhello'), '{{},"hello","hello"}');
   assert.equal(await compiler.compileToString('hello\n\nhello'), '{{},"hello","hello"}');
+  assert.equal(
+    await compiler.compileToString('`true` True.\n`a = 1`'),
+    '{{},{function()return(\ntrue\n)end,{{},"True."}},{function()\na = 1\nend}}',
+  );
 });
 
 test('Tagged text', async () => {
@@ -137,7 +141,7 @@ test('Code blocks', async () => {
   await assertThrows(() => compiler.compileToString('```lua\n(\n```\n'), 'unexpected symbol near <eof>');
   assert.equal(
     await compiler.compileToString('```lua\nprint()\n```\n'),
-    '{{},{func=function(args)\nprint()\nend}}',
+    '{{},{func=function(args)\n\nprint()\n\nend}}',
   );
 });
 
