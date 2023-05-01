@@ -8,6 +8,7 @@ import { Processor, unified } from 'unified';
 import { VFile } from 'vfile';
 
 import brocatelCompile from './compiler';
+import { convertValue } from './lua';
 
 /**
  * Configurations.
@@ -37,6 +38,45 @@ class BrocatelCompiler {
   }
 
   /**
+   * Compiles a bunch of Markdown files.
+   *
+   * @param name the name of the entry Markdown file
+   * @param content the content fo the entry file
+   * @param fetcher a function that fetches the content of the given filename
+   */
+  async compileAll(name: string, fetcher: (name: string) => Promise<string>) {
+    const target = new VFile();
+    const files: { [name: string]: VFile | null } = {};
+    const globalLua: string[] = [];
+
+    const asyncCompile = async (task: string) => {
+      const content = await fetcher(task);
+      if (!content) {
+        target.message(`cannot load file ${task}(.md)`);
+      } else {
+        const file = await this.compile(content);
+        files[task] = file;
+        globalLua.push(...file.data.globalLua as string[]);
+        const tasks: Promise<any>[] = [];
+        (file.data.dependencies as Set<string>).forEach((f) => {
+          if (typeof files[f] === 'undefined') {
+            files[task] = null;
+            tasks.push(asyncCompile(f));
+          }
+        });
+        await Promise.all(tasks);
+      }
+    };
+    await asyncCompile(name);
+
+    const root = Object.fromEntries(
+      Object.entries(files).map(([f, v]) => [f, { raw: v?.toString() }]),
+    );
+    root[''] = { version: 1, entry: name } as any;
+    return `${globalLua.join('\n')}\nreturn ${convertValue(root, true)}`;
+  }
+
+  /**
    * Compiles one Markdown file.
    *
    * @param content Markdown
@@ -60,4 +100,4 @@ class BrocatelCompiler {
   }
 }
 
-export = BrocatelCompiler;
+export default BrocatelCompiler;

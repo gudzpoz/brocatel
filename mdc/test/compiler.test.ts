@@ -1,6 +1,6 @@
 import { assert, test } from 'vitest';
 
-import BrocatelCompiler from '../src/main';
+import BrocatelCompiler from '../src';
 
 const compiler = new BrocatelCompiler({});
 
