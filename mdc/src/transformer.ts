@@ -201,7 +201,7 @@ class AstTransformer {
     }
     return {
       type: 'func',
-      func: { raw: snippet || 'true' },
+      func: { raw: snippet },
       args: [],
       node: code,
       parent,
@@ -257,11 +257,15 @@ class AstTransformer {
         type: 'text',
         value: '|',
       };
-      const tags = this.extractTags(striped.children[1]);
-      const text = this.toTextNode(para, tags, parent);
-      text.text = text.text.substring(1).trim();
-      ifElse.ifThen = metaArray(para, [ifElse, [1]]);
-      ifElse.ifThen.children.push(text);
+      if (striped.children.length >= 2) {
+        const tags = this.extractTags(striped.children[1]);
+        const text = this.toTextNode(para, tags, parent);
+        if (text) {
+          text.text = text.text.substring(1).trim();
+          ifElse.ifThen = metaArray(para, [ifElse, [1]]);
+          ifElse.ifThen.children.push(text);
+        }
+      }
       return ifElse;
     }
     const tags = this.extractTags(para.children[0]);

@@ -252,11 +252,15 @@ class BrocatelFinalizer {
   }
 
   convertIfElse(ifElse: IfElseNode) {
-    const block: any[] = [{
-      raw: ifElse.condition.startsWith('--')
-        ? 'function()end'
-        : `function()return(\n${ifElse.condition}\n)end`,
-    }];
+    let raw;
+    if (ifElse.condition.startsWith('--')) {
+      raw = 'function()end';
+    } else if (ifElse.ifThen) {
+      raw = `function()return(\n${ifElse.condition}\n)end`;
+    } else {
+      raw = `function()\n${ifElse.condition}\nend`;
+    }
+    const block: any[] = [{ raw }];
     if (ifElse.ifThen) {
       block.push(this.convert(ifElse.ifThen));
       if (ifElse.otherwise) {
