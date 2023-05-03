@@ -7,11 +7,34 @@
 local TablePath = {}
 TablePath.__index = TablePath
 
+
+--- @alias Array (Node|string)[]
+
+--- @class Node
+---
+--- @field text string|nil
+--- @field tags string[]|nil
+--- @field plural string|nil
+--- @field values table<string, function>|nil
+---
+--- @field func function|nil
+--- @field args Array[]|nil
+---
+--- @field select Array[]|nil
+---
+--- @field link TablePath|nil
+--- @field root_name string|nil
+---
+--- @field labels table<string, TablePath>|nil
+
+--- @alias Element Node|Array
+
+
 --- Creates a path from an array.
 ---
 --- The table is copied into the new path.
 ---
---- @param t table|TablePath the path
+--- @param t (string|number)[]|TablePath the path
 --- @return TablePath
 function TablePath.from(t)
     assert(type(t) == "table", "expecting a table")
@@ -39,6 +62,7 @@ end
 --- Sets the path in place.
 ---
 --- @param t table|TablePath the new path
+--- @return TablePath self
 function TablePath:set(t)
     local n = #t
     while #self > n do
@@ -73,7 +97,7 @@ end
 ---
 --- @param t table
 --- @param parents number|nil the levels to go up
---- @return string|table|nil node
+--- @return Element|nil node
 function TablePath:get(t, parents)
     assert(type(t) == "table", "expecting a table")
     if not parents then

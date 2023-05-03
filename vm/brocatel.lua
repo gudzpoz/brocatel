@@ -41,7 +41,7 @@ end
 --- Fetches a root node of the specified name
 ---
 --- @param name string the root name
---- @return table|nil root the root node
+--- @return Element|nil root the root node
 function VM:get_root(name)
     local root = self.code[name]
     if not root then
@@ -62,7 +62,7 @@ end
 --- Initializes the VM state.
 function VM:init()
     if not self.savedata then
-        local meta = assert(self:get_root(""))
+        local meta = assert(self:get_root(""))  --- @type table
         local root = assert(self:get_root(meta.entry))
         local ip = TablePath.new()
         ip:step(root, true)
@@ -161,7 +161,7 @@ end
 ---
 ---@param input number|nil
 ---@return string|table|nil
----@return boolean|table|nil
+---@return boolean|string[]|nil
 function VM:next(input)
     while true do
         local line, tags = self:fetch_and_next(input)
@@ -185,7 +185,7 @@ end
 --- @param input number|nil user-selected option index
 --- @param ip TablePath|nil the pointer
 --- @return string|table|nil result
---- @return table|boolean|nil tags `nil` if reaches the end
+--- @return string[]|boolean|nil tags `nil` if reaches the end
 function VM:fetch_and_next(input, ip)
     local co = assert(self:get_coroutine())
     ip = ip or co.ip
@@ -210,7 +210,7 @@ function VM:fetch_and_next(input, ip)
                 computed[k] = v()
             end
         end
-        local text = node.text
+        local text = node.text  --- @type string
         local plural = node.plural
         return self:translate(text, plural and computed[plural] or nil), node.tags or true
     elseif node_type == "link" then
@@ -271,7 +271,7 @@ end
 
 --- Returns "text", "tagged_text", "func", "if-else", "select" or "link" depending on the node type.
 ---
---- @param node any
+--- @param node Node
 function VM.node_type(node)
     local t = type(node)
     if t == "string" then
@@ -331,6 +331,7 @@ function VM:lookup_label(labels)
     while true do
         local is_array, node = ptr:is_array(root)
         if is_array then
+            assert(node)
             local metadata = node[1]
             local label_table = metadata.labels
             if label_table and label_table[first] then
