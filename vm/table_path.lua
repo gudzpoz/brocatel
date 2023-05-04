@@ -38,18 +38,13 @@ TablePath.__index = TablePath
 --- @return TablePath
 function TablePath.from(t)
     assert(type(t) == "table", "expecting a table")
+    assert(#t >= 1 and type(t[1]) == "string", "the first element must be a root node name")
     local copy = {}
     for i, v in ipairs(t) do
         copy[i] = v
     end
     setmetatable(copy, TablePath)
     return copy
-end
-
---- Creates a new table-path that points to the root table itself.
---- @return TablePath
-function TablePath.new()
-    return TablePath.from({})
 end
 
 --- Returns a copy of the current pointer.
@@ -103,7 +98,7 @@ function TablePath:get(t, parents)
     if not parents then
         parents = 0
     end
-    if parents > #self then
+    if parents > #self - 1 then
         return nil
     end
     for i = 1, #self - parents do
@@ -127,20 +122,21 @@ end
 --- @return TablePath self the new current path, *not* a new one
 function TablePath:resolve(...)
     local n = select("#", ...)
+    local new = self:copy()
     local args = {...}
     for i = 1, n do
         local arg = args[i]
         if type(arg) == "table" then
             for _, v in ipairs(arg) do
-                self:resolve(v)
+                new:resolve(v)
             end
         elseif arg then
-            self[#self + 1] = arg
-        else
-            self[#self] = nil
+            new[#new + 1] = arg
+        elseif #new > 1 then
+            new[#new] = nil
         end
     end
-    return self
+    return self:set(new)
 end
 
 --- Returns true if the pointer is pointing to an brocatel array.
@@ -148,13 +144,13 @@ end
 --- @param t table
 --- @param parents number|nil
 --- @return boolean is_array
---- @return any node
+--- @return Element|nil node
 function TablePath:is_array(t, parents)
     local node = self:get(t, parents)
     if type(node) ~= "table" then
-        return false
+        return false, nil
     end
-    return type(node[1]) == "table", node
+    return type(node[1]) == "table" and #node >= 1, node
 end
 
 --- Points the path to the next element.
@@ -207,32 +203,36 @@ end
 --- @return boolean success false if the tree is exhausted and no valid next element can be found
 function TablePath:step(t, init)
     assert(type(t) == "table", "expecting a table")
+    local new = self:copy()
     while true do
         if init then
             init = false
         else
+            local is_array, parent = new:is_array(t, 1)
             while (
-                not self:is_array(t, 1)
-                or #self:get(t, 1) <= self[#self]
-                or self[#self - 1] == "select"
-                or self[#self - 1] == "args"
+                #new > 1 and (
+                    not is_array
+                    or #parent <= new[#new]
+                    or new[#new - 1] == "select"
+                    or new[#new - 1] == "args"
+                )
             ) do
-                self:resolve(nil)
-                if #self == 0 then
+                new:resolve(nil)
+                if #new <= 1 then
+                    assert(#new == 1)
+                    self:set(new)
                     return false
                 end
+                is_array, parent = new:is_array(t, 1)
             end
-            self[#self] = self[#self] + 1
+            new[#new] = new[#new] + 1
         end
-        local is_array, node = self:is_array(t)
-        if not is_array and node then
-            return true
-        end
-        while self:is_array(t) do
+        while new:is_array(t) do
             -- Skipping the metadata node
-            self:resolve(2)
+            new:resolve(2)
         end
-        if self:get(t) then
+        if new:get(t) then
+            self:set(new)
             return true
         end
     end
@@ -242,7 +242,7 @@ end
 ---
 --- @return boolean done
 function TablePath:is_done()
-    return #self == 0
+    return #self <= 1
 end
 
 --- Concatenates path segments with `/`.

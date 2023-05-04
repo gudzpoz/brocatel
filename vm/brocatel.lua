@@ -27,6 +27,9 @@ VM.version = 1
 --- @param env StackedEnv the environment used to load the chunk
 --- @return VM vm the created VM
 function VM.new(compiled_chunk, env)
+    local meta = compiled_chunk[""]
+    assert(meta, "the compiled chunk must contain a meta node")
+    assert(meta.entry and meta.version, "invalid meta node for the compiled chunk")
     --- @type VM
     local vm = {
         code = compiled_chunk,
@@ -38,23 +41,29 @@ function VM.new(compiled_chunk, env)
     return vm
 end
 
---- Fetches a root node of the specified name
+--- Fetches the root, ensuring existence of the specified root node.
 ---
---- @param name string the root name
---- @return Element|nil root the root node
-function VM:get_root(name)
+--- @param name string|TablePath|nil the root node name
+--- @return table<string, Element>|nil root the root node
+function VM:ensure_root(name)
+    if type(name) == "table" then
+        assert(#name >= 1)
+        name = name[1]
+    elseif not name then
+        return self:ensure_root(self:get_coroutine().ip)
+    end
     local root = self.code[name]
     if not root then
         return nil
     end
     if type(root) == "table" then
-        return root
+        return self.code
     end
     if type(root) == "function" then
         self.env:set_init(true)
         self.code[name] = root()
         self.env:set_init(false)
-        return self:get_root(name)
+        return self:ensure_root(name)
     end
     error("expecting a table or a function")
 end
@@ -62,9 +71,9 @@ end
 --- Initializes the VM state.
 function VM:init()
     if not self.savedata then
-        local meta = assert(self:get_root(""))  --- @type table
-        local root = assert(self:get_root(meta.entry))
-        local ip = TablePath.new()
+        local meta = assert(self:ensure_root(""))[""]  --- @type table
+        local ip = TablePath.from({ meta.entry })
+        local root = assert(self:ensure_root(ip))
         ip:step(root, true)
         local save = {
             version = meta.version,
@@ -75,7 +84,6 @@ function VM:init()
                     coroutines = {
                         {
                             ip = ip,
-                            root_name = meta.entry,
                             locals = { keys = {}, values = {} },
                             stack = {},
                         },
@@ -137,7 +145,6 @@ end
 
 --- @class Coroutine
 --- @field ip TablePath
---- @field root_name string
 --- @field locals table
 --- @field stack table
 
@@ -187,9 +194,8 @@ end
 --- @return string|table|nil result
 --- @return string[]|boolean|nil tags `nil` if reaches the end
 function VM:fetch_and_next(input, ip)
-    local co = assert(self:get_coroutine())
-    ip = ip or co.ip
-    local root = assert(self:get_root(co.root_name))
+    ip = ip or assert(self:get_coroutine()).ip
+    local root = assert(self:ensure_root(ip))
     if ip:is_done() then
         return nil, nil
     end
@@ -214,12 +220,14 @@ function VM:fetch_and_next(input, ip)
         local plural = node.plural
         return self:translate(text, plural and computed[plural] or nil), node.tags or true
     elseif node_type == "link" then
-        ip:set(node.link)
         local new_root_name = node.root_name
         if new_root_name then
-            co.root_name = new_root_name
-            root = assert(self:get_root(new_root_name))
+            assert(self:ensure_root(new_root_name))
+            ip:set({ new_root_name })
+        else
+            ip:set({ ip[1] })
         end
+        ip:resolve(node.link)
         ip:step(root, true)
         return nil, true
     elseif node_type == "if-else" then
@@ -235,7 +243,6 @@ function VM:fetch_and_next(input, ip)
     elseif node_type == "select" then
         local select = node.select
         local base = ip:copy()
-        local base_root = co.root_name
         if input then
             ip:resolve("select", input, 3):step(root, true)
             return nil, true
@@ -257,7 +264,6 @@ function VM:fetch_and_next(input, ip)
                 selectables[i] = { line, tags }
                 count = count + 1
             end
-            co.root_name = base_root
             ip:set(base)
         end
         if count == 0 then
@@ -321,9 +327,8 @@ end
 --- @return TablePath|nil
 --- @return any
 function VM:lookup_label(labels)
-    local co = assert(self:get_coroutine())
-    local root = assert(self:get_root(co.root_name))
-    local ptr = co.ip:copy()
+    local ptr = assert(self:get_coroutine()).ip:copy()
+    local root = assert(self:ensure_root(ptr))
     local first = labels[1]
 
     local not_found = false
@@ -335,7 +340,6 @@ function VM:lookup_label(labels)
             local metadata = node[1]
             local label_table = metadata.labels
             if label_table and label_table[first] then
-                root = node
                 break
             end
         end
@@ -348,35 +352,26 @@ function VM:lookup_label(labels)
     end
 
     if not_found then
-        local new_root = self:get_root(first)
-        if not new_root then
+        if not self:ensure_root(labels[1]) then
             return nil
         end
-        root = new_root
+        ptr = TablePath.from({ labels[1] })
     end
 
-    --- @type any
-    local current = root
-    local path = TablePath.new()
     for i = (not_found and 2 or 1), #labels do
         local label = labels[i]
-        if not TablePath.new():is_array(current) then
-            return nil, nil
+        local is_array, current = ptr:is_array(root)
+        if not is_array or not current then
+            return nil
         end
         local relative = current[1].labels[label]
         if not relative then
-            return nil, nil
+            return nil
         end
-        path:resolve(relative)
-        current = TablePath.from(relative):get(current)
+        ptr:resolve(relative)
     end
 
-    if not_found then
-        ptr:resolve(first, path)
-    else
-        ptr:resolve(path)
-    end
-    return ptr, current
+    return ptr, ptr:get(root)
 end
 
 --- Sets the environment up.

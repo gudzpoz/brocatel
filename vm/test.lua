@@ -7,11 +7,14 @@ local brocatel = require("brocatel")
     TablePath tests
 ]]--
 
-assert(TablePath.new():equals(TablePath.from({})))
-assert(not TablePath.new():equals(TablePath.from({ 1 })))
-assert(TablePath.from({ 1, 2, 3 }):__tostring() == "/1/2/3")
+assert(not pcall(function() TablePath.from({}) end))
+assert(not pcall(function() TablePath.from({ 1 }) end))
+assert(pcall(function() TablePath.from({ "root" }) end))
+assert(TablePath.from({ "a" }):equals(TablePath.from({ "a" })))
+assert(not TablePath.from({ "a" }):equals(TablePath.from({ "b" })))
+assert(TablePath.from({ "root", 1, 2, 3 }):__tostring() == "/root/1/2/3")
 
-local path = TablePath.from({ 1, 2, 3 })
+local path = TablePath.from({ "root", 1, 2, 3 })
 assert(path:copy():copy():equals(path))
 
 local tree = {
@@ -31,17 +34,18 @@ local tree = {
         "!",
     }
 }
-assert(TablePath.from({ 4, 2 }):get(tree) == "!")
-assert(TablePath.from({ 2, 2, 2 }):get(tree) == "Hello")
-assert(TablePath.from({ 2, 2, 2 }):get(tree, 1)[3] == "Hi")
-assert(TablePath.from({ 4, 2 }):resolve(nil, nil, 2, 2, 2):get(tree) == "Hello")
+local root = { r = tree }
+assert(TablePath.from({ "r", 4, 2 }):get(root) == "!")
+assert(TablePath.from({ "r", 2, 2, 2 }):get(root) == "Hello")
+assert(TablePath.from({ "r", 2, 2, 2 }):get(root, 1)[3] == "Hi")
+assert(TablePath.from({ "r", 4, 2 }):resolve(nil, nil, 2, 2, 2):get(root) == "Hello")
 
-path = TablePath.new()
+path = TablePath.from({ "r" })
 local results = {}
-path:step(tree, true)
+path:step(root, true)
 repeat
-    results[#results + 1] = path:get(tree)
-until not path:step(tree)
+    results[#results + 1] = path:get(root)
+until not path:step(root)
 -- Not actually a path, but we just use it to compare tables for convenience.
 assert(TablePath.from(results):equals({ "Hello", "Hi", "!" }))
 
@@ -50,7 +54,7 @@ assert(TablePath.from(results):equals({ "Hello", "Hi", "!" }))
 ]]--
 
 local env = StackedEnv.new()
-local lua_env = { a = 1, type = type, assert = assert }
+local lua_env = { a = 1, type = type, assert = assert, print = print }
 local glob = {}
 assert(not env:get(""))
 env:set_lua_env(lua_env)
@@ -244,7 +248,7 @@ vm = brocatel.VM.new({
         {
             func = function(args)
                 call_count = call_count + 1
-                assert(args:equals(TablePath.from({ 3, "args" })))
+                assert(args:equals(TablePath.from({ "main", 3, "args" })))
             end,
             args = {},
         },
@@ -266,12 +270,14 @@ vm = brocatel.VM.new({
         {},
         {
             select = {
-                {},
                 { {}, "Selection #1", "Result #1" },
-                { {}, { function() call_count = call_count + 1; return false end, "Selection #2" }, "Result #2" },
+                { {}, { function() call_count = call_count + 1; return false end,
+                    {{}, "Selection #2" } }, "Result #2" },
                 { {}, { function() call_count = call_count + 1; return true end }, "Never" },
-                { {}, { function() call_count = call_count + 1; return true end, "Selection #3" }, "Result #3" },
-                { {}, { function() call_count = call_count + 1; return true end, "Selection #4" }, "Result #4" },
+                { {}, { function() call_count = call_count + 1; return true end,
+                    {{}, "Selection #3" } }, "Result #3" },
+                { {}, { function() call_count = call_count + 1; return true end,
+                    {{}, "Selection #4" } }, "Result #4" },
             },
         },
         "Hello",
@@ -280,10 +286,10 @@ vm = brocatel.VM.new({
 local selections = vm:next()
 assert(type(selections) == "table")
 for k, _ in pairs(selections) do
-    assert(k == 2 or k == 5 or k == 6)
+    assert(k == 1 or k == 4 or k == 5)
 end
-assert(selections[2][1] == "Selection #1")
-assert(selections[5][1] == "Selection #3")
-assert(selections[6][1] == "Selection #4")
-assert(vm:next(5) == "Result #3")
+assert(selections[1][1] == "Selection #1")
+assert(selections[4][1] == "Selection #3")
+assert(selections[5][1] == "Selection #4")
+assert(vm:next(4) == "Result #3")
 assert(vm:next() == "Hello")
