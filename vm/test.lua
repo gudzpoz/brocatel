@@ -97,7 +97,7 @@ local code = [[
     return {
         [""] = { version = 1, entry = "main" },
         main = {
-            {},
+            { labels = { b = { 2 } } },
             {
                 function()
                     a = a + 1
@@ -107,7 +107,7 @@ local code = [[
                     return a > 6
                 end,
                 { {}, "Hello" },
-                { {}, { link = { 2 } } }
+                { {}, { link = { "b" } } }
             },
             "Hi",
             { link = {}, root_name = "file2" }
@@ -219,7 +219,7 @@ vm = brocatel.VM.new({
         { { labels = { first = { 2 } } }, { {} } },
         "Hi",
         {
-            link = {},
+            link = {}, root_name = "main",
         },
     }
 }, StackedEnv.new())
@@ -228,7 +228,7 @@ vm:set_gettext(as_is, as_is)
 results = gather_til_end(vm, 10)
 -- Not actually a path, but we just use it to compare tables for convenience.
 assert(TablePath.from(results):equals(
-        { "Hello", "Hi", "Hello", "Hi", "Hello", "Hi", "Hello", "Hi", "Hello", "Hi", }
+    { "Hello", "Hi", "Hello", "Hi", "Hello", "Hi", "Hello", "Hi", "Hello", "Hi", }
 ))
 local _, line = vm:lookup_label({ "first" })
 assert(line == "Hello")

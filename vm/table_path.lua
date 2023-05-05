@@ -25,6 +25,7 @@ TablePath.__index = TablePath
 --- @field link TablePath|nil
 --- @field root_name string|nil
 ---
+--- @field label string|nil
 --- @field labels table<string, TablePath>|nil
 
 --- @alias Element Node|Array
@@ -33,6 +34,7 @@ TablePath.__index = TablePath
 --- Creates a path from an array.
 ---
 --- The table is copied into the new path.
+--- Listeners are not copied.
 ---
 --- @param t (string|number)[]|TablePath the path
 --- @return TablePath
@@ -54,11 +56,34 @@ function TablePath:copy()
     return TablePath.from(self)
 end
 
+local LISTENER_KEY = {}
+--- Sets the path change listener.
+---
+--- When the path is changed, it calls the listener, passing the new path and
+--- the new path.
+---
+--- @param listener function|nil
+function TablePath:set_listener(listener)
+    rawset(self, LISTENER_KEY, listener)
+end
+
+--- Calls the change listener of the old path.
+---
+--- @param old TablePath
+--- @param new TablePath
+local function call_listener(old, new)
+    local listener = rawget(new, LISTENER_KEY)
+    if listener then
+        listener(old, new)
+    end
+end
+
 --- Sets the path in place.
 ---
 --- @param t table|TablePath the new path
 --- @return TablePath self
 function TablePath:set(t)
+    call_listener(self, TablePath.from(t))
     local n = #t
     while #self > n do
         self[#self] = nil
@@ -66,6 +91,7 @@ function TablePath:set(t)
     for i = 1, n do
         self[i] = t[i]
     end
+    return self
 end
 
 --- Returns true if the two paths equal.

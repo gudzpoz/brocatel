@@ -1,6 +1,7 @@
 local TablePath = require("table_path")
 local StackedEnv = require("stacked_env")
 local savedata = require("savedata")
+local labels = require("labels")
 
 --- The brocatel module, containing the core brocatel.VM implementation.
 ---
@@ -99,7 +100,16 @@ function VM:init()
     if self.savedata.version > VM.version then
         error("library version outdated")
     end
-    self.env:get_lua_env().ip = self:get_coroutine().ip
+    for _, thread in pairs(self.savedata.threads) do
+        for _, co in ipairs(thread.coroutines) do
+            co.ip = TablePath.from(co.ip)
+        end
+    end
+    local ip = assert(self:get_coroutine()).ip
+    ip:set_listener(function (_, new)
+        assert(self:ensure_root(new))
+    end)
+    self.env:get_lua_env().ip = ip
     self.env:set_global_scope(self.savedata.globals)
     self.env:set_label_lookup(function(keys) return self:lookup_label(keys) end)
     self.env:set_init(false)
@@ -223,11 +233,10 @@ function VM:fetch_and_next(input, ip)
         local new_root_name = node.root_name
         if new_root_name then
             assert(self:ensure_root(new_root_name))
-            ip:set({ new_root_name })
-        else
-            ip:set({ ip[1] })
         end
-        ip:resolve(node.link)
+        local found = labels.find_by_labels(root, ip, node.link, new_root_name)
+        assert(#found == 1, "aaa: " .. tostring(#found))
+        ip:set(found[1])
         ip:step(root, true)
         return nil, true
     elseif node_type == "if-else" then
@@ -317,61 +326,26 @@ end
 
 --- Looks up a label relative to the current IP.
 ---
---- Returns a path to a node and the node itself by their labels.
----
---- The labels should be complete, that is, it should never miss any label in between:
---- - Correct: `part_1.chapter_1.section_1.paragraph_1`,
---- - Incorrect: `part_1.section_1.paragraph_1`, even if there is only one `section_1` under `part_1`.
----
---- @param labels table relative label path
+--- @param keys table relative label path
 --- @return TablePath|nil
 --- @return any
-function VM:lookup_label(labels)
-    local ptr = assert(self:get_coroutine()).ip:copy()
-    local root = assert(self:ensure_root(ptr))
-    local first = labels[1]
-
-    local not_found = false
-    -- The first key, where the lookup will be relative to.
-    while true do
-        local is_array, node = ptr:is_array(root)
-        if is_array then
-            assert(node)
-            local metadata = node[1]
-            local label_table = metadata.labels
-            if label_table and label_table[first] then
-                break
+function VM:lookup_label(keys)
+    local results = labels.deep_lookup(assert(self:get_coroutine()).ip, keys, self.code)
+    if #results == 0 and self.code[keys[1]] then
+        local root = keys[1]
+        if self:ensure_root(root) then
+            local path = {}
+            for i = 2, #keys do
+                path[i - 1] = keys[i]
             end
+            results = labels.deep_lookup(TablePath.from({ root }), path, self.code)
         end
-        if ptr:is_done() then
-            not_found = true
-            break
-        end
-        -- Goes to parent nodes if not found.
-        ptr:resolve(nil)
     end
-
-    if not_found then
-        if not self:ensure_root(labels[1]) then
-            return nil
-        end
-        ptr = TablePath.from({ labels[1] })
+    if #results == 0 then
+        return nil
     end
-
-    for i = (not_found and 2 or 1), #labels do
-        local label = labels[i]
-        local is_array, current = ptr:is_array(root)
-        if not is_array or not current then
-            return nil
-        end
-        local relative = current[1].labels[label]
-        if not relative then
-            return nil
-        end
-        ptr:resolve(relative)
-    end
-
-    return ptr, ptr:get(root)
+    assert(#results == 1)
+    return results[1], results[1]:get(self.code)
 end
 
 --- Sets the environment up.
