@@ -72,7 +72,7 @@ end
 --- @param old TablePath
 --- @param new TablePath
 local function call_listener(old, new)
-    local listener = rawget(new, LISTENER_KEY)
+    local listener = rawget(old, LISTENER_KEY)
     if listener then
         listener(old, new)
     end

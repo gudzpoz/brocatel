@@ -169,4 +169,56 @@ function tree.find_by_labels(root, current, labels, root_node)
     end
 end
 
+---@param path TablePath
+---@param root table
+function tree.get_path_labels(path, root)
+    local labels = { path[1] }
+    for parent = #path - 1, 0, -1 do
+        local is_array, node = path:is_array(root, parent)
+        if is_array and node and node[1].label then
+            labels[#labels + 1] = node[1].label
+        end
+    end
+    return labels
+end
+
+--- @param save table
+--- @param root table
+--- @param old TablePath
+--- @param new TablePath
+function tree.record_simple(save, root, old, new)
+    local prev_labels = tree.get_path_labels(old, root)
+    local new_labels = tree.get_path_labels(new, root)
+    local stat_node = save
+    for i, label in ipairs(new_labels) do
+        if not stat_node[label] then
+            stat_node[label] = { [""] = { count = 0 } }
+        end
+        stat_node = stat_node[label]
+        if not prev_labels or prev_labels[i] ~= label then
+            prev_labels = nil
+            stat_node[""].count = stat_node[""].count + 1
+        elseif stat_node[""].count == 0 then
+            stat_node[""].count = 1
+        end
+    end
+end
+
+--- @param save table
+--- @param path TablePath
+--- @param root table
+function tree.get_recorded_count(save, path, root)
+    local label_path = tree.get_path_labels(path, root)
+    local current = save
+    for _, label in ipairs(label_path) do
+        local next = current[label]
+        if next then
+            current = next
+        else
+            return 0
+        end
+    end
+    return current[""].count
+end
+
 return tree

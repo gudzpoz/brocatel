@@ -97,7 +97,7 @@ local code = [[
     return {
         [""] = { version = 1, entry = "main" },
         main = {
-            { labels = { b = { 2 } } },
+            { labels = { b = { 2 } }, label = "main" },
             {
                 function()
                     a = a + 1

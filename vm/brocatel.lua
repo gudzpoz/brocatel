@@ -72,10 +72,8 @@ end
 --- Initializes the VM state.
 function VM:init()
     if not self.savedata then
-        local meta = assert(self:ensure_root(""))[""]  --- @type table
+        local meta = assert(self:ensure_root(""))[""] --- @type table
         local ip = TablePath.from({ meta.entry })
-        local root = assert(self:ensure_root(ip))
-        ip:step(root, true)
         local save = {
             version = meta.version,
             current_thread = "",
@@ -92,7 +90,7 @@ function VM:init()
                     thread_locals = { keys = {}, values = {} },
                 },
             },
-            labels = {},
+            stats = {},
             globals = {},
         }
         self.savedata = save
@@ -106,13 +104,22 @@ function VM:init()
         end
     end
     local ip = assert(self:get_coroutine()).ip
-    ip:set_listener(function (_, new)
+    ip:set_listener(function(old, new)
         assert(self:ensure_root(new))
+        labels.record_simple(self.savedata.stats, self.code, old, new)
     end)
     self.env:get_lua_env().ip = ip
     self.env:set_global_scope(self.savedata.globals)
-    self.env:set_label_lookup(function(keys) return self:lookup_label(keys) end)
+    self.env:set_label_lookup(function(keys)
+        local path = self:lookup_label(keys)
+        if path and labels.get_recorded_count(self.savedata.stats, path, self.code) > 0 then
+            return path
+        end
+        return nil
+    end)
     self.env:set_init(false)
+    local root = assert(self:ensure_root(ip))
+    ip:step(root, true)
 end
 
 --- @class Gettext
@@ -226,7 +233,7 @@ function VM:fetch_and_next(input, ip)
                 computed[k] = v()
             end
         end
-        local text = node.text  --- @type string
+        local text = node.text --- @type string
         local plural = node.plural
         return self:translate(text, plural and computed[plural] or nil), node.tags or true
     elseif node_type == "link" then
@@ -344,7 +351,6 @@ function VM:lookup_label(keys)
     if #results == 0 then
         return nil
     end
-    assert(#results == 1)
     return results[1], results[1]:get(self.code)
 end
 

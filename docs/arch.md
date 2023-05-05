@@ -65,13 +65,14 @@ constructed by reading a root *array* entry by entry.
 ```lua
 SimplArray = {
   {
-      labels = {
-          para_1 = 2,
-          para_2 = 3,
-      },
-      locals = {
-          localVariable1 = 0,
-      },
+    label = "label",
+    labels = {
+      para_1 = 2,
+      para_2 = 3,
+    },
+    locals = {
+      localVariable1 = 0,
+    },
   },
   "Paragraph 1",
   "Paragraph 2",
@@ -92,7 +93,6 @@ There are several kinds of values in the compiled Lua table tree.
   ```lua
   -- [blue] [red] some raw text with _**mark-ups**_ preserved as is, visit counters {count()?}
   TaggedText = {
-    type = "text",
     text = "some raw text with _**mark-ups**_ preserved as is: {__generated_name_1} counts",
     tags = { "blue", "red" },
     plural = "__generated_name_1",
@@ -114,8 +114,8 @@ There are several kinds of values in the compiled Lua table tree.
   }
   FunctionCall_TypeII = {
     function() return hasPlayerBeenSomewhere() end,
-    {"The Player has been somewhere."},
-    {"The Player has not yet been there."},
+    { {}, "The Player has been somewhere." },
+    { {}, "The Player has not yet been there." },
   }
   ```
 
@@ -127,16 +127,16 @@ There are several kinds of values in the compiled Lua table tree.
   Select = {
     select = {
       { {}, "Option One", "Outcome #1" },
-      { {}, { function() has_item() end, "Use Item" }, "Item Used" },
+      { {}, { function() has_item() end, { {}, "Use Item" } }, "Item Used" },
     },
   }
   ```
 
-- **link**: Absolute paths (like JSONPath) to certain values. Required field: `link`.
+- **link**: Labels (relative), similar to `element element` selectors in CSS.
 
   ```lua
   Link = {
-    link = { 1, 1, "list", 1 },
+    link = { "chapter 1", "section 2" },
     root_name = "root_name",  -- Optional
   }
   ```
@@ -308,15 +308,12 @@ SaveData = {
             },
         },
     },
-    labels = {
-        chapter_1 = {
-            visited = 3,
-        },
-        chapter_2 = {
-            visited = 1,
-            section_2 = {
-                visited = 1,
-            },
+    stats = {
+        file1 = {
+          [""] = { count = 5 },
+          chapter_1 = {
+            [""] = { count = 3 },
+          },
         },
     },
     globals = {
