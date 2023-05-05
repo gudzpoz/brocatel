@@ -25,12 +25,28 @@ Markdown compiler implementation:
 - [X] Plain text nodes.
 - [X] Tagged text nodes.
 - [ ] Links.
+  - [ ] Compile-time link validity checking.
 - [X] Options.
 - [X] Function calls.
 - [X] Labels.
 - [ ] Macros.
 
 ### `v0.3.0`
+
+#### Runtime API design.
+
+- [ ] API naming convention (maybe all-capital to avoid name conflicts with user labels).
+- [ ] IP (instruction pointer) access.
+- [ ] Label access counter.
+- [ ] Show-once options, show-forever options and show-N-times options.
+
+#### Integration examples
+
+- [ ] Save & load.
+- [ ] Fast-forward (skipping only texts that users have read).
+- [ ] Complete porting The Intercept, which is a little bit lengthy.
+
+### `v0.4.0`
 
 Multi-thread (not *those* threads) support:
 
@@ -48,7 +64,7 @@ Some clarifications:
   [*threads* in Ink](https://github.com/inkle/ink/blob/master/Documentation/WritingWithInk.md#2-threads).
 - **Story calls** are just function calls for plots.
 
-### `v0.4.0` and on
+### `v0.5.0` and on
 
 Bug fixes and Markdown grammar optimization.
 
