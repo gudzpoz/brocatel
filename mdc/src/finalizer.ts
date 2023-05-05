@@ -140,7 +140,6 @@ class BrocatelFinalizer {
           if (link.link.length === 1) {
             const path = this.tryResolveUniqueLink(link);
             if (path) {
-              link.link = path;
               return;
             }
           }
@@ -149,7 +148,7 @@ class BrocatelFinalizer {
         }
         [parent] = parent.parent;
       }
-      link.link = this.resolveLink(parent, link);
+      this.resolveLink(parent, link);
     });
     this.unresolved = [];
   }
@@ -225,7 +224,6 @@ class BrocatelFinalizer {
 
   convertMetaArray(node: MetaArray): LuaMetaArray {
     const metaArray = node;
-    delete metaArray.meta.label;
     delete metaArray.meta.upper;
     metaArray.meta.refs = {};
     metaArray.meta.children = {};

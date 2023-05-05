@@ -76,7 +76,13 @@ class BrocatelCompiler {
     await asyncCompile(name);
 
     const root = Object.fromEntries(
-      Object.entries(files).map(([f, v]) => [f, { raw: v?.toString() }]),
+      Object.entries(files).map(([f, v]) => {
+        if (v) {
+          v.messages.forEach(console.log);
+          return [f, { raw: v?.toString() }];
+        }
+        return [f, null];
+      }),
     );
     root[''] = { version: 1, entry: name } as any;
     return `${globalLua.join('\n')}\nreturn ${convertValue(root, true)}`;

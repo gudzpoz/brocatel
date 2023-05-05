@@ -52,7 +52,7 @@ test('Text with values', async () => {
 });
 
 test('Headings', async () => {
-  assert.equal(await compiler.compileToString('# Heading 1'), '{{labels={["Heading 1"]={2}}},{{}}}');
+  assert.equal(await compiler.compileToString('# Heading 1'), '{{labels={["Heading 1"]={2}}},{{label="Heading 1"}}}');
   assert.equal(
     await compiler.compileToString('# A\n## B\n### C\n### D\n## E\n# F'),
     `
@@ -61,22 +61,22 @@ test('Headings', async () => {
         A={2},
         F={3}
       }},
-      {               -- A
-        {labels={
+      {
+        {label="A",labels={
           B={2},
           E={3}
         }},
-        {             -- B
-          {labels={
+        {
+          {label="B",labels={
             C={2},
             D={3}
           }},
-          {{}},       -- C
-          {{}}        -- D
+          {{label="C"}},
+          {{label="D"}}
         },
-        {{}}          -- E
+        {{label="E"}}
       },
-      {{}}            -- F
+      {{label="F"}}
     }
     `.replace(/--.+/g, '').replace(/ |\n/g, ''),
   );
@@ -84,23 +84,23 @@ test('Headings', async () => {
 
 test('Links', async () => {
   await assertThrows(() => compiler.compileToString('[](A)'), 'link not found: A');
-  assert.equal(await compiler.compileToString('[](A)\n# A'), '{{labels={A={3}}},{link={3}},{{}}}');
-  assert.equal(await compiler.compileToString('[](type)\n# type'), '{{labels={type={3}}},{link={3}},{{}}}');
+  assert.equal(await compiler.compileToString('[](A)\n# A'), '{{labels={A={3}}},{link={"A"}},{{label="A"}}}');
+  assert.equal(await compiler.compileToString('[](type)\n# type'), '{{labels={type={3}}},{link={"type"}},{{label="type"}}}');
   const serialized = `
     {
       {labels={A={2}}},
       {
-        {labels={B={2}}},
+        {label="A",labels={B={2}}},
         {
-          {labels={C={2}}},
+          {label="B",labels={C={2}}},
           {
-            {labels={D={2}}},
+            {label="C",labels={D={2}}},
             {
-              {labels={E={3}}},
-              {link={2,2,2,2,3,2}},
+              {label="D",labels={E={3}}},
+              {link={"E","F"}},
               {
-                {labels={F={2}}},
-                {{}}
+                {label="E",labels={F={2}}},
+                {{label="F"}}
               }
             }
           }
@@ -114,7 +114,7 @@ test('Links', async () => {
   );
   assert.equal(
     await compiler.compileToString('# A\n## B\n### C\n#### D\n[](F)\n##### E\n###### F'),
-    serialized,
+    serialized.replace('"E","F"', '"F"'),
   );
 });
 
@@ -125,8 +125,8 @@ test('Lists', async () => {
     `{
       {labels={A={2,"select",1,2}}},
       {select={
-        {{},{{}}},
-        {{},{link={2,"select",1,2}}}}
+        {{},{{label="A"}}},
+        {{},{link={"A"}}}}
       }
     }`.replace(/--.+/g, '').replace(/ |\n/g, ''),
   );
@@ -153,14 +153,14 @@ test('Directives', async () => {
       {
         {},
         {
-          {},
+          {label="id"},
           {
             {},
             {select={
               {{},"Hello"}
             }}
           },
-          {link={2,2}}
+          {link={"id"}}
         }
       }
     }`.replace(/--.+/g, '').replace(/ |\n/g, ''),

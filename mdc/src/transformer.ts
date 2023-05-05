@@ -378,10 +378,6 @@ class AstTransformer {
       };
       rootName = this.toMarkdown(para);
     }
-    if (rootName) {
-      rootName.toLowerCase().endsWith('.md');
-      rootName = rootName.substring(0, rootName.length - 3);
-    }
     const linkNode: LinkNode = {
       type: 'link',
       link: this.parseLinkUrl(link),
