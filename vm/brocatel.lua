@@ -1,7 +1,8 @@
 local TablePath = require("table_path")
 local StackedEnv = require("stacked_env")
-local savedata = require("savedata")
 local labels = require("labels")
+local savedata = require("savedata")
+local string = require("string")
 
 --- The brocatel module, containing the core brocatel.VM implementation.
 ---
@@ -235,7 +236,12 @@ function VM:fetch_and_next(input, ip)
         end
         local text = node.text --- @type string
         local plural = node.plural
-        return self:translate(text, plural and computed[plural] or nil), node.tags or true
+        local formatted = self:translate(text, plural and computed[plural] or nil)
+        for key, value in pairs(computed) do
+            -- The key should be a valid Lua identifier and need no regex-escaping.
+            formatted = string.gsub(formatted, "{" .. key .. "}", tostring(value))
+        end
+        return formatted, node.tags or true
     elseif node_type == "link" then
         local new_root_name = node.root_name
         if new_root_name then
