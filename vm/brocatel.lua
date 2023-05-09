@@ -2,7 +2,11 @@ local TablePath = require("table_path")
 local StackedEnv = require("stacked_env")
 local labels = require("labels")
 local savedata = require("savedata")
+
+local math = require("math")
+local os = require("os")
 local string = require("string")
+local table = require("table")
 
 --- The brocatel module, containing the core brocatel.VM implementation.
 ---
@@ -376,12 +380,40 @@ function VM:load(s)
     self:init()
 end
 
+
+--- @param t table
+--- @return table copy
+local function shallow_copy(t)
+    local copy = {}
+    for key, value in pairs(t) do
+        copy[key] = value
+    end
+    return copy
+end
+
 --- @param content string the compile brocatel chunk
 --- @param save string|nil the savedata content
+--- @param extra_env table|nil extra Lua environment globals (only `print` and `require` permitted)
 --- @return VM vm
-function brocatel.load_vm(content, save)
+function brocatel.load_vm(content, save, extra_env)
     local env = StackedEnv.new()
-    env:set_lua_env(_G)
+    if not extra_env then
+        extra_env = {}
+    end
+    env:set_lua_env({
+        assert = assert, error = error,
+        ipairs = ipairs, next = next, pairs = pairs,
+        select = select, unpack = unpack,
+        pcall = pcall, xpcall = xpcall,
+        tonumber = tonumber, tostring = tonumber, type = type,
+        print = extra_env.print,
+        require = extra_env.require,
+
+        os = { time = os.time },
+        math = shallow_copy(math),
+        string = shallow_copy(string),
+        table = shallow_copy(table),
+    })
     local chunk = savedata.load_with_env(env.env, content)()
     local vm = VM.new(chunk, env)
     if save then
