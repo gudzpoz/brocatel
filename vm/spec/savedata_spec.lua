@@ -30,9 +30,47 @@ local function generate_complex_table()
     return complex
 end
 
+--- @param table any
+--- @param saved string|nil
+--- @param loaded table|nil
+local function test_save_load(table, saved, loaded)
+    local s = savedata.save(table)
+    if saved then
+        assert.equals(saved, s)
+    end
+    if type(table) == "function" then
+        assert.same(loaded, savedata.load(s))
+    else
+        assert.same(loaded or table, savedata.load(s))
+    end
+end
+
 describe("Module savedata", function()
-    it("saves and loads large table", function ()
-        local complex = generate_complex_table()
-        assert.same(complex, savedata.load(savedata.save(complex)))
+    it("saves simple values", function()
+        test_save_load(nil, "return _\n")
+        test_save_load(function() end, "return _\n", nil)
+
+        test_save_load(0, "_=0\nreturn _\n")
+        test_save_load(1, "_=1\nreturn _\n")
+        test_save_load(0.5, "_=0.5\nreturn _\n")
+
+        test_save_load(false, "_=false\nreturn _\n")
+        test_save_load(true, "_=true\nreturn _\n")
+
+        test_save_load("a", "_=\"a\"\nreturn _\n")
+
+        test_save_load({}, "_={}\n_=_\nreturn _\n")
+        test_save_load({ "array" }, "_={}\n_=_\n_[1]=\"array\"\nreturn _\n")
+        test_save_load({ key = "value" }, "_={}\n_=_\n_[\"key\"]=\"value\"\nreturn _\n")
+    end)
+
+    it("saves no invalid keys or values", function()
+        test_save_load({ [{}] = {} }, "_={}\n_=_\nreturn _\n", {})
+        test_save_load({ func = function() end }, "_={}\n_=_\nreturn _\n", {})
+        test_save_load({ { function() end } }, "_={}\n_=_\n_b={}\n_[1]=_b\nreturn _\n", { {} })
+    end)
+
+    it("saves and loads large table", function()
+        test_save_load(generate_complex_table())
     end)
 end)

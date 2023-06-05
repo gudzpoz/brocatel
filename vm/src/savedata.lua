@@ -97,8 +97,6 @@ function savedata.save(t)
                     end
                 end
             end
-        else
-            write("nil")
         end
       end
 
