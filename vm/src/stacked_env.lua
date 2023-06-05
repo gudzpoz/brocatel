@@ -138,7 +138,7 @@ function StackedEnv:get(key)
         end
     end
     -- Labels.
-    local label = Label.new({ key }, self.label)
+    local label = self.label and Label.new({ key }, self.label)
     if label then
         return label
     end
@@ -166,7 +166,7 @@ function StackedEnv:set(key, value)
         end
     end
     -- Labels.
-    if self.label({ key }) then
+    if self.label and self.label({ key }) then
         error("writing to a label value is not supported")
     end
     -- File-local: not implemented.

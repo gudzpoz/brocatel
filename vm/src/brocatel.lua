@@ -53,7 +53,7 @@ end
 --- @return table<string, Element>|nil root the root node
 function VM:ensure_root(name)
     if type(name) == "table" then
-        assert(#name >= 1)
+        assert(#name >= 1, "not a valid TablePath")
         name = name[1]
     elseif not name then
         return self:ensure_root(self:get_coroutine().ip)
@@ -77,7 +77,7 @@ end
 --- Initializes the VM state.
 function VM:init()
     if not self.savedata then
-        local meta = assert(self:ensure_root(""))[""] --- @type table
+        local meta = assert(self:ensure_root(""), "invalidate runtime format")[""] --- @type table
         local ip = TablePath.from({ meta.entry })
         local save = {
             version = meta.version,
@@ -110,7 +110,7 @@ function VM:init()
     end
     local ip = assert(self:get_coroutine()).ip
     ip:set_listener(function(old, new)
-        assert(self:ensure_root(new))
+        assert(self:ensure_root(new), "invalid ip assigned")
         labels.record_simple(self.savedata.stats, self.code, old, new)
     end)
     self.env:get_lua_env().ip = ip

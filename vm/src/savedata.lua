@@ -61,8 +61,12 @@ end
 
 --- Saves a table.
 ---
+--- Note that the generated Lua code writes the environment
+--- by declaring global intermediate variables. It should be
+--- safe to supply an empty environment though.
+---
 --- @param t table
---- @return string saved
+--- @return string saved Lua code that returns the restored table once it gets run
 function savedata.save(t)
     local builder = {}
     local count = 0
@@ -115,14 +119,13 @@ end
 --- @param s string code
 --- @return function
 function savedata.load_with_env(env, s)
-    local chunk
     if setfenv then
-        chunk = assert(loadstring(s))
+        local chunk = assert(loadstring(s))
         setfenv(chunk, env)
+        return chunk
     else
-        chunk = assert(load(s, nil, nil, env))
+        return assert(load(s, nil, nil, env))
     end
-    return chunk
 end
 
 return savedata
