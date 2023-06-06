@@ -1,6 +1,6 @@
 local TablePath = require("table_path")
 local StackedEnv = require("stacked_env")
-local labels = require("labels")
+local labels = require("lookup")
 local savedata = require("savedata")
 
 local math = require("math")
@@ -114,6 +114,7 @@ function VM:init()
         labels.record_simple(self.savedata.stats, self.code, old, new)
     end)
     self.env:get_lua_env().ip = ip
+    self:set_up_env_api()
     self.env:set_global_scope(self.savedata.globals)
     self.env:set_label_lookup(function(keys)
         local path = self:lookup_label(keys)

@@ -11,12 +11,13 @@ local function extend(t, another)
     end
 end
 
+--- Deduplicates paths.
 --- @param paths TablePath[]
 --- @return TablePath[]
 local function deduplicate(paths)
     local set = {}
     for _, path in ipairs(paths) do
-        local s = path:__tostring()
+        local s = path:__tostring("\n")
         local stored = set[s]
         if not stored then
             set[s] = path
@@ -65,12 +66,12 @@ end
 --- @param current TablePath
 --- @param label string
 --- @param root Array
---- @param depth number the recursion levels
+--- @param depth number|nil the recursion levels (see child_lookup)
 --- @return TablePath[] paths
 function tree.sibling_lookup(current, label, root, depth)
     local ptr = current:copy():resolve(nil)
     while true do
-        local found = tree.child_lookup(current, label, root, depth)
+        local found = tree.child_lookup(ptr, label, root, depth)
         if #found ~= 0 then
             return found
         end
@@ -103,7 +104,9 @@ function tree.child_lookup(current, label, root, depth)
             if labels then
                 local rel = labels[label]
                 if rel then
-                    matches[#matches + 1] = ptr:resolve(rel)
+                    if #rel > 0 then
+                        matches[#matches + 1] = ptr:resolve(rel)
+                    end
                 elseif not depth or i < depth then
                     for _, relative in pairs(labels) do
                         lookups[#lookups + 1] = { ptr:copy():resolve(relative), i + 1 }
@@ -153,14 +156,13 @@ function tree.deep_lookup(current, labels, root)
 end
 
 --- @param root table
---- @param current TablePath
+--- @param current TablePath|string either the name of the root node or path to the current node
 --- @param labels string[]
---- @param root_node string|nil
 --- @return TablePath[] paths
-function tree.find_by_labels(root, current, labels, root_node)
-    if root_node then
+function tree.find_by_labels(root, current, labels)
+    if type(current) == "string" then
         return tree.deep_lookup(
-            TablePath.from({ root_node }),
+            TablePath.from({ current }),
             labels,
             root
         )

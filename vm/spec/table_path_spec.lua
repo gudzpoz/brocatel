@@ -25,6 +25,8 @@ describe("TablePath", function()
 
     it("tostring", function()
         assert.equals("/root/1/2/3", TablePath.from({ "root", 1, 2, 3 }):__tostring())
+        assert.equals("#root#1#2#3", TablePath.from({ "root", 1, 2, 3 }):__tostring("#"))
+        assert.equals("\nroot\n1\n2\n3", TablePath.from({ "root", 1, 2, 3 }):__tostring("\n"))
     end)
 
     it("copy", function()

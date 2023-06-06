@@ -282,11 +282,13 @@ end
 
 --- Concatenates path segments with `/`.
 ---
+--- @param sep string|nil the separator
 --- @return string path the concatenated string
-function TablePath:__tostring()
+function TablePath:__tostring(sep)
+    sep = sep or "/"
     local str = ""
     for _, v in ipairs(self) do
-        str = str .. "/" .. v
+        str = str .. sep .. v
     end
     return str
 end
