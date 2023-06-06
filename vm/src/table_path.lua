@@ -176,7 +176,7 @@ function TablePath:is_array(t, parents)
     if type(node) ~= "table" then
         return false, nil
     end
-    return type(node[1]) == "table" and #node >= 1, node
+    return type(node[1]) == "table", node
 end
 
 --- Points the path to the next element.
@@ -239,8 +239,12 @@ function TablePath:step(t, init)
                 #new > 1 and (
                     not is_array
                     or #parent <= new[#new]
-                    or new[#new - 1] == "select"
-                    or new[#new - 1] == "args"
+                    or (
+                        #new > 2 and (
+                            new[#new - 1] == "select"
+                            or new[#new - 1] == "args"
+                        )
+                    )
                 )
             ) do
                 new:resolve(nil)
@@ -251,7 +255,12 @@ function TablePath:step(t, init)
                 end
                 is_array, parent = new:is_array(t, 1)
             end
-            new[#new] = new[#new] + 1
+            if new:is_done() then
+                self:set(new)
+                return false
+            else
+                new[#new] = new[#new] + 1
+            end
         end
         while new:is_array(t) do
             -- Skipping the metadata node
