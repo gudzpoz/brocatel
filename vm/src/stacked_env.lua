@@ -48,11 +48,13 @@ end
 
 --- @param env table the Lua environment
 function StackedEnv:set_lua_env(env)
+    assert(type(env) == "table")
     self.lua = env
 end
 
 --- @param global table the global scope
 function StackedEnv:set_global_scope(global)
+    assert(type(global) == "table")
     self.global = global
 end
 
