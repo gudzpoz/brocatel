@@ -1,6 +1,6 @@
 local TablePath = require("table_path")
 local StackedEnv = require("stacked_env")
-local labels = require("lookup")
+local lookup = require("lookup")
 local savedata = require("savedata")
 
 local math = require("math")
@@ -21,6 +21,7 @@ brocatel.TablePath = TablePath
 --- @field code table the compiled brocatel scripts
 --- @field env StackedEnv the environment handle
 --- @field savedata table save data
+--- @field flags table inner api for data storage, cleaned on each `next` call
 --- @field gettext Gettext GNU Gettext config
 local VM = {}
 brocatel.VM = VM
@@ -40,6 +41,7 @@ function VM.new(compiled_chunk, env)
     local vm = {
         code = compiled_chunk,
         env = env,
+        flags = {},
         gettext = {},
     }
     setmetatable(vm, VM)
@@ -111,14 +113,13 @@ function VM:init()
     local ip = assert(self:get_coroutine()).ip
     ip:set_listener(function(old, new)
         assert(self:ensure_root(new), "invalid ip assigned")
-        labels.record_simple(self.savedata.stats, self.code, old, new)
+        lookup.record_simple(self.savedata.stats, self.code, old, new)
     end)
-    self.env:get_lua_env().ip = ip
     self:set_up_env_api()
     self.env:set_global_scope(self.savedata.globals)
     self.env:set_label_lookup(function(keys)
         local path = self:lookup_label(keys)
-        if path and labels.get_recorded_count(self.savedata.stats, path, self.code) > 0 then
+        if path and lookup.get_recorded_count(self.savedata.stats, path, self.code) > 0 then
             return path
         end
         return nil
@@ -126,6 +127,57 @@ function VM:init()
     self.env:set_init(false)
     local root = assert(self:ensure_root(ip))
     ip:step(root, true)
+end
+
+function VM:set_up_env_api()
+    local env = self.env
+    local ip = assert(self:get_coroutine()).ip
+    env:get_lua_env().IP = ip
+    env:get_lua_env().VM = self
+end
+
+--- @param values table
+--- @return table keys
+local function get_keys(values)
+    local keys = {}
+    for key, _ in pairs(values) do
+        keys[key] = true
+    end
+    return keys
+end
+
+--- Calls a function with the supplied environment pushed into the stacked env.
+---
+--- It simply executes `push(env); result = func(...); pop()` and returns the result.
+--- However, the actual environment of the function is not changed, which means
+--- it should already bind to vm.env.env to make the environment change effective.
+--- @param env table|nil
+--- @param func function
+function VM:call_with_env(env, func, ...)
+    env = env or {}
+    self.env:push(get_keys(env), env)
+    local result = { func(...) }
+    self.env:pop()
+    return (unpack or table.unpack)(result)
+end
+
+--- Evaluates a node at the supplied pointer with the environment pushed.
+---
+--- It yields values just like `next`, unless any `if-else` statement yields false,
+--- when it will return nil instead.
+---@param env table|nil
+---@param ip TablePath
+function VM:eval_with_env(env, ip)
+    ip:step(assert(self:ensure_root(ip)), true)
+    env = env or {}
+    self.env:push(get_keys(env), env)
+    while true do
+        local line, tags = self:fetch_and_next(nil, ip)
+        if line or not tags or self.flags["if-else"] == false then
+            self.env:pop()
+            return line, tags
+        end
+    end
 end
 
 --- @class Gettext
@@ -223,6 +275,8 @@ function VM:fetch_and_next(input, ip)
         return nil, nil
     end
 
+    self.flags = {}
+
     local node = assert(ip:get(root))
     local node_type = VM.node_type(node)
 
@@ -252,20 +306,25 @@ function VM:fetch_and_next(input, ip)
         if new_root_name then
             assert(self:ensure_root(new_root_name))
         end
-        local found = labels.find_by_labels(root, ip, node.link, new_root_name)
+        local found = lookup.find_by_labels(root, new_root_name or ip, node.link)
         assert(#found == 1, "aaa: " .. tostring(#found))
         ip:set(found[1])
         ip:step(root, true)
         return nil, true
     elseif node_type == "if-else" then
         self:set_env()
-        ip:resolve(node[1]() and 2 or 3):step(root, true)
+        local result = node[1]()
+        ip:resolve(result and 2 or 3):step(root, true)
+        self.flags["if-else"] = result and true or false
         return nil, true
     elseif node_type == "func" then
         self:set_env()
         local args = ip:copy():resolve("args")
         ip:step(root)
         node.func(args)
+        if not ip:is_done() then
+            ip:step(assert(self:ensure_root(ip)), true)
+        end
         return nil, true
     elseif node_type == "select" then
         local select = node.select
@@ -348,7 +407,7 @@ end
 --- @return TablePath|nil
 --- @return any
 function VM:lookup_label(keys)
-    local results = labels.deep_lookup(assert(self:get_coroutine()).ip, keys, self.code)
+    local results = lookup.deep_lookup(assert(self:get_coroutine()).ip, keys, self.code)
     if #results == 0 and self.code[keys[1]] then
         local root = keys[1]
         if self:ensure_root(root) then
@@ -356,7 +415,7 @@ function VM:lookup_label(keys)
             for i = 2, #keys do
                 path[i - 1] = keys[i]
             end
-            results = labels.deep_lookup(TablePath.from({ root }), path, self.code)
+            results = lookup.deep_lookup(TablePath.from({ root }), path, self.code)
         end
     end
     if #results == 0 then
@@ -368,8 +427,8 @@ end
 --- Sets the environment up.
 function VM:set_env()
     self.env:clear()
-    self.env:push(self:get_thread().thread_locals)
-    self.env:push(self:get_coroutine().locals)
+    self.env:push(self:get_thread().thread_locals.keys, self:get_thread().thread_locals.values)
+    self.env:push(self:get_coroutine().locals.keys, self:get_coroutine().locals.values)
 end
 
 function VM:save()

@@ -36,6 +36,10 @@ function StackedEnv.new()
     return stacked
 end
 
+--- Sets the initialing state.
+---
+--- During initialization, only the Lua environment is accessible, that it,
+--- all reads and writes are directed to the Lua environment table.
 --- @param init boolean initialing state
 function StackedEnv:set_init(init)
     self.init = init
@@ -60,13 +64,21 @@ end
 
 --- @param label function the label lookup function
 function StackedEnv:set_label_lookup(label)
+    assert(not label or type(label) == "function")
     self.label = label
 end
 
---- @param scope table a table with `keys` and `values` fields
-function StackedEnv:push(scope)
+--- @param keys table a table storing captured keys
+--- @param values table a table storing values for the keys
+function StackedEnv:push(keys, values)
+    assert(type(keys) == "table" and type(values) == "table")
     local stack = self.stack
-    stack[#stack + 1] = scope
+    stack[#stack + 1] = { keys, values }
+end
+
+function StackedEnv:pop()
+    local stack = self.stack
+    stack[#stack] = nil
 end
 
 --- Clears all normal scopes in the environment.
@@ -80,8 +92,8 @@ end
 --- @param scope table
 --- @param key any
 local function get_with(scope, key)
-    if scope.keys[key] then
-        return scope.values[key], true
+    if scope[1][key] then
+        return scope[2][key], true
     end
     return nil, false
 end
@@ -90,8 +102,8 @@ end
 --- @param key any
 --- @param value any
 local function set_with(scope, key, value)
-    if scope.keys[key] then
-        scope.values[key] = value
+    if scope[1][key] then
+        scope[2][key] = value
         return true
     end
     return false
