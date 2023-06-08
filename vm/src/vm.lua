@@ -1,5 +1,6 @@
 local TablePath = require("table_path")
 local StackedEnv = require("stacked_env")
+local history = require("history")
 local lookup = require("lookup")
 local savedata = require("savedata")
 
@@ -113,13 +114,13 @@ function VM:init()
     local ip = assert(self:get_coroutine()).ip
     ip:set_listener(function(old, new)
         assert(self:ensure_root(new), "invalid ip assigned")
-        lookup.record_simple(self.savedata.stats, self.code, old, new)
+        history.record_simple(self.savedata.stats, self.code, old, new)
     end)
     self:set_up_env_api()
     self.env:set_global_scope(self.savedata.globals)
     self.env:set_label_lookup(function(keys)
         local path = self:lookup_label(keys)
-        if path and lookup.get_recorded_count(self.savedata.stats, path, self.code) > 0 then
+        if path and history.get_recorded_count(self.savedata.stats, path) > 0 then
             return path
         end
         return nil

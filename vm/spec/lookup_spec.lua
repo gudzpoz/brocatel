@@ -79,17 +79,4 @@ describe("Module labels", function()
         assert.same({}, lookup.find_by_labels(root, "s", { "a" }))
         assert.same({ { "r", 2 }}, lookup.find_by_labels(root, TabelPath.from({ "r" }), { "a" }))
     end)
-    it("computes labels to a node", function()
-        assert.same({ "r", "a", "b" }, lookup.get_path_labels(TabelPath.from({ "r", 2, 2 }), {
-            r = {
-                {},
-                {
-                    { label = "a" },
-                    {
-                        { label = "b" },
-                    },
-                },
-            },
-        }))
-    end)
 end)
