@@ -16,7 +16,8 @@ local function makedir(save, name)
     end
 end
 
-local bits_per_number = 31
+-- Max safe integer bits for floats (single precision).
+local bits_per_number = 24
 
 --- Sets a bit in a bit set.
 --- @param bitset table<number>
@@ -56,54 +57,94 @@ function history.get_bit(bitset, index)
     return (n / mask) % 2 == 1
 end
 
+--- Fetches a key-value pair bound to a path.
+---
+--- @param save table
+--- @param path TablePath
+--- @param key string
+--- @returns string|number|boolean|nil
+function history.get(save, path, key)
+    for _, segment in ipairs(path) do
+        save = save[segment]
+        if type(save) ~= "table" then
+            return nil
+        end
+    end
+    local meta = save[1]
+    if meta then
+        assert(type(meta) == "table")
+        return meta[key]
+    end
+    return nil
+end
+
+--- Saves a key-value pair bound to a path.
+---
+--- @param save table
+--- @param root table
+--- @param path TablePath
+--- @param key string
+--- @param value string|number|boolean
+function history.set(save, root, path, key, value)
+    assert(#path > 0 and key ~= "r" and key ~= "i")
+    if path[#path] == "args" then
+        local node = path:get(root, 1)
+        assert(node and node.func)
+    else
+        assert(path:is_array(root))
+    end
+    for _, segment in ipairs(path) do
+        save = makedir(save, segment)
+    end
+    local meta = save[1]
+    if not meta then
+        meta = {}
+        save[1] = meta
+    end
+    meta[key] = value
+end
+
 --- Records the path change.
 ---
 --- - For text nodes, it simply marks the line as read.
 --- - For arrays (probably with labeled ones), it increments their visited counter.
 --- @param save table
 --- @param root table
---- @param old TablePath
+--- @param old TablePath|nil
 --- @param new TablePath
 function history.record_simple(save, root, old, new)
-    local i = 1
-    local j = 1
-    -- No counter incrementation for common parts.
-    while old[i] == new[j] and i <= #old and j <= #new do
-        local segment = old[i]
-        save = makedir(save, segment)
-        if type(segment) == "number" then
-            if not save[1] then
-                save[1] = { i = 1 }
-            end
-        end
-        i = i + 1
-        j = j + 1
+    if old and old:equals(new) then
+        return
     end
-    -- Increment counters for new parts.
-    -- An array just pointed to is not seen as read,
-    -- which is why we use `j < #new` instead of `j <= #new`.
+    local i = 1
     local segment = nil
     local meta = nil
-    while j <= #new do -- The last
-        segment = new[j]
-        if type(segment) == "number" then
+    while i < #new do
+        segment = new[i]
+        save = makedir(save, segment)
+        if new:is_array(root, #new - i) then
             meta = save[1]
+            if old and old[i] ~= segment then
+                old = nil
+            end
             if not meta then
                 meta = { i = 0 }
                 save[1] = meta
+            elseif not meta.i then
+                meta.i = 0
             end
-            meta.i = meta.i + 1
+            if not old or meta.i == 0 then
+                meta.i = meta.i + 1
+            end
+
+            local read = meta.r
+            if not read then
+                read = {}
+                meta.r = read
+            end
+            history.set_bit(read, new[i + 1])
         end
-        save = makedir(save, segment)
-        j = j + 1
-    end
-    if new:is_array(root) and type(segment) == "number" then
-        local read = meta.r
-        if not read then
-            read = {}
-            meta.r = read
-        end
-        history.set_bit(read, segment)
+        i = i + 1
     end
 end
 

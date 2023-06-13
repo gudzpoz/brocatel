@@ -133,8 +133,19 @@ end
 function VM:set_up_env_api()
     local env = self.env
     local ip = assert(self:get_coroutine()).ip
-    env:get_lua_env().IP = ip
-    env:get_lua_env().VM = self
+    local lua = env:get_lua_env()
+    lua.IP = ip
+    lua.VM = self
+    lua.GET = function(path, key)
+        return history.get(self.savedata.stats, path, key)
+    end
+    lua.SET = function(path, key, value)
+        history.set(self.savedata.stats, assert(self:ensure_root(path)), path, key, value)
+    end
+    lua.EVAL = function(path, extra_env)
+        extra_env = extra_env or {}
+        return self:eval_with_env(extra_env, path)
+    end
 end
 
 --- @param values table
@@ -441,7 +452,6 @@ function VM:load(s)
     self:init()
 end
 
-
 --- @param t table
 --- @return table copy
 local function shallow_copy(t)
@@ -462,11 +472,18 @@ function brocatel.load_vm(content, save, extra_env)
         extra_env = {}
     end
     env:set_lua_env({
-        assert = assert, error = error,
-        ipairs = ipairs, next = next, pairs = pairs,
-        select = select, unpack = unpack,
-        pcall = pcall, xpcall = xpcall,
-        tonumber = tonumber, tostring = tonumber, type = type,
+        assert = assert,
+        error = error,
+        ipairs = ipairs,
+        next = next,
+        pairs = pairs,
+        select = select,
+        unpack = unpack,
+        pcall = pcall,
+        xpcall = xpcall,
+        tonumber = tonumber,
+        tostring = tonumber,
+        type = type,
         print = extra_env.print,
         require = extra_env.require,
 

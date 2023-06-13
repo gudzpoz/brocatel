@@ -82,9 +82,10 @@ describe("VM", function()
                 {},
                 {
                     func = function(args)
-                        assert.equals("arg 1", vm:eval_with_env({}, args:copy():resolve(2)))
-                        assert.equals("arg 2", vm:eval_with_env({}, args:copy():resolve(3)))
-                        assert.is_nil(vm:eval_with_env({}, args:copy():resolve(4)))
+                        local eval = vm.env:get("EVAL")
+                        assert.equals("arg 1", eval(args:copy():resolve(2)))
+                        assert.equals("arg 2", eval(args:copy():resolve(3)))
+                        assert.is_nil(eval(args:copy():resolve(4)))
                     end,
                     args = {
                         {},
@@ -96,6 +97,36 @@ describe("VM", function()
                 "end",
             })
             assert.same({ "end" }, utils.gather_til_end(vm))
+        end)
+        it("like custom data storage", function()
+            local vm = nil
+            vm = wrap({
+                {},
+                {
+                    func = function(args)
+                        local get = vm.env:get("GET")
+                        local set = vm.env:get("SET")
+                        local ip = vm.env:get("IP")
+                        assert.is_nil(get(args, "k"))
+                        set(args, "k", "v")
+                        ip:set(args:resolve(2))
+                    end,
+                    args = { {}, { {}, "Hello" } },
+                },
+                {
+                    func = function(args)
+                        local get = vm.env:get("GET")
+                        assert.is_nil(get(args, "k"))
+                        assert.equals("v", get(args:resolve(nil, nil, 2, "args"), "k"))
+                    end
+                },
+                "end",
+            })
+            assert.same({ "Hello", "end" }, utils.gather_til_end(vm))
+            assert.same({ main = {
+                { i = 1, r = { 0xe } },
+                { args = { { i = 1, k = "v", r = { 2 } }, { { i = 1, r = { 2 } } } } },
+            } }, vm.savedata.stats)
         end)
     end)
 
