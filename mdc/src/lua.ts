@@ -1,6 +1,9 @@
 import {
   lauxlib, lua, lualib, to_luastring,
 } from 'fengari';
+import {
+  checkjs, luaopen_js, push, tojs,
+} from 'fengari-interop';
 
 export function detectLuaErrors(code: string): Error | null {
   const L = lauxlib.luaL_newstate();
@@ -10,38 +13,57 @@ export function detectLuaErrors(code: string): Error | null {
   return new SyntaxError(lua.lua_tojsstring(L, -1));
 }
 
+function convertSingleLuaValue(L: any, index: number): any {
+  const i = lua.lua_absindex(L, index);
+  if (!lua.lua_istable(L, i)) {
+    return tojs(L, index);
+  }
+  const table: any = lauxlib.luaL_len(L, i) === 0 ? {} : [];
+  lua.lua_checkstack(L, 2);
+  lua.lua_pushnil(L);
+  while (lua.lua_next(L, i)) {
+    const key = convertSingleLuaValue(L, -2);
+    const value = convertSingleLuaValue(L, -1);
+    table[Number.isInteger(key) ? key - 1 : key] = value;
+    lua.lua_pop(L, 1);
+  }
+  return table;
+}
+
 /**
- * Converts a Lua value on stack into a JavaScript one.
+ * Converts a Lua value on stack into a fully JavaScript one.
  *
  * @param L the Lua state
  * @param index the stack index
  * @returns the converted value
  */
 function convertLuaValue(L: any, index: number): any {
-  switch (lua.lua_type(L, index)) {
-    case lua.LUA_TTABLE: {
-      lua.lua_checkstack(L, 2);
-      const i = lua.lua_absindex(L, index);
-      const table = lauxlib.luaL_len(L, i) !== 0 ? [] : ({} as { [key: string]: any });
-      lua.lua_pushnil(L);
-      while (lua.lua_next(L, i)) {
-        const key = convertLuaValue(L, -2);
-        const value = convertLuaValue(L, -1);
-        table[Number.isInteger(key) ? key - 1 : key] = value;
-        lua.lua_pop(L, 1);
+  const root = convertSingleLuaValue(L, index);
+  let partial = [[root, null, null]];
+  while (partial.length !== 0) {
+    partial = partial.filter(([e]) => e).flatMap(([element, key, p]) => {
+      const parent = p;
+      switch (typeof element) {
+        case 'object':
+          if (Array.isArray(element)) {
+            return element.map((v, i, arr) => [v, i, arr]);
+          }
+          return Object.entries(element).map(([k, v]) => [v, k, element]);
+        case 'function':
+          lua.lua_checkstack(L, 1);
+          push(L, element);
+          if (!lua.lua_istable(L, -1)) {
+            throw new TypeError('unable to convert value');
+          }
+          parent[key] = convertSingleLuaValue(L, -1);
+          lua.lua_pop(L, 1);
+          return [[parent[key], null, null]];
+        default:
+          return [];
       }
-      return table;
-    }
-    case lua.LUA_TNUMBER:
-      return lua.lua_tonumber(L, index);
-    case lua.LUA_TBOOLEAN:
-      return lua.lua_toboolean(L, index);
-    case lua.LUA_TSTRING:
-      return lua.lua_tojsstring(L, index);
-    case lua.LUA_TNIL:
-    default:
-      return null;
+    });
   }
+  return root;
 }
 
 /**
@@ -65,7 +87,12 @@ const LUA_KEYWORDS = new Set([
 
 const LUA_IDENTIFIER = /^[A-Za-z_]\w*$/;
 
-function isIdentifier(s: string): boolean {
+/**
+ * Returns true if the string is a valid Lua identifier.
+ *
+ * @param s the string
+ */
+export function isIdentifier(s: string): boolean {
   return !LUA_KEYWORDS.has(s) && LUA_IDENTIFIER.test(s);
 }
 
@@ -75,6 +102,8 @@ function isIdentifier(s: string): boolean {
  * There is a special node: `{ raw: string_element }`.
  * The content of the string element will be dumped as is, so as to
  * generate Lua functions.
+ *
+ * Recursive references will likely lead to stack overflow.
  *
  * @param root the node
  * @param special turns on special node processing and empty node stripping
@@ -136,15 +165,33 @@ export function runLua(
 ): any {
   const L = lauxlib.luaL_newstate();
   lualib.luaL_openlibs(L);
+  lauxlib.luaL_requiref(L, 'js', luaopen_js, false);
+  // Let fengari-interop simulate Lua tables: start indices from 1.
+  lauxlib.luaL_getmetatable(L, to_luastring('js object'));
+  lua.lua_pushjsfunction(L, (J: any) => {
+    const u = checkjs(J, 1);
+    const k = tojs(J, 2);
+    push(J, u[Array.isArray(u) ? k - 1 : k]);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, '__index');
+  lua.lua_pushjsfunction(L, (J: any) => {
+    const u = checkjs(J, 1);
+    const k = tojs(J, 2);
+    const v = tojs(J, 3);
+    u[Array.isArray(u) ? k - 1 : k] = v;
+    return 0;
+  });
+  lua.lua_setfield(L, -2, '__newindex');
+  lua.lua_pop(L, 1);
   if (functions) {
     Object.entries(functions).forEach(([k, v]) => {
       lua.lua_pushjsfunction(L, v);
       lua.lua_setglobal(L, to_luastring(k));
     });
   }
-  if (lauxlib.luaL_dostring(L, to_luastring(`arg = ${convertValue(arg)}`)) !== lua.LUA_OK) {
-    throw new Error(`unable to serialize ${arg}`);
-  }
+  push(L, arg);
+  lua.lua_setglobal(L, 'arg');
   codes.forEach((code) => {
     if (lauxlib.luaL_dostring(L, to_luastring(code)) !== lua.LUA_OK) {
       throw new Error(`error running ${code}: ${lua.lua_tojsstring(L, -1)}`);
@@ -156,12 +203,13 @@ export function runLua(
 export function wrap(f: Function) {
   return function unwrap(L: any) {
     const args: any[] = [];
-    for (let i = 1; i <= lua.lua_gettop(L); i += 1) {
+    const top = lua.lua_gettop(L);
+    for (let i = 1; i <= top; i += 1) {
       args.push(convertLuaValue(L, i));
     }
     lua.lua_settop(L, 0);
     const result = f.call(null, ...args);
-    lauxlib.luaL_dostring(L, to_luastring(`return ${convertValue(result)}`));
+    push(L, result);
     return 1;
   };
 }
