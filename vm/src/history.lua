@@ -84,9 +84,9 @@ end
 --- @param root table
 --- @param path TablePath
 --- @param key string
---- @param value string|number|boolean
+--- @param value string|number|table|boolean
 function history.set(save, root, path, key, value)
-    assert(#path > 0 and key ~= "R" and key ~= "I")
+    assert(#path > 0)
     if path[#path] == "args" then
         local node = path:get(root, 1)
         assert(node and node.func)

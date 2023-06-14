@@ -206,12 +206,15 @@ describe("VM", function()
         assert.equals(2, call_count)
     end)
 
-    it("with select statements", function()
+    it("with select function", function()
         local call_count = 0
-        local vm = wrap({
+        local vm = nil
+        vm = wrap({
             {},
             {
-                select = {
+                func = function(args) vm.env:get("FUNC").S_ONCE(args) end,
+                args = {
+                    {},
                     { {}, "Selection #1", "Result #1" },
                     { {}, { function()
                         call_count = call_count + 1; return false
@@ -225,24 +228,54 @@ describe("VM", function()
                     end,
                         { {}, "Selection #3" } }, "Result #3" },
                     { {}, { function()
-                        call_count = call_count + 1; return true
+                        call_count = call_count + 1; return vm.env:get("RECUR")(1)
                     end,
                         { {}, "Selection #4" } }, "Result #4" },
                 },
             },
             "Hello",
+            { func = function() vm.env:get("IP"):set(TablePath.from({ "main", 2 })) end },
         })
         local output = assert(vm:next())
-        local selections = output.text
-        assert.is_table(selections)
-        --- @diagnostic disable-next-line: param-type-mismatch
-        for k, _ in pairs(selections) do
-            assert(k == 1 or k == 4 or k == 5)
-        end
-        assert.equals("Selection #1", selections[1][1].text)
-        assert.equals("Selection #3", selections[4][1].text)
-        assert.equals("Selection #4", selections[5][1].text)
-        assert.equals("Result #3", vm:next(4).text)
+        assert.same({
+            tags = true,
+            select = {
+                { key = 2, option = "Selection #1" },
+                { key = 5, option = "Selection #3" },
+                { key = 6, option = "Selection #4" },
+            },
+        }, output)
+        assert.equals("Result #3", vm:next(5).text)
+        assert.equals("Hello", vm:next().text)
+
+        assert.same({
+            tags = true,
+            select = {
+                { key = 2, option = "Selection #1" },
+                { key = 6, option = "Selection #4" },
+            },
+        }, vm:next())
+        assert.equals("Result #4", vm:next(6).text)
+        assert.equals("Hello", vm:next().text)
+        assert.same({
+            tags = true,
+            select = {
+                { key = 2, option = "Selection #1" },
+                { key = 6, option = "Selection #4" },
+            },
+        }, vm:next())
+        assert.equals("Result #4", vm:next(6).text)
+        assert.equals("Hello", vm:next().text)
+
+        assert.same({
+            tags = true,
+            select = {
+                { key = 2, option = "Selection #1" },
+            },
+        }, vm:next())
+        assert.equals("Result #1", vm:next(2).text)
+        assert.equals("Hello", vm:next().text)
+        -- Options exhausted
         assert.equals("Hello", vm:next().text)
     end)
 end)

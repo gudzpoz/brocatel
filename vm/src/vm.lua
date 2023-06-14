@@ -128,6 +128,17 @@ function VM:init()
     self.env:set_init(false)
     local root = assert(self:ensure_root(ip))
     ip:step(root, true)
+    self:set_env()
+end
+
+--- @param values table
+--- @return table keys
+local function get_keys(values)
+    local keys = {}
+    for key, _ in pairs(values) do
+        keys[key] = true
+    end
+    return keys
 end
 
 function VM:set_up_env_api()
@@ -141,6 +152,12 @@ function VM:set_up_env_api()
         return history.get(self.savedata.stats, path, key)
     end)
     env:set_api("SET", function(path, key, value)
+        if type(key) == "string" and #key == 1 then
+            local char = key:byte(1)
+            if 65 <= char and char <= 90 then
+                error("key A-Z reserved")
+            end
+        end
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         history.set(self.savedata.stats, assert(self:ensure_root(path)), path, key, value)
     end)
@@ -153,16 +170,73 @@ function VM:set_up_env_api()
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         return history.get(self.savedata.stats, path, "I") or 0
     end)
-end
+    --- @param args TablePath
+    --- @param recur number|boolean
+    local function user_select(args, recur)
+        local current = self.savedata.current
+        local counts = history.get(self.savedata.stats, args, "S") or {}
+        local root = assert(self:ensure_root(args))
+        if current.input then
+            env:get("IP"):set(args:copy():resolve(current.input, 3))
+            local count = counts[current.input] or 0
+            count = count + 1
+            counts[current.input] = count
+            history.set(self.savedata.stats, root, args, "S", counts)
+            current.input = nil
+            return
+        end
 
---- @param values table
---- @return table keys
-local function get_keys(values)
-    local keys = {}
-    for key, _ in pairs(values) do
-        keys[key] = true
+        env:get("IP"):set(args:copy():resolve(nil))
+        recur = recur or 0
+        assert(recur == true or recur >= 0)
+        local selectables = {}
+        local options = args:get(root)
+        for i = 2, #options do
+            local visits = counts[i] or 0
+            local local_env = {
+                CHOICE_COUNT = #selectables,
+                VISITS = visits,
+                ONCE = visits == 0,
+                RECUR = function(n)
+                    return visits <= n
+                end,
+            }
+            local inner = local_env
+            local should_recur = recur == true or visits <= recur
+            if not should_recur then
+                local_env = {}
+                setmetatable(local_env, {
+                    __index = function(_, key)
+                        if key == "RECUR" then
+                            should_recur = true
+                        end
+                        return inner[key]
+                    end
+                })
+            end
+            local line, success = self:eval_with_env(local_env, args:copy():resolve(i), get_keys(inner))
+            if line and should_recur and success then
+                selectables[#selectables + 1] = {
+                    option = line,
+                    key = i,
+                }
+            end
+        end
+        if #selectables == 0 then
+            ip:step(root)
+            return nil, true
+        end
+        self.savedata.current.output = { select = selectables, tags = true }
     end
-    return keys
+    env:set_api("FUNC", {
+        SELECT = user_select,
+        S_ONCE = function(args)
+            user_select(args, 0)
+        end,
+        S_RECUR = function(args)
+            user_select(args, true)
+        end
+    })
 end
 
 --- Calls a function with the supplied environment pushed into the stacked env.
@@ -184,15 +258,17 @@ end
 ---
 --- It yields values just like `next`, unless any `if-else` statement yields false,
 --- when it will return nil instead.
----@param env table|nil
----@param ip TablePath
-function VM:eval_with_env(env, ip)
+--- @param env table|nil
+--- @param ip TablePath
+--- @param env_keys table|nil
+function VM:eval_with_env(env, ip, env_keys)
     ip:step(assert(self:ensure_root(ip)), true)
     env = env or {}
-    self.env:push(get_keys(env), env)
+    env_keys = env_keys or get_keys(env)
+    self.env:push(env_keys, env)
     while true do
         local line, tags = self:fetch_and_next(ip)
-        if line or not tags or self.flags["if-else"] == false then
+        if line or not tags or self.flags["if-else"] == false or self.flags["empty"] then
             self.env:pop()
             return line, tags
         end
@@ -327,7 +403,6 @@ function VM:fetch_and_next(ip)
         local computed = {}
         ip:step(root)
         if values then
-            self:set_env()
             for k, v in pairs(values) do
                 computed[k] = v()
             end
@@ -351,13 +426,11 @@ function VM:fetch_and_next(ip)
         ip:step(root, true)
         return nil, true
     elseif node_type == "if-else" then
-        self:set_env()
         local result = node[1]()
-        ip:resolve(result and 2 or 3):step(root, true)
+        _, self.flags["empty"] = ip:resolve(result and 2 or 3):step(root, true)
         self.flags["if-else"] = result and true or false
         return nil, true
     elseif node_type == "func" then
-        self:set_env()
         local args = ip:copy():resolve("args")
         ip:step(root)
         node.func(args)
@@ -365,39 +438,6 @@ function VM:fetch_and_next(ip)
             ip:step(assert(self:ensure_root(ip)), true)
         end
         return nil, true
-    elseif node_type == "select" then
-        local select = node.select
-        local base = ip:copy()
-        local input = self.savedata.current.input
-        if input then
-            ip:resolve("select", input, 3):step(root, true)
-            self.savedata.current.input = nil
-            return nil, true
-        end
-        local selectables = {}
-        local count = 0
-        for i = 1, #select do
-            local option_node = assert(ip:resolve("select", i, 2):get(root))
-            if self.node_type(option_node) == "if-else" and #option_node <= 2 then
-                self:set_env()
-                ip:resolve(option_node[1]() and 2 or 3, 2)
-                if ip:get(root) then
-                    local line, tags = self:next()
-                    selectables[i] = { line, tags }
-                    count = count + 1
-                end
-            else
-                local line, tags = self:next()
-                selectables[i] = { line, tags }
-                count = count + 1
-            end
-            ip:set(base)
-        end
-        if count == 0 then
-            ip:step(root)
-            return nil, true
-        end
-        return selectables, true
     end
     error("not implemented")
 end

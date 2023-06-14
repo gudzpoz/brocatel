@@ -230,9 +230,11 @@ end
 --- @param t table
 --- @param init boolean|nil see the above usage tips
 --- @return boolean success false if the tree is exhausted and no valid next element can be found
+--- @return boolean gone_up true if the process exhausted at least one array and started looking at its siblings
 function TablePath:step(t, init)
     assert(type(t) == "table", "expecting a table")
     local new = self:copy()
+    local gone_up = false
     while true do
         if init then
             init = false
@@ -250,17 +252,18 @@ function TablePath:step(t, init)
                     )
                 )
             ) do
+                gone_up = true
                 new:resolve(nil)
                 if #new <= 1 then
                     assert(#new == 1)
                     self:set(new)
-                    return false
+                    return false, true
                 end
                 is_array, parent = new:is_array(t, 1)
             end
             if new:is_done() then
                 self:set(new)
-                return false
+                return false, gone_up
             else
                 new[#new] = new[#new] + 1
             end
@@ -271,7 +274,7 @@ function TablePath:step(t, init)
         end
         if new:get(t) then
             self:set(new)
-            return true
+            return true, gone_up
         end
     end
 end
