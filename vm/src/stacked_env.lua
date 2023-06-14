@@ -109,30 +109,36 @@ local function set_with(scope, key, value)
     return false
 end
 
-local LABEL_PATH_INDEX = {}
 local LABELER_INDEX = {}
 local Label = {}
 function Label.new(path, labeler)
-    local label = labeler(path)
-    if not label then
+    if not labeler(path) then
         return nil
     end
-    rawset(label, LABEL_PATH_INDEX, path)
-    rawset(label, LABELER_INDEX, labeler)
-    setmetatable(label, Label)
-    return label
+    rawset(path, LABELER_INDEX, labeler)
+    setmetatable(path, Label)
+    return path
 end
+
 function Label:__index(key)
+    if type(key) ~= "string" then
+        return rawget(self, key)
+    end
     local path = {}
-    for i, v in ipairs(rawget(self, LABEL_PATH_INDEX)) do
+    for i, v in ipairs(self) do
         path[i] = v
     end
     path[#path + 1] = key
     local labeler = rawget(self, LABELER_INDEX)
     return Label.new(path, labeler)
 end
+
 function Label.__newindex()
     error("writing to a label value is not supported")
+end
+
+function StackedEnv.is_label(path)
+    return rawget(path, LABELER_INDEX) and true or false
 end
 
 --- Does a scoped search.

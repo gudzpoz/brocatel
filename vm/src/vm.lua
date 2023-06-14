@@ -119,11 +119,7 @@ function VM:init()
     self:set_up_env_api()
     self.env:set_global_scope(self.savedata.globals)
     self.env:set_label_lookup(function(keys)
-        local path = self:lookup_label(keys)
-        if path and history.get_recorded_count(self.savedata.stats, path) > 0 then
-            return path
-        end
-        return nil
+        return self:lookup_label(keys)
     end)
     self.env:set_init(false)
     local root = assert(self:ensure_root(ip))
@@ -137,14 +133,21 @@ function VM:set_up_env_api()
     lua.IP = ip
     lua.VM = self
     lua.GET = function(path, key)
+        path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         return history.get(self.savedata.stats, path, key)
     end
     lua.SET = function(path, key, value)
+        path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         history.set(self.savedata.stats, assert(self:ensure_root(path)), path, key, value)
     end
     lua.EVAL = function(path, extra_env)
         extra_env = extra_env or {}
+        path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         return self:eval_with_env(extra_env, path)
+    end
+    lua.VISITED = function(path)
+        path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
+        return history.get(self.savedata.stats, path, "I") or 0
     end
 end
 

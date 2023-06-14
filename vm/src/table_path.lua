@@ -28,8 +28,8 @@ TablePath.__index = TablePath
 --- @field label string|nil
 --- @field labels table<string, TablePath>|nil
 ---
---- @field i number|nil
---- @field m table<number>|nil
+--- @field I number|nil
+--- @field R table<number>|nil
 
 --- @alias Element Node|Array
 

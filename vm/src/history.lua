@@ -4,7 +4,7 @@ local history = {}
 ---
 --- @param save table
 --- @param name number|string
---- @return table inner
+--- @return Element inner
 local function makedir(save, name)
     local inner = save[name]
     if inner then
@@ -86,7 +86,7 @@ end
 --- @param key string
 --- @param value string|number|boolean
 function history.set(save, root, path, key, value)
-    assert(#path > 0 and key ~= "r" and key ~= "i")
+    assert(#path > 0 and key ~= "R" and key ~= "I")
     if path[#path] == "args" then
         local node = path:get(root, 1)
         assert(node and node.func)
@@ -117,30 +117,28 @@ function history.record_simple(save, root, old, new)
         return
     end
     local i = 1
-    local segment = nil
-    local meta = nil
     while i < #new do
-        segment = new[i]
+        local segment = new[i]
         save = makedir(save, segment)
         if new:is_array(root, #new - i) then
-            meta = save[1]
+            local meta = save[1]
             if old and old[i] ~= segment then
                 old = nil
             end
             if not meta then
-                meta = { i = 0 }
+                meta = { I = 0 }
                 save[1] = meta
-            elseif not meta.i then
-                meta.i = 0
+            elseif not meta.I then
+                meta.I = 0
             end
-            if not old or meta.i == 0 then
-                meta.i = meta.i + 1
+            if not old or meta.I == 0 then
+                meta.I = meta.I + 1
             end
 
-            local read = meta.r
+            local read = meta.R
             if not read then
                 read = {}
-                meta.r = read
+                meta.R = read
             end
             history.set_bit(read, new[i + 1])
         end
@@ -154,12 +152,12 @@ end
 function history.get_recorded_count(save, path)
     local is_array, node = path:is_array(save)
     if is_array then
-        return assert(node)[1].i or 0
+        return assert(node)[1].I or 0
     end
     local parent
     is_array, parent = path:is_array(save, 1)
     if is_array then
-        local bitset = assert(parent)[1].m
+        local bitset = assert(parent)[1].R
         return bitset and history.get_bit(bitset, path[#path]) or 0
     end
     return 0

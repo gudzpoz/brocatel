@@ -101,7 +101,7 @@ describe("VM", function()
         it("like custom data storage", function()
             local vm = nil
             vm = wrap({
-                {},
+                { labels = { a = { 2, "args", 2 } } },
                 {
                     func = function(args)
                         local get = vm.env:get("GET")
@@ -118,14 +118,16 @@ describe("VM", function()
                         local get = vm.env:get("GET")
                         assert.is_nil(get(args, "k"))
                         assert.equals("v", get(args:resolve(nil, nil, 2, "args"), "k"))
+                        local visited = vm.env:get("VISITED")
+                        assert.equals(1, visited(vm.env:get("a")))
                     end
                 },
                 "end",
             })
             assert.same({ "Hello", "end" }, utils.gather_til_end(vm))
             assert.same({ main = {
-                { i = 1, r = { 0xe } },
-                { args = { { i = 1, k = "v", r = { 2 } }, { { i = 1, r = { 2 } } } } },
+                { I = 1, R = { 0xe } },
+                { args = { { I = 1, k = "v", R = { 2 } }, { { I = 1, R = { 2 } } } } },
             } }, vm.savedata.stats)
         end)
     end)
