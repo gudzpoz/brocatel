@@ -232,17 +232,17 @@ describe("VM", function()
             },
             "Hello",
         })
-        --- @type table
-        --- @diagnostic disable-next-line: assign-type-mismatch
-        local selections = vm:next()
+        local output = assert(vm:next())
+        local selections = output.text
         assert.is_table(selections)
+        --- @diagnostic disable-next-line: param-type-mismatch
         for k, _ in pairs(selections) do
             assert(k == 1 or k == 4 or k == 5)
         end
-        assert.equals("Selection #1", selections[1][1])
-        assert.equals("Selection #3", selections[4][1])
-        assert.equals("Selection #4", selections[5][1])
-        assert.equals("Result #3", vm:next(4))
-        assert.equals("Hello", vm:next())
+        assert.equals("Selection #1", selections[1][1].text)
+        assert.equals("Selection #3", selections[4][1].text)
+        assert.equals("Selection #4", selections[5][1].text)
+        assert.equals("Result #3", vm:next(4).text)
+        assert.equals("Hello", vm:next().text)
     end)
 end)

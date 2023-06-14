@@ -85,6 +85,10 @@ function VM:init()
         local save = {
             version = meta.version,
             current_thread = "",
+            current = {
+                input = nil,
+                output = nil,
+            },
             threads = {
                 [""] = {
                     current_coroutine = 1,
@@ -187,7 +191,7 @@ function VM:eval_with_env(env, ip)
     env = env or {}
     self.env:push(get_keys(env), env)
     while true do
-        local line, tags = self:fetch_and_next(nil, ip)
+        local line, tags = self:fetch_and_next(ip)
         if line or not tags or self.flags["if-else"] == false then
             self.env:pop()
             return line, tags
@@ -257,14 +261,35 @@ end
 --- Yields the next line.
 ---
 ---@param input number|nil
----@return string|table|nil
----@return boolean|string[]|nil
 function VM:next(input)
+    local current = self.savedata.current
+    if input then
+        current.input = input
+    end
+    current.output = nil
+    return self:current()
+end
+
+--- Returns the current line.
+function VM:current()
+    local current = self.savedata.current
+    local output = current.output
+    if output then
+        return output
+    end
+
     while true do
-        local line, tags = self:fetch_and_next(input)
-        input = nil
-        if line or not tags then
-            return line, tags
+        local line, tags = self:fetch_and_next()
+        if not tags then
+            return nil
+        end
+        if line then
+            output = { text = line, tags = tags }
+            current.output = output
+        end
+        output = current.output
+        if current.output then
+            return current.output
         end
     end
 end
@@ -279,11 +304,10 @@ end
 --- - `line, tags` on a tagged line,
 --- - `nil, true` when the caller should call again to fetch the next line.
 ---
---- @param input number|nil user-selected option index
 --- @param ip TablePath|nil the pointer
 --- @return string|table|nil result
 --- @return string[]|boolean|nil tags `nil` if reaches the end
-function VM:fetch_and_next(input, ip)
+function VM:fetch_and_next(ip)
     ip = ip or assert(self:get_coroutine()).ip
     local root = assert(self:ensure_root(ip))
     if ip:is_done() then
@@ -344,8 +368,10 @@ function VM:fetch_and_next(input, ip)
     elseif node_type == "select" then
         local select = node.select
         local base = ip:copy()
+        local input = self.savedata.current.input
         if input then
             ip:resolve("select", input, 3):step(root, true)
+            self.savedata.current.input = nil
             return nil, true
         end
         local selectables = {}

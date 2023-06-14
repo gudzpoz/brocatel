@@ -4,9 +4,9 @@ local function gather_til_end(vm, limit)
     limit = limit or 1e6
     local lines = {}
     for _ = 1, limit do
-        local line, _ = vm:next()
+        local line = vm:next()
         if line then
-            lines[#lines + 1] = line
+            lines[#lines + 1] = line.text
         else
             break
         end
