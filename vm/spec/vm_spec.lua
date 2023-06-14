@@ -120,6 +120,8 @@ describe("VM", function()
                         assert.equals("v", get(args:resolve(nil, nil, 2, "args"), "k"))
                         local visited = vm.env:get("VISITED")
                         assert.equals(1, visited(vm.env:get("a")))
+                        assert.error(function() vm.env:set("GET", 0) end)
+                        assert.no_error(function() vm.env:set("_GET", 0) end)
                     end
                 },
                 "end",

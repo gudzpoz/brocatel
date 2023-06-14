@@ -132,23 +132,23 @@ function VM:set_up_env_api()
     local lua = env:get_lua_env()
     lua.IP = ip
     lua.VM = self
-    lua.GET = function(path, key)
+    env:set_api("GET", function(path, key)
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         return history.get(self.savedata.stats, path, key)
-    end
-    lua.SET = function(path, key, value)
+    end)
+    env:set_api("SET", function(path, key, value)
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         history.set(self.savedata.stats, assert(self:ensure_root(path)), path, key, value)
-    end
-    lua.EVAL = function(path, extra_env)
+    end)
+    env:set_api("EVAL", function(path, extra_env)
         extra_env = extra_env or {}
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         return self:eval_with_env(extra_env, path)
-    end
-    lua.VISITED = function(path)
+    end)
+    env:set_api("VISITED", function(path)
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         return history.get(self.savedata.stats, path, "I") or 0
-    end
+    end)
 end
 
 --- @param values table

@@ -42,11 +42,20 @@ describe("StackedEnv", function()
         env:set_label_lookup(function(s)
             if s[1] == "some" then
                 return { 1 }
+            elseif #s == 0 then
+                return {}
             end
         end)
         assert.is_nil(env:get("some"))
         env:set_init(false)
         assert.is_table(env:get("some"))
+        assert.same(env:get("some"), env:get("ROOT").some)
+    end)
+    it("rejects writing to api fields", function()
+        local env = StackedEnv:new()
+        assert.error(function() env:set("ROOT", "") end)
+        env:set_init(false)
+        assert.error(function() env:set("ROOT", "") end)
     end)
 
     local function test_with_environments()

@@ -8,6 +8,7 @@
 --- @field label fun(table):table label lookup function
 --- @field stack table some normal scopes that pose no requirements
 --- @field env table the environment to be used
+--- @field api table<string, boolean> keys that forbid overriding
 --- @field init boolean whether in initialing state
 local StackedEnv = {}
 StackedEnv.__index = StackedEnv
@@ -22,6 +23,7 @@ function StackedEnv.new()
         label = nil,
         stack = {},
         env = {},
+        api = { ROOT = true },
         init = true,
     }
     setmetatable(stacked, StackedEnv)
@@ -158,6 +160,9 @@ function StackedEnv:get(key)
         end
     end
     -- Labels.
+    if key == "ROOT" and self.label then
+        return Label.new({}, self.label)
+    end
     local label = self.label and Label.new({ key }, self.label)
     if label then
         return label
@@ -172,7 +177,15 @@ function StackedEnv:get(key)
     return self.lua[key]
 end
 
+function StackedEnv:set_api(key, value)
+    self.lua[key] = value
+    self.api[key] = true
+end
+
 function StackedEnv:set(key, value)
+    if self.api[key] then
+        error("overriding api keys not allowed")
+    end
     if self.init then
         self.lua[key] = value
         return
