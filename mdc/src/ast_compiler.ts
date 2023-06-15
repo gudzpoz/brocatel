@@ -19,7 +19,10 @@ function entryCompare(a: [string, any], b: [string, any]): number {
   return a[0].localeCompare(b[0]);
 }
 
-function serializeTableInner<T>(object: { [key: string]: T }, encoder: (s: T) => string): string {
+export function serializeTableInner<T>(
+  object: { [key: string]: T },
+  encoder: (s: T) => string,
+): string {
   return Object.entries(object).sort(entryCompare)
     .map(([k, v]) => {
       const key = isIdentifier(k) ? k : `[${JSON.stringify(k)}]`;

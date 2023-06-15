@@ -76,7 +76,7 @@ class MacroExpander {
         this.vfile.message('expecting a list inside the macro node', node);
         return false;
       }
-    } else if (node.children[0].type !== 'paragraph' || node.children[1].type !== 'list') {
+    } else if (node.children[0]?.type !== 'paragraph' || node.children[1]?.type !== 'list') {
       this.vfile.message('invalid macro node', node);
       return false;
     }

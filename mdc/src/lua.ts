@@ -89,7 +89,6 @@ export function isIdentifier(s: string): boolean {
   return !LUA_KEYWORDS.has(s) && LUA_IDENTIFIER.test(s);
 }
 
-
 /**
  * Runs Lua snippets, passing the `arg` argument as the global value `arg`.
  *

@@ -140,13 +140,13 @@ class AstTransformer {
   }
 
   destructDirective(directive: ContainerDirective) {
-    let label;
-    let list;
+    let label = null;
+    let list = null;
     let func = false;
     if (directive.children.length === 1) {
       label = null;
       [list] = directive.children;
-    } else {
+    } else if (directive.children.length === 2) {
       let first;
       [first, list] = directive.children;
       if (first.type === 'code' && first.meta === 'func') {
@@ -154,11 +154,9 @@ class AstTransformer {
         func = true;
       } else if (first.type === 'paragraph' && first.children[0].type === 'inlineCode') {
         label = first.children[0].value;
-      } else {
-        label = null;
       }
     }
-    if (list.type !== 'list') {
+    if (list?.type !== 'list') {
       this.vfile.message('unexpected element inside directive', directive);
       list = null;
     }

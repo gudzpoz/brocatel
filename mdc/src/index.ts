@@ -1,14 +1,16 @@
-import { directiveFromMarkdown } from 'mdast-util-directive';
 import { mdxExpressionFromMarkdown } from 'mdast-util-mdx-expression';
-import { directive } from 'micromark-extension-directive';
 import { mdxExpression } from 'micromark-extension-mdx-expression';
 import remarkJoinCJKLines from 'remark-join-cjk-lines';
 import remarkParse from 'remark-parse';
 import { Processor, unified } from 'unified';
 import { VFile } from 'vfile';
 
-import brocatelCompile from './compiler';
-import { convertValue } from './lua';
+import astCompiler, { serializeTableInner } from './ast_compiler';
+import { directiveFromMarkdown } from './directive';
+import expandMacro from './expander';
+import transformAst from './transformer';
+
+const VERSION = 1;
 
 /**
  * Configurations.
@@ -20,6 +22,13 @@ interface CompilerConfig {
    * AutoNewLine adds line breaks, allowing the Markdown file to be more compact.
    */
   noAutoNewLine?: boolean;
+}
+
+function removeMdExt(name: string): string {
+  if (name.toLowerCase().endsWith('.md')) {
+    return name.substring(0, name.length - 3);
+  }
+  return name;
 }
 
 /**
@@ -34,13 +43,18 @@ class BrocatelCompiler {
     this.config = config;
     this.remark = unified()
       .use(remarkParse)
-      .use(function micromarkPlugin() {
+      .use(function remarkMdx() {
+        // Remark-Mdx expects the expressions to be JS expressions,
+        // while we use them as Lua ones.
         const data = this.data();
-        data.fromMarkdownExtensions = [[directiveFromMarkdown], [mdxExpressionFromMarkdown]];
-        data.micromarkExtensions = [mdxExpression(), directive()];
+        data.fromMarkdownExtensions = [[mdxExpressionFromMarkdown]];
+        data.micromarkExtensions = [mdxExpression()];
       })
       .use(remarkJoinCJKLines)
-      .use(brocatelCompile);
+      .use(directiveFromMarkdown)
+      .use(expandMacro)
+      .use(transformAst)
+      .use(astCompiler);
   }
 
   /**
@@ -51,21 +65,28 @@ class BrocatelCompiler {
    * @param fetcher a function that fetches the content of the given filename
    */
   async compileAll(name: string, fetcher: (name: string) => Promise<string>) {
-    const target = new VFile();
+    const target = new VFile({ path: `${removeMdExt(name)}.lua` });
     const files: { [name: string]: VFile | null } = {};
+    const input: { [name: string]: VFile } = {};
     const globalLua: string[] = [];
 
-    const asyncCompile = async (task: string) => {
+    const asyncCompile = async (filename: string) => {
+      const task = removeMdExt(filename);
       const content = await fetcher(task);
       if (!content) {
         target.message(`cannot load file ${task}(.md)`);
       } else {
         const file = await this.compile(content);
         files[task] = file;
+        const processed = new VFile({ path: task });
+        input[task] = processed;
+        processed.messages.push(...file.messages);
+        processed.value = content;
+
         globalLua.push(...file.data.globalLua as string[]);
         const tasks: Promise<any>[] = [];
         (file.data.dependencies as Set<string>).forEach((f) => {
-          if (typeof files[f] === 'undefined') {
+          if (typeof files[removeMdExt(f)] === 'undefined') {
             files[task] = null;
             tasks.push(asyncCompile(f));
           }
@@ -75,17 +96,18 @@ class BrocatelCompiler {
     };
     await asyncCompile(name);
 
-    const root = Object.fromEntries(
-      Object.entries(files).map(([f, v]) => {
-        if (v) {
-          v.messages.forEach(console.log);
-          return [f, { raw: v?.toString() }];
-        }
-        return [f, null];
-      }),
-    );
-    root[''] = { version: 1, entry: name } as any;
-    return `${globalLua.join('\n')}\nreturn ${convertValue(root, true)}`;
+    const contents = serializeTableInner(files, (v) => {
+      if (!v) {
+        return 'nil';
+      }
+      target.messages.push(...v.messages);
+      return v.toString();
+    });
+    target.value = `${globalLua.join('\n')}
+return {[""]={version=${VERSION},entry=${JSON.stringify(removeMdExt(name))}},${contents}}
+`;
+    target.data.input = input;
+    return target;
   }
 
   /**
