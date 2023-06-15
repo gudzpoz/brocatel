@@ -1,0 +1,60 @@
+import { Paragraph } from 'mdast';
+import { Node } from 'unist';
+
+/**
+ * Shallow-copeis an object.
+ *
+ * @param node the object
+ * @returns a new object with fields from the supplied one
+ */
+export function shallowCopy<T extends object>(node: T): T {
+  return Object.fromEntries(Object.entries(node)) as T;
+}
+
+/**
+ * Removes all fields from the target object and assigns all from the value object.
+ *
+ * @param target the node to get assigned to
+ * @param value the value node where the assigned values come from
+ */
+export function overwrite<T extends Node>(target: Node, value: T): T {
+  const { position, data } = target;
+  const o = target as any;
+  Object.keys(o).forEach((key) => delete o[key]);
+  Object.entries(value).forEach(([k, v]) => { o[k] = v; });
+  if (!o.data && data) {
+    o.data = data;
+  }
+  if (!o.position && position) {
+    o.position = position;
+  }
+  return o as T;
+}
+
+/**
+ * Returns a new paragraph almost identical to the provided one, with a few children removed.
+ *
+ * @param para the paragraph
+ * @param start the starting child index
+ * @returns a new paragraph
+ */
+export function subParagraph(para: Paragraph, start: number): Paragraph {
+  const children: typeof para.children = [];
+  for (let i = start; i < para.children.length; i += 1) {
+    const node = para.children[i];
+    // Strip starting spaces.
+    if (children.length === 0 && node.type === 'text') {
+      const value = node.value.trimStart();
+      if (value) {
+        const trimmed = shallowCopy(node);
+        trimmed.value = value;
+        children.push(trimmed);
+      }
+    } else {
+      children.push(node);
+    }
+  }
+  const sub = shallowCopy(para);
+  sub.children = children;
+  return sub;
+}

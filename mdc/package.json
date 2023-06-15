@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "compile": "vite-node ./src/cli.ts",
+    "lint": "eslint \"**/*.ts\"",
     "test": "vitest"
   },
   "keywords": [],

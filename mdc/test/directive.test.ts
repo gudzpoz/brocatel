@@ -33,7 +33,9 @@ test('Parsing with a label', () => {
 });
 
 function assertMatch(input: string) {
-  const ast = parser.runSync(parser.parse(input)) as Root;
+  const vfile = new VFile();
+  const ast = parser.runSync(parser.parse(input), vfile) as Root;
+  assert.isEmpty(vfile.messages, vfile.messages.map((m) => m.message).join(', '));
   assert.equal(
     toMarkdown(ast, {
       extensions: [directiveToMarkdown],
@@ -58,6 +60,14 @@ test('Parsing and generating', () => {
 
     :::c\`10\`
     *   d`);
+
+  assertMatch(`
+:::a
+\`\`\`lua func
+IP:set(arg:resolve(2))
+\`\`\`
+
+*   b`);
 
   assertMatch(`
 :::loop\`10\`

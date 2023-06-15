@@ -14,14 +14,15 @@ md = {}
 --- @return string markdown stringified Markdown
 function md.to_markdown(node)
   --- @diagnostic disable-next-line: undefined-global
-  return to_markdown(node)
+  return TO_MARKDOWN(node)
 end
 
 --- @param text string text content
+--- @param type string|nil node type
 --- @return Node text a Markdown text node
-function md.text(text)
+function md.text(text, type)
   return {
-    type = "text",
+    type = type or "text",
     value = text,
   }
 end
@@ -71,11 +72,12 @@ function md.loop(label, children)
     loop_count = loop_count + 1
     label = "#loop-" .. loop_count
   end
-  return md.block({
-    md.heading(label),
-    md.block(children),
-    md.paragraph({ md.link(label) }),
-  })
+  local content = { md.heading(label) }
+  for i, child in ipairs(children) do
+    content[i + 1] = child
+  end
+  content[#content + 1] = md.paragraph({ md.link(label) })
+  return md.block(content)
 end
 
 --- @param expr string the Lua expression
@@ -83,67 +85,72 @@ end
 --- @param else_children Node[]|nil the else branch
 --- @return Node blockquote a blockquote node that condition blocks
 function md.if_else(expr, if_children, else_children)
-  local block = md.block({ md.block(if_children), else_children and md.block(else_children) })
-  block.data = { ["if"] = expr }
+  local condition = md.block({ md.text(expr, "inlineCode") })
+  local block = md.block({
+    condition,
+    md.block(if_children),
+    else_children and md.block(else_children)
+  }, "containerDirective")
+  block.name = "if"
   return block
+end
+
+--- @param arg Node a containerDirective node
+function md.destruct(arg)
+  assert(arg.children and 1 <= #arg.children and #arg.children <= 2)
+  local label, list
+  if #arg.children == 1 then
+    list = arg.children[1]
+    assert(list.type == "list")
+  else
+    label = arg.children[1]
+    list = arg.children[2]
+    assert(label.data and label.data.directiveLabel)
+    if label.type == "code" then
+      label = label.value
+    elseif label.type == "paragraph" and #label.children == 1
+        and label.children[1].type == "inlineCode" then
+      label = label.children[1].value
+    else
+      error("unexpected node")
+    end
+  end
+  assert(list.type == "list")
+  return label, list
 end
 
 --- @param arg Node a containerDirective node
 --- @return Node blockquote a loop node
 --- @diagnostic disable-next-line: lowercase-global
 function loop(arg)
-  local label = nil
-  assert(arg.children and #arg.children >= 1)
-  local first = arg.children[1]
-  local children = arg.children or {}
-  if first.data and first.data.directiveLabel then
-    label = md.to_markdown(first)
-    children = {}
-    for i = 2, #arg.children do
-      children[#children + 1] = arg.children[i]
+  --[[
+    - containerDirective
+      children:
+        - directiveLabel?
+        - list
+          children:
+            - listItem1
+            - listItem2
+            - ...
+  ]]
+  --
+  local label, list = md.destruct(arg)
+  local children = {}
+  for _, item in ipairs(list.children) do
+    for _, child in ipairs(item.children) do
+      children[#children + 1] = child
     end
   end
   return md.loop(label, children)
 end
 
 --- @param arg Node a containerDirective node
---- @return Node[] blockquote a if-else node
---- @diagnostic disable-next-line: lowercase-global
-function when(arg)
-  assert(#arg.children == 2, "missing conditional or list")
-  assert(arg.children[1].type == "paragraph", "missing conditional")
-  assert(arg.children[1].data.directiveLabel, "missing conditional")
-  local list = arg.children[2]
-  assert(list.type == "list", "missing list")
-  assert(#list.children >= 1)
-  local expr = md.to_markdown(arg.children[1])
-  return md.if_else(
-    expr or 'true',
-    list.children[1].children,
-    list.children[2] and list.children[2].children
-  )
-end
-
---- @param arg Node a containerDirective node
---- @return Node[] blockquote a switch-case node
+--- @return Node blockquote a switch-case node
 --- @diagnostic disable-next-line: lowercase-global
 function switch(arg)
-  assert(#arg.children >= 1)
-  local code = ""
+  local code, list = md.destruct(arg)
+  code = code or ""
 
-  local first = arg.children[1]
-  local list_index = 1
-  if first.type ~= "list" then
-    assert(first.type == "paragraph"
-      and first.data and first.data.directiveLabel, "inner content must be a list")
-    code = md.to_markdown(first)
-    list_index = 2
-  end
-  assert(#arg.children == list_index, "no extra content allowed")
-  local list = arg.children[list_index]
-  assert(list.type == "list", "inner content must be a list")
-
-  local branches = {}  --- @type Node[]
   for i, list_item in ipairs(list.children) do
     assert(#list_item.children >= 1, "conditional branch must not be empty")
     local cond = list_item.children[1]
@@ -152,14 +159,18 @@ function switch(arg)
       "the first element must be a condition"
     )
     local case = cond.children[1].value
-    local items = {}  --- @type Node[]
+    local items = {} --- @type Node[]
     for j = 2, #list_item.children do
       items[#items + 1] = list_item.children[j]
     end
-    branches[i] = md.block(items)
-    code = code .. "\nif(\n" .. case .. "\n)then return ip:set(args:resolve(" .. i .. "))end"
+    list_item.children = items
+    code = code .. "\nif(\n" .. case .. "\n)then return IP:set(args:resolve(" .. (i + 1) .. "))end"
   end
-  local block = md.block(branches)
-  block.data = { ["func"] = code }
+
+  local func = md.text(code, "code")
+  func.lang = "lua"
+  func.meta = "func"
+  local block = md.block({ func, list }, "containerDirective")
+  block.name = "do"
   return block
 end

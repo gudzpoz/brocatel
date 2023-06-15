@@ -1,6 +1,6 @@
 import {
   BlockContent,
-  Content, Paragraph, Parent, Root, Text,
+  Content, InlineCode, Paragraph, Parent, Root, Text,
 } from 'mdast';
 import { ContainerDirective } from 'mdast-util-directive';
 import { Info, Options, State } from 'mdast-util-to-markdown';
@@ -12,18 +12,23 @@ import { Node } from 'unist';
 import { visitParents } from 'unist-util-visit-parents';
 import { VFile } from 'vfile';
 
+export function isDirectiveLabel(para: Node | undefined): boolean {
+  const labeled = para?.data?.directiveLabel;
+  return !!labeled && para.type === 'paragraph';
+}
+
 function handleDirective(node: ContainerDirective, _: any, state: State, info: Info): string {
   const tracker = track(info);
   const containerExit = state.enter('containerDirective');
   let value = tracker.move(`:::${node.name}`);
   const label = node.children[0];
-  const labeled = label?.data?.directiveLabel;
-  if (labeled && label.type === 'paragraph') {
+  const labeled = isDirectiveLabel(label);
+  if (labeled) {
     const exit = state.enter('label');
-    value += tracker.move(containerPhrasing(label, state, {
+    value += tracker.move(containerPhrasing(label as Paragraph, state, {
       ...tracker.current(),
       before: value,
-      after: ']',
+      after: '\n',
     }));
     exit();
   }
@@ -65,6 +70,19 @@ function isDirectiveLine(node: Content): boolean {
   return prefix.type === 'text' && prefix.value.startsWith(':::');
 }
 
+export function directiveLabel(value: string | InlineCode): Paragraph {
+  const code: InlineCode = typeof value === 'string' ? {
+    type: 'inlineCode',
+    value,
+  } : value;
+  const para: Paragraph = {
+    type: 'paragraph',
+    children: [code],
+    data: { directiveLabel: true },
+  };
+  return para;
+}
+
 const simpleDirectiveLineRegex = /^:::(\w+)()()$/;
 
 function parseDirectiveLine(line: Paragraph, vfile: VFile): ContainerDirective {
@@ -75,18 +93,14 @@ function parseDirectiveLine(line: Paragraph, vfile: VFile): ContainerDirective {
   };
   const match = simpleDirectiveLineRegex.exec((line.children[0] as Text).value);
   if (match) {
-    [,directive.name] = match;
+    [, directive.name] = match;
   } else {
     vfile.message('invalid directive line', line);
   }
   if (line.children.length >= 2) {
     const condition = line.children[1];
     if (condition.type === 'inlineCode') {
-      directive.children.push({
-        type: 'paragraph',
-        children: [condition],
-        data: { directiveLabel: true },
-      });
+      directive.children.push(directiveLabel(condition));
     } else {
       vfile.message('unsupported element', condition);
     }
@@ -109,6 +123,10 @@ export const directiveFromMarkdown: Plugin = () => (root: Node, vfile: VFile) =>
           const directive = merged[merged.length - 1] as ContainerDirective;
           directive.children.push(child as BlockContent);
           inDirective = false;
+          if (child.type === 'code' && child.lang === 'lua' && child.meta === 'func'
+            && directive.children.length === 1) {
+            inDirective = true;
+          }
         } else if (isDirectiveLine(child)) {
           merged.push(parseDirectiveLine(child as Paragraph, vfile));
           inDirective = true;
