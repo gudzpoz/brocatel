@@ -1,7 +1,5 @@
 import { assert, test } from 'vitest';
-import {
-  convertValue, detectLuaErrors, runLua, wrap,
-} from '../src/lua';
+import { detectLuaErrors, runLua, wrap } from '../src/lua';
 
 test('Lua checking', () => {
   assert.isNotNull(detectLuaErrors('('));
@@ -28,13 +26,6 @@ test('Convert from Lua values', () => {
   assert.deepEqual(
     runLua([1, 2, 3], ['arg[4] = { a = 1, b = "c" }; return arg']),
     [1, 2, 3, { a: 1, b: 'c' }],
-  );
-});
-
-test('Lua convert', () => {
-  assert.equal(
-    convertValue({ if: 'else', while: 'do', end: 'function' }),
-    '{["end"]="function",["if"]="else",["while"]="do"}',
   );
 });
 

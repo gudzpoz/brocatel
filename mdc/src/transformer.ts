@@ -8,8 +8,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { VFile } from 'vfile';
 
 import { Plugin } from 'unified';
+import { visitParents } from 'unist-util-visit-parents';
 import {
-  LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaTags, LuaText, luaArray,
+  LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaTags, LuaText, RelativePath, luaArray,
 } from './ast';
 import { toMarkdownString } from './expander';
 import { overwrite } from './utils';
@@ -40,7 +41,47 @@ class AstTransformer {
   }
 
   transform(): LuaArray {
-    return this.parseBlock(this.root);
+    const transformed = this.parseBlock(this.root);
+    this.attachRelativeLinks(transformed);
+    return transformed;
+  }
+
+  attachRelativeLinks(root: LuaArray) {
+    visitParents(root, (node, parents) => {
+      const n = node;
+      n.position = node.node.position;
+      if (node.type !== 'array' || !node.data?.label) {
+        return;
+      }
+      const { label } = node.data;
+      let i;
+      for (i = parents.length - 1; i > 0; i -= 1) {
+        const element = parents[i];
+        if (element.data?.label) {
+          break;
+        }
+      }
+      const parent = parents[i];
+      const path: RelativePath = [];
+      for (; i < parents.length; i += 1) {
+        const upper = parents[i];
+        const child = parents[i + 1] || node;
+        const children = upper.children as LuaElement[];
+        const index = children.indexOf(child);
+        if (index === -1) {
+          this.vfile.message('unknown child', child);
+          return;
+        }
+        if (upper.type === 'func') {
+          path.push('args');
+        }
+        path.push(index + 2);
+      }
+      if (!parent.data?.labels) {
+        parent.data = { labels: {} };
+      }
+      parent.data.labels[label] = path;
+    });
   }
 
   /**

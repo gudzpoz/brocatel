@@ -66,13 +66,6 @@ function convertLuaValue(L: any, index: number): any {
   return root;
 }
 
-/**
- * Compares between object entries.
- */
-function entryCompare(a: [string, any], b: [string, any]): number {
-  return a[0].localeCompare(b[0]);
-}
-
 export function allEmpty(...objects: any[]): boolean {
   return objects.every((o) => o === null || o === undefined
     || o === '' || (typeof o === 'object' && Object.keys(o).length === 0));
@@ -96,62 +89,6 @@ export function isIdentifier(s: string): boolean {
   return !LUA_KEYWORDS.has(s) && LUA_IDENTIFIER.test(s);
 }
 
-/**
- * Recursively converts a node into Lua table.
- *
- * There is a special node: `{ raw: string_element }`.
- * The content of the string element will be dumped as is, so as to
- * generate Lua functions.
- *
- * Recursive references will likely lead to stack overflow.
- *
- * @param root the node
- * @param special turns on special node processing and empty node stripping
- */
-export function convertValue(root: any, special: boolean = false): string {
-  const builder: string[] = [];
-  function format(value: any) {
-    if (value === null || value === undefined) {
-      builder.push('nil');
-    } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-      builder.push(JSON.stringify(value));
-    } else if (value instanceof Array) {
-      builder.push('{');
-      value.forEach((e, i) => {
-        if (i) {
-          builder.push(',');
-        }
-        format(e);
-      });
-      builder.push('}');
-    } else if (value instanceof Object) {
-      if (special && typeof value.raw === 'string') {
-        builder.push(value.raw);
-      } else {
-        builder.push('{');
-        let entries = Object.entries(value);
-        if (special) {
-          entries = entries.filter(([k, v]) => !(k === 'type' && typeof v === 'string') && !allEmpty(v));
-        }
-        // To provide reproducible serialization (while maybe locale-dependent).
-        entries = entries.sort(entryCompare);
-        entries.forEach(([k, v], i) => {
-          builder.push(
-            i ? ',' : '',
-            isIdentifier(k) ? k : JSON.stringify([k]),
-            '=',
-          );
-          format(v);
-        });
-        builder.push('}');
-      }
-    } else {
-      throw new TypeError(`unexpected ${value}: ${builder.join('')}`);
-    }
-  }
-  format(root);
-  return builder.join('');
-}
 
 /**
  * Runs Lua snippets, passing the `arg` argument as the global value `arg`.
