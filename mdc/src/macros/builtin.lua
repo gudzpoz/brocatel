@@ -70,7 +70,7 @@ local loop_count = 0
 function md.loop(label, children)
   if not label then
     loop_count = loop_count + 1
-    label = "#loop-" .. loop_count
+    label = "\\#loop-" .. loop_count
   end
   local content = { md.heading(label) }
   for i, child in ipairs(children) do

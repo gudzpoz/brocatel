@@ -40,11 +40,11 @@ test('Expand conditional', () => {
 
 test('Expand macro', () => {
   assertMatch(':::loop\n- a', `
-> # #loop-1
+> # \\\\#loop-1
 >
 > a
 >
-> [](#loop-1)
+> [](\\\\#loop-1)
   `);
 
   assertMatch(':::switch`a = 0`\n- `a == 1`\n\n  ok\n- `a == 0`\n\n  ok', `
@@ -61,5 +61,5 @@ a == 0
 
 *   ok
 *   ok
-  `)
+  `);
 });

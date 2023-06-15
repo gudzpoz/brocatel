@@ -17,11 +17,11 @@ import builtInMacros from './macros/builtin.lua?raw';
 
 type Node = Root | Content | Directive;
 
-function isBuiltInMacro(name: string): boolean {
+export function isBuiltInMacro(name: string): boolean {
   return name === 'do' || name === 'if';
 }
 
-function toMarkdownString(node: Content): string {
+export function toMarkdownString(node: Content): string {
   return toMarkdown(node, {
     extensions: [directiveToMarkdown, mdxExpressionToMarkdown],
   }).trim();
@@ -76,11 +76,9 @@ class MacroExpander {
         this.vfile.message('expecting a list inside the macro node', node);
         return false;
       }
-    } else {
-      if (node.children[0].type !== 'paragraph' || node.children[1].type !== 'list') {
-        this.vfile.message('invalid macro node', node);
-        return false;
-      }
+    } else if (node.children[0].type !== 'paragraph' || node.children[1].type !== 'list') {
+      this.vfile.message('invalid macro node', node);
+      return false;
     }
     if (!isIdentifier(node.name.replace(/\./g, ''))) {
       this.vfile.message('not a lua identifier', node);

@@ -1,141 +1,205 @@
-import { Node } from 'unist';
+import { Data, Parent, Node } from 'unist';
 
 export type PathSegment = number | string;
 /**
  * A relative table path used only when compiling.
  */
 export type RelativePath = PathSegment[];
-/**
- * Compiled absolute path.
- */
-export type Path = PathSegment[];
 
 /**
- * Lua scripts.
+ * The metadata node of an array.
  */
-export type LuaSnippet = string;
-
-export type ParentEdge = [ValueNode | MetaArray, RelativePath];
-
-/**
- * Nodes in the AST tree.
- */
-export interface TreeNode {
-  type: string;
-  node: Node | null;
-  parent: ParentEdge | null;
-}
-
-/**
- * Required Lua evaluation in text nodes.
- */
-export interface TextValues {
-  [key: string]: LuaSnippet;
-}
-/**
- * The text node, for both plain texts and tagged ones.
- */
-export interface TextNode extends TreeNode {
-  type: 'text';
-  text: string;
-  tags: string[];
-  plural: string;
-  values: TextValues;
-}
-
-/**
- * A link node (relative).
- */
-export interface LinkNode extends TreeNode {
-  type: 'link';
-  link: RelativePath;
-  rootName?: string;
-}
-
-/**
- * A if-else node.
- */
-export interface IfElseNode extends TreeNode {
-  type: 'if-else';
-  condition: LuaSnippet,
-  ifThen?: MetaArray,
-  otherwise?: MetaArray,
-}
-
-/**
- * A function call node.
- */
-export interface LuaNode extends TreeNode {
-  type: 'func';
-  func: { raw: LuaSnippet },
-  args: MetaArray[],
-}
-
-/**
- * A selection node.
- */
-export interface SelectNode extends TreeNode {
-  type: 'select';
-  select: MetaArray[];
-}
-
-/**
- * Values.
- */
-export type ValueNode = TextNode | LinkNode | IfElseNode | LuaNode | SelectNode;
-
-/**
- * Relative paths to childrens with labels.
- */
-export interface Labels {
-  [label: string]: Path;
-}
-
-export interface Metadata {
-  type: 'meta';
+export interface Metadata extends Data {
   /**
-   * All direct labels of children.
-   */
-  labels: Labels;
-  /**
-   * All direct/indirect labels of children.
-   */
-  children: { [label: string]: Path[] };
-  /**
-   * References, used to look up children by labels.
-   */
-  refs: { [label: string]: MetaArray };
-  /**
-   * Upper node where the label is stored.
-   */
-  upper?: MetaArray;
-  /**
-   * Label for the current node, temporary.
+   * Label for the current array.
    */
   label?: string;
+  /**
+   * Paths to labeled children.
+   */
+  labels: { [label: string]: RelativePath };
+}
+
+export type LuaElement = LuaArray | LuaText | LuaLink | LuaIfElse | LuaCode;
+
+/**
+ * The main kind of branch nodes in the Lua format.
+ *
+ * Transpiled into `[ metadata, ...children ]`.
+ *
+ * ## Markdown equivalence
+ *
+ * Any block of Markdown lines will turn into one or multiple LuaArrays.
+ * Also, every heading generates a new labeled LuaArray.
+ */
+export interface LuaArray extends Parent<LuaElement, Metadata> {
+  type: 'array';
+  /**
+   * The original node.
+   */
+  node: Node;
 }
 
 /**
- * Arrays with metadata.
+ * A transformed node tracking the original node.
  */
-export interface MetaArray extends TreeNode {
-  type: 'array';
-  meta: Metadata;
-  children: (ValueNode | MetaArray)[];
+export interface LuaNode extends Node {
+  /**
+   * The original node.
+   */
+  node: Node;
 }
 
-export function metaArray(node: Node, parent: ParentEdge | null, label?: string): MetaArray {
+export type LuaTags = { [key: string]: string };
+
+/**
+ * The text node.
+ *
+ * It is either transpiled into a plain string, or a tagged text node.
+ *
+ * ## Markdown equivalence
+ *
+ * Lines. Texts. Normal paragraphs.
+ *
+ * (See LuaLink and LuaIfElse for "abnormal" paragraphs.)
+ */
+export interface LuaText extends LuaNode {
+  type: 'text';
+  text: string;
+  /**
+   * Tags, used by external programs (i.e. your games).
+   */
+  tags: LuaTags;
+  /**
+   * Values used for interpolation.
+   */
+  values: { [key: string]: string };
+  /**
+   * The plural value. See `ngettext`.
+   */
+  plural?: string;
+}
+
+/**
+ * A relative link.
+ *
+ * If `root` is specified, the lookup starts from the root node of that `root` file.
+ * Otherwise, the lookup starts where the current node lies.
+ *
+ * ## Markdown equivalence
+ *
+ * Paragraphs containing only a Markdown link are treated as LuaLinks.
+ */
+export interface LuaLink extends LuaNode {
+  type: 'link';
+  /**
+   * Hierarchical labels.
+   */
+  labels: string[];
+  /**
+   * The root file.
+   */
+  root?: string;
+}
+
+/**
+ * A simple if-else statement.
+ *
+ * It gets transpiled into `{ function()return ... end, ifThen, otherwise }`.
+ *
+ * ## Markdown equivalence
+ *
+ * Paragraphs starting with an inlineCode snippet are treated as conditionals,
+ * except when the snippet is the only element in the paragraph, which will
+ * get treated as an inline LuaCode snippet.
+ *
+ * Conditional links should be supported: `` `conditional` [](somewhere) ``.
+ */
+export interface LuaIfElse extends Parent<LuaArray> {
+  type: 'if-else';
+  /**
+   * A Lua expresssion (e.g. `true`, `#list == 1`, etc.).
+   */
+  condition: string;
+  /**
+   * Branches.
+   *
+   * - The first element: the branch to jump to if the condition is satisfied.
+   * - The second: otherwise.
+   */
+  children: [LuaArray] | [LuaArray, LuaArray];
+  /**
+   * The original node.
+   */
+  node: Node;
+}
+
+/**
+ * A Lua snippet.
+ *
+ * Its children are arbitrary parameters, probably coming from macros.
+ *
+ * ## Markdown equivalence
+ *
+ * A snippet without arguments:
+ * ~~~markdown
+ * ```lua
+ * print("ok")
+ * ```
+ * ~~~
+ *
+ * To pass arguments, you will need to use a special macro `do`:
+ * ~~~markdown
+ * ```lua
+ * function my_func(args)
+ *   do_something_with(args)
+ * end
+ * ```
+ *
+ * :::do[my_func]
+ * - List Item A
+ * - List Item B
+ * - List Item C
+ * :::
+ * ~~~
+ *
+ * (The `do` macro manipulates internal data in the AST nodes.)
+ */
+export interface LuaCode extends Parent<LuaArray> {
+  type: 'func';
+  /**
+   * The Lua snippet (e.g. `return true`, `a = 1`, etc.).
+   */
+  code: string;
+  /**
+   * The original node.
+   */
+  node: Node;
+}
+
+/**
+ * The amalgamation result.
+ *
+ * Its children are the root nodes compiled from Markdown files,
+ * whose filenames are recorded in the `files` field.
+ */
+export interface LuaEntry extends Parent<LuaArray> {
+  type: 'root';
+  ['']: {
+    entry: string;
+    version: number;
+  };
+  files: string[];
+}
+
+export function luaArray(node: Node, label?: string): LuaArray {
   return {
     type: 'array',
-    meta: {
-      type: 'meta',
+    data: {
       labels: {},
-      children: {},
-      refs: {},
       label,
     },
     children: [],
     node,
-    parent,
   };
 }

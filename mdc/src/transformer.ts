@@ -1,21 +1,18 @@
 import {
-  Blockquote,
   Code,
-  Content, Heading, Link, List, Paragraph, Parent, PhrasingContent, Root,
+  Content, Heading, Link, Paragraph, Parent, PhrasingContent, Root,
 } from 'mdast';
-import { toMarkdown } from 'mdast-util-to-markdown';
-import { ContainerDirective, directiveToMarkdown } from 'mdast-util-directive';
-import { mdxExpressionToMarkdown, MDXTextExpression } from 'mdast-util-mdx-expression';
+import { ContainerDirective } from 'mdast-util-directive';
+import { MDXTextExpression } from 'mdast-util-mdx-expression';
 import { v4 as uuidv4 } from 'uuid';
 import { VFile } from 'vfile';
 
+import { Plugin } from 'unified';
 import {
-  IfElseNode,
-  LinkNode, LuaNode, LuaSnippet, metaArray, MetaArray, ParentEdge, SelectNode, TextNode, ValueNode,
+  LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaTags, LuaText, luaArray,
 } from './ast';
-import { runLua, wrap } from './lua';
-
-import builtInMacros from './macros/builtin.lua?raw';
+import { toMarkdownString } from './expander';
+import { overwrite } from './utils';
 
 class AstTransformer {
   root: Root;
@@ -28,35 +25,22 @@ class AstTransformer {
   dependencies: Set<string>;
 
   /**
-   * Unresolved links.
-   */
-  links: LinkNode[];
-
-  /**
    * Global Lua snippets.
    */
-  globalLua: LuaSnippet[];
-
-  /**
-   * Macro Lua snippets.
-   */
-  macros: LuaSnippet[];
+  globalLua: string[];
 
   constructor(root: Root, vfile: VFile) {
     this.root = root;
     this.vfile = vfile;
     this.dependencies = new Set<string>();
-    this.links = [];
     this.globalLua = [];
-    this.macros = [];
 
     this.vfile.data.dependencies = this.dependencies;
-    this.vfile.data.links = this.links;
     this.vfile.data.globalLua = this.globalLua;
   }
 
-  transform(): MetaArray {
-    return this.parseBlock(this.root, null);
+  transform(): LuaArray {
+    return this.parseBlock(this.root);
   }
 
   /**
@@ -71,51 +55,39 @@ class AstTransformer {
     }
   }
 
-  parseBlock(block: Parent, parent: ParentEdge | null): MetaArray {
-    const array = metaArray(block, parent);
+  parseBlock(block: Parent): LuaArray {
+    const array = luaArray(block);
     // Levels of previous headings.
     const headings = [0];
-    let current = array;
+    const stack = [array];
     block.children.forEach((node) => {
+      let current = stack[stack.length - 1];
       switch (node.type) {
         case 'paragraph':
-          current.children.push(
-            this.parseParagraph(node, [current, [current.children.length + 2]]),
-          );
-          break;
-        case 'list':
-          current.children.push(
-            this.parseSelection(node, [current, [current.children.length + 2]]),
-          );
+          current.children.push(this.parseParagraph(node));
           break;
         case 'code':
-          current.children.push(
-            this.parseCodeBlock(node, [current, [current.children.length + 2]]),
-          );
+          current.children.push(this.parseCodeBlock(node));
           break;
         case 'blockquote':
-          current.children.push(
-            this.parseBlockquote(node, [current, [current.children.length + 2]]),
-          );
+          current.children.push(this.parseBlock(node));
           break;
         case 'containerDirective':
-          current.children.push(
-            this.parseDirective(node, [current, [current.children.length + 2]]),
-          );
+          current.children.push(this.parseDirective(node));
           break;
         case 'heading': {
           while (node.depth <= headings[headings.length - 1]) {
             headings.pop();
-            current = current.parent?.[0] as MetaArray;
+            stack.pop();
+            current = stack[stack.length - 1];
           }
-          const nested = metaArray(
+          const nested = luaArray(
             node,
-            [current, [current.children.length + 2]],
             this.extractHeadingLabel(node),
           );
           current.children.push(nested);
-          current = nested;
           headings.push(node.depth);
+          stack.push(nested);
           break;
         }
         default:
@@ -126,51 +98,78 @@ class AstTransformer {
     return array;
   }
 
-  parseDirective(node: ContainerDirective, parent: ParentEdge): ValueNode | MetaArray {
-    if (!node.name) {
-      return this.parseBlock(node, parent);
+  destructDirective(directive: ContainerDirective) {
+    let label;
+    let list;
+    let func = false;
+    if (directive.children.length === 1) {
+      label = null;
+      [list] = directive.children;
+    } else {
+      let first;
+      [first, list] = directive.children;
+      if (first.type === 'code' && first.meta === 'func') {
+        label = first.value;
+        func = true;
+      } else if (first.type === 'paragraph' && first.children[0].type === 'inlineCode') {
+        label = first.children[0].value;
+      } else {
+        label = null;
+      }
     }
-    const codes = [builtInMacros as string];
-    codes.push(...this.macros);
-    codes.push(`return ${node.name}(arg)`);
-    return this.parseBlockquote(
-      runLua(node, codes, { to_markdown: wrap((n: any) => this.toMarkdown(n)) }),
-      parent,
-    );
+    if (list.type !== 'list') {
+      this.vfile.message('unexpected element inside directive', directive);
+      list = null;
+    }
+    return { label, list, func };
   }
 
-  parseBlockquote(node: Blockquote, parent: ParentEdge): ValueNode | MetaArray {
-    if (node.data?.if) {
-      const ifElse: IfElseNode = {
-        type: 'if-else',
-        condition: node.data.if as string,
-        node,
-        parent,
-      };
-      ifElse.ifThen = this.parseBlock(node.children[0] as Blockquote, [ifElse, [2]]);
-      if (node.children.length > 1) {
-        ifElse.otherwise = this.parseBlock(node.children[1] as Blockquote, [ifElse, [3]]);
+  parseDirective(node: ContainerDirective): LuaElement {
+    const { label, list, func } = this.destructDirective(node);
+    if (!list) {
+      this.vfile.message('missing element', node);
+      return this.parseBlock(node);
+    }
+    switch (node.name) {
+      case 'if': {
+        if (!label) {
+          this.vfile.message('expecting condition and branches', node);
+        }
+        const condition = label || 'false';
+        const children = list.children.map((child) => this.parseBlock(child)) as any;
+        if (children.length >= 1 && children.length <= 2) {
+          const ifElse: LuaIfElse = {
+            type: 'if-else',
+            condition,
+            children,
+            node,
+          };
+          return ifElse;
+        }
+        this.vfile.message('only one or two branches allowed', node);
+        break;
       }
-      return ifElse;
-    }
-    if (node.data?.func) {
-      const funcNode: LuaNode = {
-        type: 'func',
-        func: { raw: node.data.func as string },
-        args: [],
-        node,
-        parent,
-      };
-      node.children.forEach((n) => {
-        const block: Parent = {
-          type: 'blockquote',
-          children: [n],
+      case 'do': {
+        let code;
+        if (!label) {
+          this.vfile.message('expecting lua code', node);
+          code = 'true';
+        } else {
+          code = func ? label : `${label}(args)`;
+        }
+        const luaFunc: LuaCode = {
+          type: 'func',
+          code,
+          children: list.children.map((child) => this.parseBlock(child)),
+          node,
         };
-        funcNode.args.push(this.parseBlock(block, [funcNode, [funcNode.args.length + 1, 'args']]));
-      });
-      return funcNode;
+        return luaFunc;
+      }
+      default:
+        this.vfile.message('unknown macro', node);
+        break;
     }
-    return this.parseBlock(node, parent);
+    return this.parseBlock(node);
   }
 
   extractHeadingLabel(node: Heading) {
@@ -185,7 +184,7 @@ class AstTransformer {
     return node.children[0].value;
   }
 
-  parseCodeBlock(code: Code, parent: ParentEdge): LuaNode {
+  parseCodeBlock(code: Code): LuaCode {
     if (code.lang !== 'lua') {
       this.vfile.message('unsupported code block type');
     }
@@ -194,29 +193,16 @@ class AstTransformer {
       this.globalLua.push(code.value);
       snippet = '';
     } else if (code.meta === 'macro') {
-      this.macros.push(code.value);
       snippet = '';
     } else {
       snippet = code.value;
     }
     return {
       type: 'func',
-      func: { raw: snippet },
-      args: [],
+      code: snippet,
+      children: [],
       node: code,
-      parent,
     };
-  }
-
-  parseSelection(list: List, parent: ParentEdge): SelectNode {
-    const node: SelectNode = {
-      type: 'select',
-      node: list,
-      select: [],
-      parent,
-    };
-    node.select = list.children.map((item, i) => this.parseBlock(item, [node, [i + 1, 'select']]));
-    return node;
   }
 
   /**
@@ -233,65 +219,36 @@ class AstTransformer {
    * @param parent the parent
    * @returns converted
    */
-  parseParagraph(para: Paragraph, parent: ParentEdge): MetaArray | ValueNode {
-    if (para.children.length === 0) {
-      const empty = metaArray(para, parent);
-      return empty;
-    }
+  parseParagraph(para: Paragraph): LuaText | LuaLink {
     if (para.children.length === 1 && para.children[0].type === 'link') {
-      const link = this.parseLink(para.children[0], parent);
-      this.links.push(link);
+      const link = this.parseLink(para.children[0]);
       return link;
     }
-    if (para.children[0].type === 'inlineCode') {
-      const ifElse: IfElseNode = {
-        type: 'if-else',
-        condition: para.children[0].value,
-        node: para,
-        parent,
-      };
-      const striped = para;
-      striped.children = striped.children.slice();
-      // Just to prevent starting spaces getting converted to `&#x20`.
-      striped.children[0] = {
-        type: 'text',
-        value: '|',
-      };
-      if (striped.children.length >= 2) {
-        const tags = this.extractTags(striped.children[1]);
-        const text = this.toTextNode(para, tags, parent);
-        if (text) {
-          text.text = text.text.substring(1).trim();
-          ifElse.ifThen = metaArray(para, [ifElse, [1]]);
-          ifElse.ifThen.children.push(text);
-        }
-      }
-      return ifElse;
-    }
     const tags = this.extractTags(para.children[0]);
-    const text = this.toTextNode(para, tags, parent);
+    const text = this.toTextNode(para, tags);
     return text;
   }
 
-  extractTags(node: PhrasingContent | undefined): string[] {
+  extractTags(node: PhrasingContent | undefined): LuaTags {
     if (!node || node.type !== 'text') {
-      return [];
+      return {};
     }
     const textNode = node;
     textNode.value = textNode.value.trimStart();
     if (textNode.value.startsWith('\\')) {
       textNode.value = textNode.value.substring(1).trimStart();
-      return [];
+      return {};
     }
 
-    const tags = [];
+    const tags: LuaTags = {};
     while (textNode.value.startsWith('[')) {
       const i = textNode.value.indexOf(']');
       if (i === -1) {
         this.vfile.message('possibly incomplete tag', textNode);
         break;
       }
-      tags.push(textNode.value.substring(1, i));
+      const [key, value] = textNode.value.substring(1, i).split(':', 2);
+      tags[key] = value || '';
       textNode.value = textNode.value.substring(i + 1).trimStart();
     }
     return tags;
@@ -300,7 +257,7 @@ class AstTransformer {
   /**
    * Converts children of a paragraph to a text node.
    */
-  toTextNode(para: Paragraph, tags: string[], parent: ParentEdge): TextNode {
+  toTextNode(para: Paragraph, tags: LuaTags): LuaText {
     const references: { [id: string]: [string, MDXTextExpression] } = {};
     this.checkChildren(
       para,
@@ -315,14 +272,13 @@ class AstTransformer {
       },
       'links or inline code snippets in text are not supported',
     );
-    const [text, values, plural] = this.replaceReferences(this.toMarkdown(para), references);
-    const textNode: TextNode = {
+    const [text, values, plural] = this.replaceReferences(toMarkdownString(para), references);
+    const textNode: LuaText = {
       type: 'text',
       text,
       tags,
       plural,
       values,
-      parent,
       node: para,
     };
     return textNode;
@@ -369,24 +325,23 @@ class AstTransformer {
    * @param parent the parent
    * @returns a link node
    */
-  parseLink(link: Link, parent: ParentEdge): LinkNode {
-    let rootName = link.title || undefined;
-    if (!rootName && link.children.length > 0) {
+  parseLink(link: Link): LuaLink {
+    let root = link.title || undefined;
+    if (!root && link.children.length > 0) {
       const para: Paragraph = {
         type: 'paragraph',
         children: link.children,
       };
-      rootName = this.toMarkdown(para);
+      root = toMarkdownString(para);
     }
-    const linkNode: LinkNode = {
+    const linkNode: LuaLink = {
       type: 'link',
-      link: this.parseLinkUrl(link),
+      labels: this.parseLinkUrl(link),
       node: link,
-      parent,
-      rootName,
+      root,
     };
-    if (!linkNode.rootName) {
-      delete linkNode.rootName;
+    if (!linkNode.root) {
+      delete linkNode.root;
     }
     return linkNode;
   }
@@ -395,7 +350,7 @@ class AstTransformer {
    * Splits a url with `|`, where `|` is escaped by `||`.
    */
   parseLinkUrl(link: Link): string[] {
-    const tokens = link.url.split('|');
+    const tokens = link.url.match(/(\\.|[^#])+/g) || [];
     const finalized: string[] = [];
     let token = null;
     for (let i = 0; i < tokens.length; i += 1) {
@@ -415,17 +370,11 @@ class AstTransformer {
     }
     return finalized;
   }
-
-  toMarkdown(node: Content): string {
-    try {
-      return toMarkdown(node, {
-        extensions: [directiveToMarkdown, mdxExpressionToMarkdown],
-      }).trim();
-    } catch (e) {
-      this.vfile.message(e as Error, node);
-      return '';
-    }
-  }
 }
 
-export default AstTransformer;
+const transformAst: Plugin = () => (node, vfile) => {
+  const transformer = new AstTransformer(node as Root, vfile);
+  overwrite(node, transformer.transform());
+};
+
+export default transformAst;
