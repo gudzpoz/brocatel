@@ -416,7 +416,7 @@ function VM:fetch_and_next(ip)
         end
         return formatted, node.tags or true
     elseif node_type == "link" then
-        local new_root_name = node.root_name
+        local new_root_name = node.root
         if new_root_name then
             assert(self:ensure_root(new_root_name))
         end

@@ -338,7 +338,6 @@ SaveData = {
             coroutines = {
                 {
                     ip = CurrentInstructionPointer,
-                    root_name = "root_node_name",
                     locals = {
                         values = {
                             localVariable1 = "Hello",
@@ -348,8 +347,8 @@ SaveData = {
                         },
                     },
                     stack = {
-                        {ip = InstructionPointer1, root_name = "some_other_root", locals = { ... }},
-                        {ip = InstructionPointer2, root_name = "some_other_root", locals = { ... }},
+                        {ip = InstructionPointer1, locals = { ... }},
+                        {ip = InstructionPointer2, locals = { ... }},
                     },
                 },
             },

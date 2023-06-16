@@ -5,7 +5,7 @@ import remarkParse from 'remark-parse';
 import { Processor, unified } from 'unified';
 import { VFile } from 'vfile';
 
-import astCompiler, { serializeTableInner } from './ast_compiler';
+import astCompiler, { serializeTableInner } from './ast-compiler';
 import { directiveFromMarkdown } from './directive';
 import expandMacro from './expander';
 import transformAst from './transformer';
@@ -15,7 +15,7 @@ const VERSION = 1;
 /**
  * Configurations.
  */
-interface CompilerConfig {
+export interface CompilerConfig {
   /**
    * Requiring correct Markdown paragraphs.
    *
@@ -34,7 +34,7 @@ function removeMdExt(name: string): string {
 /**
  * The compiler.
  */
-class BrocatelCompiler {
+export class BrocatelCompiler {
   config: CompilerConfig;
 
   remark: Processor;
@@ -143,5 +143,3 @@ return {[""]={version=${VERSION},entry=${JSON.stringify(removeMdExt(name))}},${c
     return file.toString();
   }
 }
-
-export default BrocatelCompiler;

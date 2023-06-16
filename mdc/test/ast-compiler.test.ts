@@ -7,7 +7,7 @@ import { assert, test } from 'vitest';
 import { directiveFromMarkdown } from '../src/directive';
 import expandMacro from '../src/expander';
 import transformAst from '../src/transformer';
-import astCompiler from '../src/ast_compiler';
+import astCompiler from '../src/ast-compiler';
 
 const parser = unified()
   .use(remarkParse)

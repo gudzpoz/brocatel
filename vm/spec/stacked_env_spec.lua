@@ -143,7 +143,7 @@ describe("StackedEnv", function()
                         { {}, { link = { "b" } } }
                     },
                     "Hi",
-                    { link = {}, root_name = "file2" }
+                    { link = {}, root = "file2" }
                 },
                 file2 = { {}, "End" },
             }

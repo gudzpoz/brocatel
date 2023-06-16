@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { VFile } from 'vfile';
 
-import BrocatelCompiler from '.';
+import { BrocatelCompiler } from '.';
 
 /* eslint-disable no-console */
 function displayWarnings(input: string, vfile: VFile) {

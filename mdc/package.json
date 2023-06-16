@@ -2,9 +2,11 @@
   "name": "brocatel-mdc",
   "version": "0.1.0",
   "description": "Markdown compiler for brocatel scripts.",
-  "main": "index.js",
   "type": "module",
+  "main": "dist/brocatel-mdc.es.js",
+  "types": "dist/index.d.ts",
   "scripts": {
+    "build": "vite build",
     "compile": "vite-node ./src/cli.ts",
     "lint": "eslint \"**/*.ts\"",
     "test": "vitest"
@@ -26,6 +28,7 @@
     "typescript": "^5.0.4",
     "vite": "^4.3.2",
     "vite-node": "^0.30.1",
+    "vite-plugin-dts": "^2.3.0",
     "vitest": "^0.30.1"
   },
   "dependencies": {

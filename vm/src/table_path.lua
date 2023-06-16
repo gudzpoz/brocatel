@@ -23,7 +23,7 @@ TablePath.__index = TablePath
 --- @field select Array[]|nil
 ---
 --- @field link TablePath|nil
---- @field root_name string|nil
+--- @field root string|nil
 ---
 --- @field label string|nil
 --- @field labels table<string, TablePath>|nil
