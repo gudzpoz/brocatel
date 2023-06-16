@@ -83,7 +83,7 @@ export function directiveLabel(value: string | InlineCode): Paragraph {
   return para;
 }
 
-const simpleDirectiveLineRegex = /^:::(\w+)()()$/;
+const simpleDirectiveLineRegex = /^:::(\S+)\s*$/;
 
 function parseDirectiveLine(line: Paragraph, vfile: VFile): ContainerDirective {
   const directive: ContainerDirective = {

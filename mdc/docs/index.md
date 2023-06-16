@@ -8,11 +8,11 @@ hero:
   tagline: Fully customizable.
   actions:
     - theme: brand
-      text: Markdown Examples
-      link: /markdown-examples
+      text: Getting Started
+      link: /tutorial
     - theme: alt
-      text: API Examples
-      link: /api-examples
+      text: Road Map
+      link: /roadmap
 
 features:
   - title: Portability

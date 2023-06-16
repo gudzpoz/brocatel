@@ -133,6 +133,7 @@ class AstTransformer {
         }
         default:
           this.vfile.message(`unsupported markdown type: ${node.type}`, node);
+          current.children.push(this.asIs(node));
           break;
       }
     });
@@ -164,6 +165,12 @@ class AstTransformer {
   }
 
   parseDirective(node: ContainerDirective): LuaElement {
+    if (node.name === 'nil') {
+      return this.asIs({
+        ...node as any,
+        type: 'paragraph',
+      })
+    }
     const { label, list, func } = this.destructDirective(node);
     if (!list) {
       this.vfile.message('missing element', node);
@@ -223,9 +230,10 @@ class AstTransformer {
     return node.children[0].value;
   }
 
-  parseCodeBlock(code: Code): LuaCode {
+  parseCodeBlock(code: Code): LuaCode | LuaText {
     if (code.lang !== 'lua') {
       this.vfile.message('unsupported code block type');
+      return this.asIs(code);
     }
     let snippet;
     if (code.meta === 'global') {
@@ -241,6 +249,16 @@ class AstTransformer {
       code: snippet,
       children: [],
       node: code,
+    };
+  }
+
+  asIs(node: Content): LuaText {
+    return {
+      type: 'text',
+      text: toMarkdownString(node),
+      tags: {},
+      values: {},
+      node,
     };
   }
 

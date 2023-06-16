@@ -1,5 +1,5 @@
 <template>
-  <div class="md-example">
+  <div class="md-example" :style="{ height: props.height }">
     <pre ref="defaultText" style="display: none"><slot></slot></pre>
     <vue-monaco-editor
       v-model:value="code"
@@ -12,32 +12,43 @@
     />
     <div ref="output" class="md-output">
       <div class="lines">
-        <TransitionGroup><p v-for="line, i in lines" :key="i">{{ line }}</p></TransitionGroup>
+        <TransitionGroup>
+          <p v-for="line, i in lines" :key="i" v-html="parse(line.text)" :style="line.tags"></p>
+        </TransitionGroup>
       </div>
       <Transition>
         <div v-show="options.length > 0">
-          <button v-for="option in options" :key="option.option" @click="next(option.key)">
-            {{ option.option }}
+          <button v-for="option in options" :key="option.option"
+            @click="multiNext(10, option.key)" v-html="parse(option.option, true)">
           </button>
         </div>
       </Transition>
-      <button v-show="options.length === 0 && story && completed" @click="multiNext(10)">Next</button>
+      <button v-show="options.length === 0 && story && completed && !ended" @click="multiNext(10)">
+        Next Few Lines
+      </button>
+      <Transition><div v-show="ended">~~ ended ~~</div></Transition>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { BrocatelCompiler, fengari } from 'brocatel-mdc';
 import { debounce } from '@github/mini-throttle';
+import { BrocatelCompiler, fengari } from 'brocatel-mdc';
+import { remark } from 'remark';
+import remarkHtml from 'remark-html';
 import { useData } from 'vitepress';
-import { computed, nextTick, ref, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref } from 'vue';
 
+const props = defineProps<{
+  height?: string,
+}>();
+// @ts-ignore
 import bundle from '../cache/vm-bundle.lua?raw';
 
 const { isDark } = useData();
 const monacoOptions: any = {
   folding: false,
-  fontFamily: 'sans-serif',
+  fontSize: 10.5,
   glyphMargin: false,
   lineNumbers: 'on',
   lineDecorationsWidth: 1,
@@ -50,30 +61,42 @@ const monacoOptions: any = {
 const compiler = new BrocatelCompiler({
   noAutoNewLine: false,
 });
-const output = ref<HTMLDivElement | null>(null);
-let story = ref<Story | null>(null);
+const output = ref<HTMLDivElement>();
+const story = ref<Story>();
 const handleChange = debounce(async (code: string) => {
   if (!code || !output.value) {
     return;
   }
   clear();
-  const compiled = await compiler.compileAll('main', async () => code);
   try {
-    story.value = new Story(compiled.toString().trim());
+    const compiled = await compiler.compileAll('main', async () => code);
+    try {
+      const s = compiled.toString().trim()
+      story.value = new Story(s);
+      multiNext(10);
+    } catch (e) {
+      console.log(compiled.toString());
+    }
   } catch (e) {
-    console.log(compiled.toString());
+    console.log(code);
   }
-}, 2000);
+}, 1000);
 
-// Automatic compilation on mount.
+// Automatic compilation on mount and update.
 const code = ref('');
-const defaultText = ref<HTMLPreElement | null>(null);
-watch(computed(() => output.value && defaultText.value), (pre) => {
+const defaultText = ref<HTMLPreElement>();
+const observer = ref<MutationObserver>();
+onMounted(function refetch() {
+  const pre = defaultText.value?.querySelector('pre');
   if (pre) {
     code.value = pre.innerText;
     handleChange(code.value);
+    observer.value?.disconnect();
+    observer.value = new MutationObserver(refetch);
+    observer.value.observe(pre, { subtree: true, childList: true, characterData: true });
   }
 });
+onUnmounted(() => observer.value?.disconnect());
 
 // VM wrapper.
 const { lauxlib, lualib, lua, to_luastring, tojs } = fengari;
@@ -108,24 +131,28 @@ class Story {
     this.doString('return story:next(option)');
     const content = tojs(this.L, -1);
     lua.lua_pop(this.L, 1);
-    console.log(content);
     return content;
   }
 }
 
+// User interaction.
 const completed = ref(true);
-const lines = ref<string[]>([]);
+const ended = ref(false);
+const lines = ref<{ text: string, tags: { [key: string]: string } }[]>([]);
 const options = ref<{ option: string, key: number }[]>([]);
 function clear() {
+  completed.value = true;
+  ended.value = false;
   lines.value = [];
   options.value = [];
 }
-function multiNext(count: number) {
+function multiNext(count: number, option?: number) {
   if (!completed.value) {
     return;
   }
-  function runNext(i: number) {
-    if (i < count && next()) {
+  function runNext(i: number, option?: number) {
+    const v = next(option);
+    if (i < count && v) {
       setTimeout(() => runNext(i + 1), 1);
     } else {
       completed.value = true;
@@ -137,7 +164,7 @@ function multiNext(count: number) {
     });
   }
   completed.value = false;
-  runNext(0);
+  runNext(0, option);
 }
 function next(option?: number): boolean {
   if (!story.value) {
@@ -147,13 +174,29 @@ function next(option?: number): boolean {
     options.value = [];
   }
   const line = story.value.next(option);
+  if (!line) {
+    ended.value = true;
+    return false;
+  }
   if (line.text) {
-    lines.value.push(line.text);
+    line.tags = typeof line.tags === 'boolean' ? {} : line.tags;
+    lines.value.push(line);
     return true;
   } else if (line.select) {
     options.value = line.select;
+    return false;
   }
   return false;
+}
+
+// Markdown to HTML.
+const parser = remark().use(remarkHtml);
+function parse(markdown: string, strip?: boolean): string {
+  const s = parser.processSync(markdown).toString().replace(/\n\n/g, '\n');
+  if (strip) {
+    return s.trim().replace(/^<p>/, '').replace(/<\/p>$/, '');
+  }
+  return s;
 }
 </script>
 

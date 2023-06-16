@@ -18,7 +18,7 @@ import builtInMacros from './macros/builtin.lua?raw';
 type Node = Root | Content | Directive;
 
 export function isBuiltInMacro(name: string): boolean {
-  return name === 'do' || name === 'if';
+  return name === 'do' || name === 'if' || name === 'nil';
 }
 
 export function toMarkdownString(node: Content): string {
