@@ -24,11 +24,13 @@ Markdown compiler implementation:
 
 - [X] Plain text nodes.
 - [X] Tagged text nodes.
-- [ ] Links.
+- [X] Links.
   - [ ] Compile-time link validity checking.
 - [X] Options.
+  - [ ] Rework to allow show-once options.
 - [X] Function calls.
 - [X] Labels.
+  - [ ] Compile-time label validity check.
 - [ ] Macros.
 
 ### `v0.3.0`
@@ -36,9 +38,14 @@ Markdown compiler implementation:
 #### Runtime API design.
 
 - [ ] API naming convention (maybe all-capital to avoid name conflicts with user labels).
-- [ ] IP (instruction pointer) access.
-- [ ] Label access counter.
-- [ ] Show-once options, show-forever options and show-N-times options.
+  - [X] Make API values read-only.
+- [X] IP (instruction pointer) access.
+- [X] Label access counter.
+- [X] Show-once options, show-forever options and show-N-times options.
+  - [X] Data save API (allow functions to attach data to the current IP or any path).
+- [X] Add caching layer.
+  - [X] Cache output to provide idempotency.
+  - [X] Cache user input.
 
 #### Integration examples
 
@@ -71,8 +78,9 @@ Bug fixes and Markdown grammar optimization.
 Documentation, tutorials, etc.
 
 - [ ] Porting [The Intercept](https://github.com/inkle/the-intercept/blob/master/Assets/Ink/TheIntercept.ink).
+- [ ] Porting [Cloak of Darkness](Cloak of Darkness).
 - [ ] Follow suit: [Tutorial for Ink](https://www.inklestudios.com/ink/web-tutorial/) (better still if interactive).
-- [ ] IDE implementation (or probably just a VS Code plugin).
+- [ ] IDE implementation (or probably just a VS Code plugin with language server protocol implementation).
 
 ## `v1.0.0`
 
