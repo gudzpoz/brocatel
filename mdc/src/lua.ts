@@ -13,7 +13,7 @@ export function detectLuaErrors(code: string): Error | null {
   return new SyntaxError(lua.lua_tojsstring(L, -1));
 }
 
-function convertSingleLuaValue(L: any, index: number): any {
+export function convertSingleLuaValue(L: any, index: number): any {
   const i = lua.lua_absindex(L, index);
   if (!lua.lua_istable(L, i)) {
     return tojs(L, index);

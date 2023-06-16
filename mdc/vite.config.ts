@@ -24,7 +24,7 @@ export default defineConfig({
     },
   },
   define: {
-    'process.env.FENGARICONF': "void 0",
+    'process.env.FENGARICONF': '\"{}\"',
   },
   plugins: [dts()],
   test: {},

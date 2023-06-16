@@ -6,6 +6,7 @@ import { assert, test } from 'vitest';
 
 import { directiveFromMarkdown } from '../src/directive';
 import expandMacro from '../src/expander';
+import { detectLuaErrors } from '../src/lua';
 import transformAst from '../src/transformer';
 import astCompiler from '../src/ast-compiler';
 
@@ -26,7 +27,9 @@ const parser = unified()
 function assertCompile(markdown: string): string {
   const vfile = parser.processSync(markdown);
   assert.isEmpty(vfile.messages, vfile.messages.map((m) => m.message).join(', '));
-  return vfile.value.toString();
+  const lua = vfile.value.toString();
+  assert.isNull(detectLuaErrors(`return ${lua}`), lua)
+  return lua;
 }
 
 test('Simple text', () => {
@@ -145,7 +148,7 @@ test('Links', async () => {
 test('Lists', async () => {
   assert.equal(
     assertCompile('- a\n- b'),
-    '{{},{args={{},{{},"a"},{{},"b"},func=function(args)FUNC.S_ONCE(args)\nend}}',
+    '{{},{args={{},{{},"a"},{{},"b"}},func=function(args)FUNC.S_ONCE(args)\nend}}',
   );
   assert.equal(
     assertCompile('- # A\n- [](A)').replace(/\n/g, ''),
@@ -153,7 +156,7 @@ test('Lists', async () => {
       {labels={A={2,"args",2,2}}},
       {args={{},
         {{},{{label="A"}}},
-        {{},{link={"A"}}},
+        {{},{link={"A"}}}},
        func=function(args)FUNC.S_ONCE(args)end
       }
     }`.replace(/--.+/g, '').replace(/ |\n/g, ''),
@@ -161,7 +164,7 @@ test('Lists', async () => {
   assert.equal(
     assertCompile('1. `some` some\n2. else').replace(/\n/g, ''),
     '{{},{args={{},{{},{function()return(some)end,{{},"some"}}},'
-    + '{{},"else"},func=function(args)FUNC.S_RECUR(args)end}}',
+    + '{{},"else"}},func=function(args)FUNC.S_RECUR(args)end}}',
   );
 });
 
@@ -184,7 +187,7 @@ test('Directives', async () => {
         {
           {label="id"},
           {args={{},
-            {{},"Hello"},
+            {{},"Hello"}},
             func=function(args)FUNC.S_ONCE(args)
           end},
           {link={"id"}}
@@ -223,9 +226,25 @@ test('Directives', async () => {
   Three.
       `,
     )).replace(/\s/g, ''),
-    '{{},{args={{},{{},"One."},{{},"Two."},{{},"Three."},'
+    '{{},{args={{},{{},"One."},{{},"Two."},{{},"Three."}},'
     + 'func=function(args)if(count==1)thenreturnIP:set(args:resolve(2))end'
     + 'if(count==2)thenreturnIP:set(args:resolve(3))end'
     + 'if(count==3)thenreturnIP:set(args:resolve(4))endend}}',
+  );
+});
+
+test('Mixed', () => {
+  const compiled = assertCompile(`
+# Hello World
+
+## inner
+
+Hello World!
+
+[](<#Hello World#inner>)`);
+  assert.equal(
+    compiled,
+    '{{labels={["Hello World"]={2}}},{{label="Hello World",labels={inner={2}}},{{label="inner"},'
+    + '"Hello World!",{link={"Hello World","inner"}}}}}',
   );
 });

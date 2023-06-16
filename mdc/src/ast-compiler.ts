@@ -125,7 +125,7 @@ class AstCompiler {
         this.output += '}';
         return;
       }
-      this.output += node.children.length === 0 ? '' : ',';
+      this.output += node.children.length === 0 ? '' : '},';
       this.output += `func=function(args)${this.checkLua(node.code.trim(), node)}\nend}`;
       return;
     }

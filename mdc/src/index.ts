@@ -143,3 +143,10 @@ return {[""]={version=${VERSION},entry=${JSON.stringify(removeMdExt(name))}},${c
     return file.toString();
   }
 }
+
+import _fengari from 'fengari';
+import _fengari_js from 'fengari-interop';
+import { convertSingleLuaValue } from './lua';
+_fengari.js = _fengari_js;
+_fengari.tojs = convertSingleLuaValue;
+export const fengari = _fengari;
