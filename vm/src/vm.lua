@@ -4,11 +4,6 @@ local history = require("history")
 local lookup = require("lookup")
 local savedata = require("savedata")
 
-local math = require("math")
-local os = require("os")
-local string = require("string")
-local table = require("table")
-
 --- The brocatel module, containing the core brocatel.VM implementation.
 ---
 --- @see VM

@@ -1,6 +1,3 @@
-local string = require("string")
-local table = require("table")
-
 local savedata = {}
 
 --- Checks if the key has a savable type.

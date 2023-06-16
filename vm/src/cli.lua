@@ -1,5 +1,4 @@
 local brocatel = require("vm")
-local io = require("io")
 
 if #arg ~= 1 then
   print("usage: cli.lua <filename>")
