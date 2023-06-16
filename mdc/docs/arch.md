@@ -34,6 +34,8 @@ and merges all Lua files into an amalgam.
 
 ## Runtime
 
+Not all of the following is implemented yet.
+
 ### Story File Format
 
 The [story file](https://www.ifwiki.org/Story_file) is a Lua script file, which can get separated into multiple files if necessary (e.g. when the file is too large).

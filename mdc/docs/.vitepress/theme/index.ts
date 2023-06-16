@@ -1,9 +1,7 @@
 // https://vitepress.dev/guide/custom-theme
-import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor'
-import { h } from 'vue';
+import { defineAsyncComponent, h } from 'vue';
 import Theme from 'vitepress/theme';
 
-import MdExample from './MdExample.vue';
 import './style.css';
 
 export default {
@@ -12,7 +10,8 @@ export default {
     // https://vitepress.dev/guide/extending-default-theme#layout-slots
   }),
   enhanceApp({ app }) {
-    app.use(VueMonacoEditorPlugin);
-    app.component('MdExample', MdExample);
+    app.component('VueMonacoEditor', defineAsyncComponent(() => import('@guolao/vue-monaco-editor')));
+    // @ts-ignore
+    app.component('MdExample', defineAsyncComponent(() =>  import('./MdExample.vue')));
   },
 };

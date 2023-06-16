@@ -3,6 +3,7 @@ import { defineConfig } from 'vitepress';
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: 'Brocatel',
+  base: '/brocatel/',
   description: 'Write your game plots in Markdown and Lua.',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
@@ -18,6 +19,13 @@ export default defineConfig({
           { text: 'Cloak of Darkness', link: '/cloak' },
         ],
       },
+      {
+        text: 'Internals',
+        items: [
+          { text: 'Architecture', link: '/arch' },
+          { text: 'Road Map', link: '/roadmap' },
+        ],
+      }
     ],
 
     socialLinks: [

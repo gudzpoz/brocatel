@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 import { debounce } from '@github/mini-throttle';
-import { BrocatelCompiler, fengari } from 'brocatel-mdc';
+import { type BrocatelCompiler } from 'brocatel-mdc';
 import { remark } from 'remark';
 import remarkHtml from 'remark-html';
 import { useData } from 'vitepress';
@@ -58,9 +58,8 @@ const monacoOptions: any = {
 };
 
 // Automatically compile new script.
-const compiler = new BrocatelCompiler({
-  noAutoNewLine: false,
-});
+const compiler = ref<BrocatelCompiler>();
+const fengari = ref<any>();
 const output = ref<HTMLDivElement>();
 const story = ref<Story>();
 const handleChange = debounce(async (code: string) => {
@@ -69,10 +68,16 @@ const handleChange = debounce(async (code: string) => {
   }
   clear();
   try {
-    const compiled = await compiler.compileAll('main', async () => code);
+    if (!compiler.value) {
+      // It seems that fengari uses `document` somewhere, messing up the whole SSR.
+      const mdc = await import('brocatel-mdc');
+      compiler.value = new mdc.BrocatelCompiler({ noAutoNewLine: false });
+      fengari.value = mdc.fengari;
+    }
+    const compiled = await compiler.value.compileAll('main', async () => code);
     try {
       const s = compiled.toString().trim()
-      story.value = new Story(s);
+      story.value = new Story(s, fengari.value);
       multiNext(10);
     } catch (e) {
       console.log(compiled.toString());
@@ -99,11 +104,13 @@ onMounted(function refetch() {
 onUnmounted(() => observer.value?.disconnect());
 
 // VM wrapper.
-const { lauxlib, lualib, lua, to_luastring, tojs } = fengari;
 class Story {
+  fengari: any;
   L: any;
 
-  constructor(story: string) {
+  constructor(story: string, fengari: any) {
+    this.fengari = fengari;
+    const { lauxlib, lualib, lua, to_luastring } = fengari;
     const L = lauxlib.luaL_newstate();
     this.L = L;
     lualib.luaL_openlibs(L);
@@ -116,12 +123,14 @@ class Story {
   }
 
   doString(s: string) {
+    const { lauxlib, lua, to_luastring } = this.fengari;
     if (lauxlib.luaL_dostring(this.L, to_luastring(s)) !== lua.LUA_OK) {
       throw new Error(`${lua.lua_tojsstring(this.L, -1)}:\n${s}`);
     }
   }
 
   next(option?: number) {
+    const { lua, tojs } = this.fengari;
     if (option) {
       lua.lua_pushnumber(this.L, option);
     } else {

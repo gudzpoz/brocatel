@@ -27,17 +27,17 @@ Markdown compiler implementation:
 - [X] Links.
   - [ ] Compile-time link validity checking.
 - [X] Options.
-  - [ ] Rework to allow show-once options.
+  - [X] Rework to allow show-once options.
 - [X] Function calls.
 - [X] Labels.
   - [ ] Compile-time label validity check.
-- [ ] Macros.
+- [X] Macros.
 
 ### `v0.3.0`
 
 #### Runtime API design.
 
-- [ ] API naming convention (maybe all-capital to avoid name conflicts with user labels).
+- [X] API naming convention (maybe all-capital to avoid name conflicts with user labels): ALL CAPITALS & some Lua reserved words.
   - [X] Make API values read-only.
 - [X] IP (instruction pointer) access.
 - [X] Label access counter.
@@ -50,6 +50,7 @@ Markdown compiler implementation:
 #### Integration examples
 
 - [ ] Save & load.
+  - [X] API.
 - [ ] Fast-forward (skipping only texts that users have read).
 - [ ] Complete porting The Intercept, which is a little bit lengthy.
 
@@ -78,9 +79,10 @@ Bug fixes and Markdown grammar optimization.
 Documentation, tutorials, etc.
 
 - [ ] Porting [The Intercept](https://github.com/inkle/the-intercept/blob/master/Assets/Ink/TheIntercept.ink).
-- [ ] Porting [Cloak of Darkness](Cloak of Darkness).
+- [X] Porting [Cloak of Darkness](Cloak of Darkness).
 - [ ] Follow suit: [Tutorial for Ink](https://www.inklestudios.com/ink/web-tutorial/) (better still if interactive).
 - [ ] IDE implementation (or probably just a VS Code plugin with language server protocol implementation).
+- [ ] Frontend implementation, so that one can easily publish their IF online.
 
 ## `v1.0.0`
 
