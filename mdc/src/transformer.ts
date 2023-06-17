@@ -21,6 +21,17 @@ function isNormalLink(s: string) {
   return normalLinkPattern.test(s) || s.startsWith('www.') || s.startsWith('./#');
 }
 
+const fuzzyPattern = /\s|[!"#$%&'()*+,\-.\/:;<=>?@[\\\]^_`{|}~]/g;
+
+/**
+ * Converts from `A B` to `a-b`.
+ *
+ * @param s the label
+ */
+function fuzzyLabel(s: string) {
+  return s.replace(fuzzyPattern, '-');
+}
+
 class AstTransformer {
   root: Root;
 
@@ -86,7 +97,10 @@ class AstTransformer {
       if (!parent.data?.labels) {
         parent.data = { labels: {} };
       }
-      parent.data.labels[label] = path;
+      if (parent.data.labels[fuzzyLabel(label)]) {
+        this.vfile.message('heading name collision', node);
+      }
+      parent.data.labels[fuzzyLabel(label)] = path;
     });
   }
 

@@ -49,11 +49,12 @@ Markdown compiler implementation:
       - [X] Syntax sugar: `---` for `END()` (we are going to use it for function calls)
 - [X] IP (instruction pointer) access.
 - [X] Label access counter.
-  - [ ] Label fuzzy lookup.
+  - [X] Label fuzzy lookup.
     ```markdown
     # Markdown Examples
     [](#markdown-examples)
     ```
+    (This allows running `README.md` from most repositories.)
   - [X] Exclude normal links like `[Wikipedia](https://...)`.
 - [X] Show-once options, show-forever options and show-N-times options.
   - [X] Data save API (allow functions to attach data to the current IP or any path).

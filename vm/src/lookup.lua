@@ -11,6 +11,19 @@ local function extend(t, another)
     end
 end
 
+--- Looks up `Broc atel` from `broc-atel`.
+---
+--- @param t table
+--- @param key string
+local function fuzzy_lookup(t, key)
+    local v = t[key]
+    if v then
+        return v
+    end
+    key = string.gsub(string.gsub(string.lower(key), '%s', '-'), '%p', '-')
+    return t[key]
+end
+
 --- Deduplicates paths.
 --- @param paths TablePath[]
 --- @return TablePath[]
@@ -47,7 +60,7 @@ function tree.direct_lookup(current, label, root)
             local metadata = node[1]
             local labels = metadata.labels
             if labels then
-                local rel = labels[label]
+                local rel = fuzzy_lookup(labels, label)
                 if rel then
                     matches[#matches + 1] = ptr:copy():resolve(rel)
                 end
@@ -102,7 +115,7 @@ function tree.child_lookup(current, label, root, depth)
         if is_array and node then
             local labels = node[1].labels
             if labels then
-                local rel = labels[label]
+                local rel = fuzzy_lookup(labels, label)
                 if rel then
                     if #rel > 0 then
                         matches[#matches + 1] = ptr:resolve(rel)
