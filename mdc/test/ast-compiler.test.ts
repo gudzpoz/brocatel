@@ -186,10 +186,10 @@ test('Directives', async () => {
         {},
         {
           {label="id"},
-          {args={{},
+          {{},{args={{},
             {{},"Hello"}},
             func=function(args)FUNC.S_ONCE(args)
-          end},
+          end}},
           {link={"id"}}
         }
       }

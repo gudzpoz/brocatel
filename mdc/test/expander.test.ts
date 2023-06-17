@@ -42,7 +42,7 @@ test('Expand macro', () => {
   assertMatch(':::loop\n- a', `
 > # \\\\#loop-1
 >
-> a
+> > a
 >
 > [](\\\\#loop-1)
   `);

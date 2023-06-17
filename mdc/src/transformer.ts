@@ -15,6 +15,12 @@ import {
 import { toMarkdownString } from './expander';
 import { overwrite } from './utils';
 
+const normalLinkPattern = /^(?!mailto:)(?:http|https|ftp):\/\//;
+
+function isNormalLink(s: string) {
+  return normalLinkPattern.test(s) || s.startsWith('www.') || s.startsWith('./#');
+}
+
 class AstTransformer {
   root: Root;
 
@@ -278,8 +284,10 @@ class AstTransformer {
    */
   parseParagraph(para: Paragraph): LuaText | LuaLink {
     if (para.children.length === 1 && para.children[0].type === 'link') {
-      const link = this.parseLink(para.children[0]);
-      return link;
+      if (isNormalLink(para.children[0].url)) {
+        return this.asIs(para);
+      }
+      return this.parseLink(para.children[0]);
     }
     const tags = this.extractTags(para.children[0]);
     const text = this.toTextNode(para, tags);

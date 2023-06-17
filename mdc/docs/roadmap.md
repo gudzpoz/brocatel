@@ -46,6 +46,7 @@ Markdown compiler implementation:
       - A
         `END(loop_name)`
       ```
+      - [X] Syntax sugar: `---` for `END()` (we are going to use it for function calls)
 - [X] IP (instruction pointer) access.
 - [X] Label access counter.
   - [ ] Label fuzzy lookup.
@@ -53,7 +54,7 @@ Markdown compiler implementation:
     # Markdown Examples
     [](#markdown-examples)
     ```
-  - [ ] Exclude normal links like `[Wikipedia](https://...)`.
+  - [X] Exclude normal links like `[Wikipedia](https://...)`.
 - [X] Show-once options, show-forever options and show-N-times options.
   - [X] Data save API (allow functions to attach data to the current IP or any path).
 - [X] Add caching layer.

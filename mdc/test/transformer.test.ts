@@ -60,6 +60,10 @@ test('Transform text', () => {
 test('Transform link', () => {
   assert.deepInclude(assertOnlyChild(parse('[](#a)')), { type: 'link', labels: ['a'] });
   assert.deepInclude(assertOnlyChild(parse('[main](#a#b)')), { type: 'link', labels: ['a', 'b'], root: 'main' });
+  assert.deepInclude(
+    assertOnlyChild(parse('[main](www.example.com)')),
+    { type: 'text', text: '[main](www.example.com)' },
+  );
 });
 
 test('Transform code blocks', () => {

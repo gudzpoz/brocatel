@@ -94,7 +94,22 @@ class MacroExpander {
   }
 
   expandSyntacticSugar(node: Node, parent: Node) {
-    return this.expandList(node, parent) || this.expandConditional(node);
+    return this.expandList(node, parent)
+      || this.expandConditional(node)
+      || this.expandThematicBreak(node);
+  }
+
+  expandThematicBreak(node: Node) {
+    if (node.type !== 'thematicBreak') {
+      return false;
+    }
+    const end: Code = {
+      type: 'code',
+      lang: 'lua',
+      value: 'END()',
+    };
+    overwrite(node, end);
+    return true;
   }
 
   /**
