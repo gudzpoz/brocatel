@@ -23,6 +23,7 @@ local VM = {}
 brocatel.VM = VM
 VM.__index = VM
 VM.version = 1
+VM.set_up_env_api = require("env_api")
 
 --- Creates a VM from compiled brocatel scripts, in brocatel runtime format.
 ---
@@ -128,7 +129,7 @@ end
 
 --- @param values table
 --- @return table keys
-local function get_keys(values)
+function VM.get_keys(values)
     local keys = {}
     for key, _ in pairs(values) do
         keys[key] = true
@@ -136,107 +137,6 @@ local function get_keys(values)
     return keys
 end
 
-function VM:set_up_env_api()
-    local env = self.env
-    local ip = assert(self:get_coroutine()).ip
-    local lua = env:get_lua_env()
-    lua.IP = ip
-    lua.VM = self
-    env:set_api("GET", function(path, key)
-        path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
-        return history.get(self.savedata.stats, path, key)
-    end)
-    env:set_api("SET", function(path, key, value)
-        if type(key) == "string" and #key == 1 then
-            local char = key:byte(1)
-            if 65 <= char and char <= 90 then
-                error("key A-Z reserved")
-            end
-        end
-        path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
-        history.set(self.savedata.stats, assert(self:ensure_root(path)), path, key, value)
-    end)
-    env:set_api("EVAL", function(path, extra_env)
-        extra_env = extra_env or {}
-        path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
-        return self:eval_with_env(extra_env, path)
-    end)
-    --- @param path table|TablePath
-    local function visits(path)
-        path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
-        return history.get(self.savedata.stats, path, "I") or 0
-    end
-    env:set_api("VISITS", visits)
-    env:set_api("VISITED", function(path) return visits(path) > 0 end)
-    --- @param args TablePath
-    --- @param recur number|boolean
-    local function user_select(args, recur)
-        local current = self.savedata.current
-        local counts = history.get(self.savedata.stats, args, "S") or {}
-        local root = assert(self:ensure_root(args))
-        if current.input then
-            env:get("IP"):set(args:copy():resolve(current.input, 3))
-            local count = counts[current.input] or 0
-            count = count + 1
-            counts[current.input] = count
-            history.set(self.savedata.stats, root, args, "S", counts)
-            current.input = nil
-            return
-        end
-
-        env:get("IP"):set(args:copy():resolve(nil))
-        recur = recur or 0
-        assert(recur == true or recur >= 0)
-        local selectables = {}
-        local options = args:get(root)
-        for i = 2, #options do
-            local count = counts[i] or 0
-            local local_env = {
-                CHOICE_COUNT = #selectables,
-                DEFAULT = #selectables == 0,
-                COUNT = count,
-                ONCE = count == 0,
-                RECUR = function(n)
-                    return count <= n
-                end,
-            }
-            local inner = local_env
-            local should_recur = recur == true or count <= recur
-            if not should_recur then
-                local_env = {}
-                setmetatable(local_env, {
-                    __index = function(_, key)
-                        if key == "RECUR" then
-                            should_recur = true
-                        end
-                        return inner[key]
-                    end
-                })
-            end
-            local line, success = self:eval_with_env(local_env, args:copy():resolve(i), get_keys(inner))
-            if line and should_recur and success then
-                selectables[#selectables + 1] = {
-                    option = line,
-                    key = i,
-                }
-            end
-        end
-        if #selectables == 0 then
-            ip:step(root)
-            return nil, true
-        end
-        self.savedata.current.output = { select = selectables, tags = true }
-    end
-    env:set_api("FUNC", {
-        SELECT = user_select,
-        S_ONCE = function(args)
-            user_select(args, 0)
-        end,
-        S_RECUR = function(args)
-            user_select(args, true)
-        end
-    })
-end
 
 --- Calls a function with the supplied environment pushed into the stacked env.
 ---
@@ -247,7 +147,7 @@ end
 --- @param func function
 function VM:call_with_env(env, func, ...)
     env = env or {}
-    self.env:push(get_keys(env), env)
+    self.env:push(self.get_keys(env), env)
     local result = { func(...) }
     self.env:pop()
     return (unpack or table.unpack)(result)
@@ -263,7 +163,7 @@ end
 function VM:eval_with_env(env, ip, env_keys)
     ip:step(assert(self:ensure_root(ip)), true)
     env = env or {}
-    env_keys = env_keys or get_keys(env)
+    env_keys = env_keys or self.get_keys(env)
     self.env:push(env_keys, env)
     while true do
         local line, tags = self:fetch_and_next(ip)

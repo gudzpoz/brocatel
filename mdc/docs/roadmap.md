@@ -39,8 +39,21 @@ Markdown compiler implementation:
 
 - [X] API naming convention (maybe all-capital to avoid name conflicts with user labels): ALL CAPITALS & some Lua reserved words.
   - [X] Make API values read-only.
+  - [ ] More API.
+    - [X] `BREAK` or `EXIT` or **`END`** for loops.
+      ```markdown
+      :::loop `loop_name`
+      - A
+        `END(loop_name)`
+      ```
 - [X] IP (instruction pointer) access.
 - [X] Label access counter.
+  - [ ] Label fuzzy lookup.
+    ```markdown
+    # Markdown Examples
+    [](#markdown-examples)
+    ```
+  - [ ] Exclude normal links like `[Wikipedia](https://...)`.
 - [X] Show-once options, show-forever options and show-N-times options.
   - [X] Data save API (allow functions to attach data to the current IP or any path).
 - [X] Add caching layer.
@@ -83,6 +96,8 @@ Documentation, tutorials, etc.
 - [ ] Follow suit: [Tutorial for Ink](https://www.inklestudios.com/ink/web-tutorial/) (better still if interactive).
 - [ ] IDE implementation (or probably just a VS Code plugin with language server protocol implementation).
 - [ ] Frontend implementation, so that one can easily publish their IF online.
+  - [ ] Choice-based stories.
+  - [ ] A bit parser-like frontend.
 
 ## `v1.0.0`
 

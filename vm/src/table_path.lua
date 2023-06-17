@@ -182,6 +182,20 @@ function TablePath:is_array(t, parents)
     return type(node[1]) == "table", node
 end
 
+--- @param path TablePath
+--- @return boolean
+function TablePath:is_parent_to(path)
+    if #path <= #self then
+        return false
+    end
+    for i, segment in ipairs(self) do
+        if segment ~= path[i] then
+            return false
+        end
+    end
+    return true
+end
+
 --- Points the path to the next element.
 ---
 --- The iteration follows the brocatel runtime format specification.

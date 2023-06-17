@@ -24,10 +24,10 @@ local input = nil
 while true do
   local line = vm:next(input)
   input = nil
-  print_tags(line.tags)
   if type(line) == "nil" then
     break
   elseif type(line.text) == "string" then
+    print_tags(line.tags)
     io.write(line.text, "\n")
   elseif type(line.select) == "table" then
     while not input do

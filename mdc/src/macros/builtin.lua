@@ -72,12 +72,11 @@ function md.loop(label, children)
     loop_count = loop_count + 1
     label = "\\#loop-" .. loop_count
   end
-  local content = { md.heading(label) }
-  for i, child in ipairs(children) do
-    content[i + 1] = child
-  end
-  content[#content + 1] = md.paragraph({ md.link(label) })
-  return md.block(content)
+  return md.block({
+    md.heading(label),
+    md.block(children),
+    md.paragraph({ md.link(label) }),
+  })
 end
 
 --- @param expr string the Lua expression
