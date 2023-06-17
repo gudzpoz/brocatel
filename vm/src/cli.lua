@@ -22,23 +22,24 @@ end
 local vm = brocatel.load_vm(content)
 local input = nil
 while true do
-  local line, tags = vm:next(input)
+  local line = vm:next(input)
   input = nil
-  print_tags(tags)
+  print_tags(line.tags)
   if type(line) == "nil" then
     break
-  elseif type(line) == "string" then
-    io.write(line, "\n")
-  else
+  elseif type(line.text) == "string" then
+    io.write(line.text, "\n")
+  elseif type(line.select) == "table" then
     while not input do
-      for key, prompt in pairs(line) do
-        io.write("### Option ", tostring(key), " ###\n")
-        print_tags(prompt[2])
-        io.write(prompt[1], "\n")
+      options = {}
+      for _, option in ipairs(line.select) do
+        options[option.key] = true
+        io.write("### Option ", tostring(option.key), " ###\n")
+        io.write(option.option, "\n")
       end
       io.write("Please input your choice: ")
       input = io.read("*n")
-      if not line[input] then
+      if not options[input] then
         input = nil
       end
     end

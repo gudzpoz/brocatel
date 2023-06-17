@@ -117,14 +117,17 @@ function history.record_simple(save, root, old, new)
         return
     end
     local i = 1
-    while i < #new do
+    while i <= #new do
         local segment = new[i]
-        save = makedir(save, segment)
-        if new:is_array(root, #new - i) then
-            local meta = save[1]
+        local is_array = new:is_array(root, #new - i)
+        if i < #new or is_array then
+            save = makedir(save, segment)
+        end
+        if is_array then
             if old and old[i] ~= segment then
                 old = nil
             end
+            local meta = save[1]
             if not meta then
                 meta = { I = 0 }
                 save[1] = meta
@@ -135,12 +138,14 @@ function history.record_simple(save, root, old, new)
                 meta.I = meta.I + 1
             end
 
-            local read = meta.R
-            if not read then
-                read = {}
-                meta.R = read
+            if i < #new then
+                local read = meta.R
+                if not read then
+                    read = {}
+                    meta.R = read
+                end
+                history.set_bit(read, new[i + 1])
             end
-            history.set_bit(read, new[i + 1])
         end
         i = i + 1
     end
