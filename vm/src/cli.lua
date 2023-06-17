@@ -31,7 +31,7 @@ while true do
     io.write(line.text, "\n")
   elseif type(line.select) == "table" then
     while not input do
-      options = {}
+      local options = {}
       for _, option in ipairs(line.select) do
         options[option.key] = true
         io.write("### Option ", tostring(option.key), " ###\n")

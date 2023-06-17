@@ -161,10 +161,13 @@ function VM:set_up_env_api()
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         return self:eval_with_env(extra_env, path)
     end)
-    env:set_api("VISITED", function(path)
+    --- @param path table|TablePath
+    local function visits(path)
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         return history.get(self.savedata.stats, path, "I") or 0
-    end)
+    end
+    env:set_api("VISITS", visits)
+    env:set_api("VISITED", function(path) return visits(path) > 0 end)
     --- @param args TablePath
     --- @param recur number|boolean
     local function user_select(args, recur)
@@ -187,17 +190,18 @@ function VM:set_up_env_api()
         local selectables = {}
         local options = args:get(root)
         for i = 2, #options do
-            local visits = counts[i] or 0
+            local count = counts[i] or 0
             local local_env = {
                 CHOICE_COUNT = #selectables,
-                VISITS = visits,
-                ONCE = visits == 0,
+                DEFAULT = #selectables == 0,
+                COUNT = count,
+                ONCE = count == 0,
                 RECUR = function(n)
-                    return visits <= n
+                    return count <= n
                 end,
             }
             local inner = local_env
-            local should_recur = recur == true or visits <= recur
+            local should_recur = recur == true or count <= recur
             if not should_recur then
                 local_env = {}
                 setmetatable(local_env, {
@@ -359,8 +363,8 @@ function VM:current()
             current.output = output
         end
         output = current.output
-        if current.output then
-            return current.output
+        if output then
+            return output
         end
     end
 end
@@ -422,6 +426,7 @@ function VM:fetch_and_next(ip)
         return nil, true
     elseif node_type == "if-else" then
         local result = node[1]()
+        local _
         _, self.flags["empty"] = ip:resolve(result and 2 or 3):step(root, true)
         self.flags["if-else"] = result and true or false
         return nil, true
