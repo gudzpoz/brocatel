@@ -41,6 +41,7 @@ import { nextTick, onMounted, onUnmounted, ref } from 'vue';
 
 const props = defineProps<{
   height?: string,
+  autoScroll?: boolean,
 }>();
 // @ts-ignore
 import bundle from '../cache/vm-bundle.lua?raw';
@@ -167,7 +168,7 @@ function multiNext(count: number, option?: number) {
       completed.value = true;
     }
     nextTick(() => {
-      if (output.value) {
+      if (props.autoScroll && output.value) {
         output.value.scrollTop = output.value.scrollHeight;
       }
     });

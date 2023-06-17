@@ -196,7 +196,7 @@ We use links to direct the flow of the story.
 ```markdown
 # header
 
-:::if`VISITED(header) > 1`
+:::if`VISITS(header) > 1`
 - Hello! Time travellers!
   # real end?
   - Ready for another jump?
@@ -229,7 +229,7 @@ Also, when a heading contains space like `## real end?`, you should put a pair o
 
 ### Happy coding
 
-You might have noticed that we used some pecular ``:::if`VISITED(header) > 1` `` to detect *time travellers*.
+You might have noticed that we used some pecular ``:::if`VISITS(header) > 1` `` to detect *time travellers*.
 
 We will be working on an imperfect example and improve it bit by bit by introducing more concepts.
 
@@ -344,7 +344,7 @@ You will notice that there is a special `CHOICE_COUNT` there, if there is no oth
 which means `CHOICE_COUNT == 0` (we, the program, associated the value for you),
 then that option will be available as a fallback.
 
-#### Conditional blocks
+### Conditional blocks
 
 A conditional line is sometimes just not enough. You might need to do things like:
 ```markdown
@@ -383,3 +383,139 @@ Maybe:
 A conditional block starts with ``:::if `your condition here` ``, and follows one or two branches.
 The story flows to the first branch (`You still have enough money.`) if `budget >= 3.79`,
 and otherwise the `Not enough money.` branch.
+
+### Choices Revisted: Show-Once / Recur
+
+Plain unordered list items are actually show-once choices:
+
+<md-example>
+
+~~~markdown
+TODO:
+# header
+- Learn Ink
+  Ink, Inky, Inkle, Inklewriter...
+- Learn Inform 7
+  The Gazebo is a room.
+  **"A white canvas parasol raised up on stakes driven into the grass."**
+- Learn TADS 3
+  This is a real todo.
+- `CHOICE_COUNT == 0` Done!
+  [](#end)
+[](#header)
+# end
+~~~
+
+</md-example>
+
+And ordered ones recur:
+
+
+<md-example>
+
+~~~markdown
+TODO:
+# header
+1.  Learn Ink
+    # ink
+    Ink, Inky, Inkle, Inklewriter...
+2.  Learn Inform 7
+    # inform
+    The Gazebo is a room.
+    **"A white canvas parasol raised up on stakes driven into the grass."**
+3.  Learn TADS 3
+    # tads
+    This is a real todo.
+4.  `VISITED(ink) and VISITED(inform) and VISITED(tads)` Maybe later.
+    [](#end)
+[](#header)
+# end
+~~~
+
+</md-example>
+
+You may also make certain `RECUR` / `ONCE`:
+
+<md-example>
+
+~~~markdown
+# header
+- `RECUR` Use the unbreakable shovel
+  Nothing.
+- `RECUR(3)` Use the rusted one ({4 - VISITS(use_rusted)})
+  # use_rusted
+  Nothing.
+  `VISITS(use_rusted) > 3` The handle fell off.
+- `RECUR(0)` Use the fragile one (1)
+  It broke.
+- `ONCE` Use another fragile one (1)
+  It broke.
+[](#header)
+~~~
+
+</md-example>
+
+## Macros
+
+> In computer programming, a macro (short for "macro instruction"; from Greek μακρο- 'long, large'[1])
+> is a rule or pattern that specifies how a certain input should be mapped to a replacement output.
+>
+> [Macro (computer science) - Wikipedia](https://en.wikipedia.org/wiki/Macro_(computer_science))
+
+To be honest, I didn't know what exactly a macro is until I looked it up in the Wikipedia.
+(I mean, macros are... *macros*.)
+
+We should start with some examples. In short, macros simplify your work (by leaving most of
+the work to the macro writers).
+
+<md-example height="8em">
+
+~~~markdown
+:::loop
+- This loops!
+  Line 2
+  Line 3
+  ...
+~~~
+
+</md-example>
+
+The syntax is three colons followed immediately by a macro name `loop`.
+This make the compiler transform the snippet above into a loop:
+
+```markdown
+# random-loop-name12345
+This loops!
+Line 2
+Line 3
+...
+[](#random-loop-name12345)
+```
+
+This usually saves a bit of space, and by indenting the texts (the `-` list and indentation are required)
+you can get a better impression of how the story actually flows.
+
+### The `switch` macro
+
+<md-example height="8em">
+
+~~~markdown
+`been_to_place_2 = true`
+:::switch
+- `been_to_place_1`
+  The user has been to Place 1.
+- `been_to_place_2`
+  The user has not yet been to Place 1.
+  But they have been to Place 2.
+- `been_to_place_3`
+  Been to Place 3 but not 1 or 2.
+- `true`
+  None of the three.
+~~~
+
+</md-example>
+
+(Just in case, like many programming languages, Lua uses `true` and `false` to represent yes and no.
+So `been_to_place_2 = true` probably means "yes, somebody has `been_to_place_2`".)
+
+The `switch` macro is suitable when the `:::if` conditional block appear insufficient.
