@@ -22,7 +22,7 @@
   "dependencies": {
     "@github/mini-throttle": "^2.1.0",
     "@guolao/vue-monaco-editor": "^1.1.3",
-    "brocatel-mdc": "link:..",
+    "brocatel-mdc": "workspace:^",
     "remark": "^14.0.3",
     "remark-html": "^15.0.2"
   }

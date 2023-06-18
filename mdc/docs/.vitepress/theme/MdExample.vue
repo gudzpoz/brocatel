@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 import { debounce } from '@github/mini-throttle';
-import { type BrocatelCompiler } from 'brocatel-mdc';
+import { type BrocatelCompiler } from 'brocatel-mdc/src/index';
 import { remark } from 'remark';
 import remarkHtml from 'remark-html';
 import { useData } from 'vitepress';
@@ -71,7 +71,7 @@ const handleChange = debounce(async (code: string) => {
   try {
     if (!compiler.value) {
       // It seems that fengari uses `document` somewhere, messing up the whole SSR.
-      const mdc = await import('brocatel-mdc');
+      const mdc = await import('brocatel-mdc/src/index');
       compiler.value = new mdc.BrocatelCompiler({ noAutoNewLine: false });
       fengari.value = mdc.fengari;
     }
@@ -81,10 +81,10 @@ const handleChange = debounce(async (code: string) => {
       story.value = new Story(s, fengari.value);
       multiNext(10);
     } catch (e) {
-      console.log(compiled.toString());
+      console.log(e, compiled.toString());
     }
   } catch (e) {
-    console.log(code);
+    console.log(e);
   }
 }, 1000);
 
