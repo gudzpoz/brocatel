@@ -80,54 +80,54 @@ test('Text with values', async () => {
 });
 
 test('Headings', async () => {
-  assert.equal(assertCompile('# Heading 1'), '{{labels={["Heading 1"]={2}}},{{label="Heading 1"}}}');
+  assert.equal(assertCompile('# Heading 1'), '{{labels={["heading-1"]={2}}},{{label="heading-1"}}}');
   assert.equal(
     assertCompile('# A\n## B\n### C\n### D\n## E\n# F'),
     `
     {
       {labels={
-        A={2},
-        F={3}
+        a={2},
+        f={3}
       }},
       {
-        {label="A",labels={
-          B={2},
-          E={3}
+        {label="a",labels={
+          b={2},
+          e={3}
         }},
         {
-          {label="B",labels={
-            C={2},
-            D={3}
+          {label="b",labels={
+            c={2},
+            d={3}
           }},
-          {{label="C"}},
-          {{label="D"}}
+          {{label="c"}},
+          {{label="d"}}
         },
-        {{label="E"}}
+        {{label="e"}}
       },
-      {{label="F"}}
+      {{label="f"}}
     }
     `.replace(/--.+/g, '').replace(/ |\n/g, ''),
   );
 });
 
 test('Links', async () => {
-  assert.equal(assertCompile('[](A)\n# A'), '{{labels={A={3}}},{link={"A"}},{{label="A"}}}');
+  assert.equal(assertCompile('[](a)\n# A'), '{{labels={a={3}}},{link={"a"}},{{label="a"}}}');
   assert.equal(assertCompile('[](type)\n# type'), '{{labels={type={3}}},{link={"type"}},{{label="type"}}}');
   const serialized = `
     {
-      {labels={A={2}}},
+      {labels={a={2}}},
       {
-        {label="A",labels={B={2}}},
+        {label="a",labels={b={2}}},
         {
-          {label="B",labels={C={2}}},
+          {label="b",labels={c={2}}},
           {
-            {label="C",labels={D={2}}},
+            {label="c",labels={d={2}}},
             {
-              {label="D",labels={E={3}}},
-              {link={"E","F"}},
+              {label="d",labels={e={3}}},
+              {link={"e","f"}},
               {
-                {label="E",labels={F={2}}},
-                {{label="F"}}
+                {label="e",labels={f={2}}},
+                {{label="f"}}
               }
             }
           }
@@ -136,12 +136,12 @@ test('Links', async () => {
     }
     `.replace(/--.+/g, '').replace(/ |\n/g, '');
   assert.equal(
-    assertCompile('# A\n## B\n### C\n#### D\n[](E#F)\n##### E\n###### F'),
+    assertCompile('# A\n## B\n### C\n#### D\n[](e#f)\n##### E\n###### F'),
     serialized,
   );
   assert.equal(
-    assertCompile('# A\n## B\n### C\n#### D\n[](F)\n##### E\n###### F'),
-    serialized.replace('"E","F"', '"F"'),
+    assertCompile('# A\n## B\n### C\n#### D\n[](f)\n##### E\n###### F'),
+    serialized.replace('"e","f"', '"f"'),
   );
 });
 
@@ -151,12 +151,12 @@ test('Lists', async () => {
     '{{},{args={{},{{},"a"},{{},"b"}},func=function(args)FUNC.S_ONCE(args)\nend}}',
   );
   assert.equal(
-    assertCompile('- # A\n- [](A)').replace(/\n/g, ''),
+    assertCompile('- # A\n- [](a)').replace(/\n/g, ''),
     `{
-      {labels={A={2,"args",2,2}}},
+      {labels={a={2,"args",2,2}}},
       {args={{},
-        {{},{{label="A"}}},
-        {{},{link={"A"}}}},
+        {{},{{label="a"}}},
+        {{},{link={"a"}}}},
        func=function(args)FUNC.S_ONCE(args)end
       }
     }`.replace(/--.+/g, '').replace(/ |\n/g, ''),
@@ -241,10 +241,10 @@ test('Mixed', () => {
 
 Hello World!
 
-[](<#Hello World#inner>)`);
+[](#hello-world#inner)`);
   assert.equal(
     compiled,
-    '{{labels={["Hello World"]={2}}},{{label="Hello World",labels={inner={2}}},{{label="inner"},'
-    + '"Hello World!",{link={"Hello World","inner"}}}}}',
+    '{{labels={["hello-world"]={2}}},{{label="hello-world",labels={inner={2}}},{{label="inner"},'
+    + '"Hello World!",{link={"hello-world","inner"}}}}}',
   );
 });

@@ -29,7 +29,7 @@ const fuzzyPattern = /\s|[!"#$%&'()*+,\-.\/:;<=>?@[\\\]^_`{|}~]/g;
  * @param s the label
  */
 function fuzzyLabel(s: string) {
-  return s.replace(fuzzyPattern, '-');
+  return s.toLowerCase().replace(fuzzyPattern, '-');
 }
 
 class AstTransformer {
@@ -97,10 +97,10 @@ class AstTransformer {
       if (!parent.data?.labels) {
         parent.data = { labels: {} };
       }
-      if (parent.data.labels[fuzzyLabel(label)]) {
+      if (parent.data.labels[label]) {
         this.vfile.message('heading name collision', node);
       }
-      parent.data.labels[fuzzyLabel(label)] = path;
+      parent.data.labels[label] = path;
     });
   }
 
@@ -247,7 +247,7 @@ class AstTransformer {
       this.vfile.message('unexpected complex heading', node);
       return '';
     }
-    return node.children[0].value;
+    return fuzzyLabel(node.children[0].value);
   }
 
   parseCodeBlock(code: Code): LuaCode | LuaText {
@@ -426,28 +426,11 @@ class AstTransformer {
   }
 
   /**
-   * Splits a url with `|`, where `|` is escaped by `||`.
+   * Splits a url with `#`, where `#` is escaped by `\\#`.
    */
   parseLinkUrl(link: Link): string[] {
     const tokens = link.url.match(/(\\.|[^#])+/g) || [];
-    const finalized: string[] = [];
-    let token = null;
-    for (let i = 0; i < tokens.length; i += 1) {
-      if (token === null) {
-        token = tokens[i];
-      } else {
-        token += tokens[i];
-      }
-      if (!token.endsWith('|')) {
-        finalized.push(token);
-        token = null;
-      }
-    }
-    if (token !== null) {
-      this.vfile.message('link incomplete', link);
-      finalized.push(token);
-    }
-    return finalized;
+    return tokens.map((s) => s.replace(/\\#/g, '#'));
   }
 }
 
