@@ -12,6 +12,6 @@ export default {
   enhanceApp({ app }) {
     app.component('VueMonacoEditor', defineAsyncComponent(() => import('@guolao/vue-monaco-editor')));
     // @ts-ignore
-    app.component('MdExample', defineAsyncComponent(() =>  import('./MdExample.vue')));
+    app.component('MdExample', defineAsyncComponent(() =>  import('../components/MdExample.vue')));
   },
 };
