@@ -26,9 +26,12 @@ const parser = unified()
 
 function assertCompile(markdown: string): string {
   const vfile = parser.processSync(markdown);
-  assert.isEmpty(vfile.messages, vfile.messages.map((m) => m.message).join(', '));
+  assert.isEmpty(
+    vfile.messages.filter((e) => e.fatal !== null),
+    vfile.messages.map((m) => m.message).join(', '),
+  );
   const lua = vfile.value.toString();
-  assert.isNull(detectLuaErrors(`return ${lua}`), lua)
+  assert.isNull(detectLuaErrors(`return ${lua}`), lua);
   return lua;
 }
 
@@ -250,5 +253,15 @@ Hello World!
     compiled,
     '{{labels={["hello-world"]={2}}},{{label="hello-world",labels={inner={2}}},{{label="inner"},'
     + '"Hello World!",{link={"hello-world","inner"}}}}}',
+  );
+});
+
+test('Function', () => {
+  const compiled = assertCompile(`# func {}\n[{}](#func)\n\n---`);
+  assert.equal(
+    compiled,
+    '{{labels={func={3}}},{func=function(args)END()\n'
+    + 'end},{{func=true,label="func"},{link={"func"},params=function()return{}end},{func=function(args)END()\n'
+    + 'end}}}',
   );
 });

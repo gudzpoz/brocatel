@@ -1,10 +1,19 @@
+import { BlockContent, Content, Parent as MdAstParent } from 'mdast';
+import { Root } from 'remark-parse/lib';
 import { Data, Parent, Node } from 'unist';
+
+export type MarkdownNode = BlockContent | Content | Root;
+export type MarkdownParent = MarkdownNode & MdAstParent;
 
 export type PathSegment = number | string;
 /**
  * A relative table path used only when compiling.
  */
 export type RelativePath = PathSegment[];
+
+export interface StoryRoutineInfo {
+  parameters: string[],
+}
 
 /**
  * The metadata node of an array.
@@ -18,6 +27,10 @@ export interface Metadata extends Data {
    * Paths to labeled children.
    */
   labels: { [label: string]: RelativePath };
+  /**
+   * Function info.
+   */
+  routine?: StoryRoutineInfo,
 }
 
 export type LuaElement = LuaArray | LuaText | LuaLink | LuaIfElse | LuaCode;
@@ -37,7 +50,7 @@ export interface LuaArray extends Parent<LuaElement, Metadata> {
   /**
    * The original node.
    */
-  node: Node;
+  node: MarkdownNode;
 }
 
 /**
@@ -47,7 +60,7 @@ export interface LuaNode extends Node {
   /**
    * The original node.
    */
-  node: Node;
+  node: MarkdownNode;
 }
 
 export type LuaTags = { [key: string]: string };
@@ -100,6 +113,10 @@ export interface LuaLink extends LuaNode {
    * The root file.
    */
   root?: string;
+  /**
+   * Parameters.
+   */
+  params?: string;
 }
 
 /**
@@ -131,7 +148,7 @@ export interface LuaIfElse extends Parent<LuaArray> {
   /**
    * The original node.
    */
-  node: Node;
+  node: MarkdownNode;
 }
 
 /**
@@ -174,7 +191,7 @@ export interface LuaCode extends Parent<LuaArray> {
   /**
    * The original node.
    */
-  node: Node;
+  node: MarkdownNode;
 }
 
 /**
@@ -192,12 +209,13 @@ export interface LuaEntry extends Parent<LuaArray> {
   files: string[];
 }
 
-export function luaArray(node: Node, label?: string): LuaArray {
+export function luaArray(node: MarkdownNode, label?: string, parameters?: string[]): LuaArray {
   return {
     type: 'array',
     data: {
       labels: {},
       label,
+      routine: parameters ? { parameters } : undefined,
     },
     children: [],
     node,

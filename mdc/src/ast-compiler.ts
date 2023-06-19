@@ -98,7 +98,8 @@ class AstCompiler {
   serializeLink(child: LuaLink) {
     const root = child.root ? `,root=${JSON.stringify(child.root)}` : '';
     const labels = child.labels.map((label) => JSON.stringify(label)).join(',');
-    this.output += `{link={${labels}}${root}}`;
+    const params = child.params ? `,params=function()return${child.params}end` : '';
+    this.output += `{link={${labels}}${params}${root}}`;
   }
 
   serializeText(child: LuaText) {
@@ -132,21 +133,21 @@ class AstCompiler {
 
     switch (node.type) {
       case 'array': {
-        this.output += '{{';
         const labels = serializeTableInner(
           node.data?.labels || {},
           (p) => `{${p.map((s) => JSON.stringify(s)).join(',')}}`,
         );
+        const attributes: string[] = [];
+        if (node.data?.routine) {
+          attributes.push('func=true');
+        }
         if (node.data?.label) {
-          this.output += `label=${JSON.stringify(node.data.label)}`;
-          if (labels) {
-            this.output += ',';
-          }
+          attributes.push(`label=${JSON.stringify(node.data.label)}`);
         }
         if (labels) {
-          this.output += `labels={${labels}}`;
+          attributes.push(`labels={${labels}}`);
         }
-        this.output += '}';
+        this.output += `{{${attributes.join(',')}}`;
         break;
       }
       case 'func':

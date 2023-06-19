@@ -28,7 +28,10 @@ const parser = unified()
 function parse(input: string): LuaArray {
   const vfile = new VFile();
   const ast = parser.runSync(parser.parse(input), vfile) as LuaArray;
-  assert.isEmpty(vfile.messages, vfile.messages.map((m) => m.message).join(', '));
+  assert.isEmpty(
+    vfile.messages.filter((e) => e.fatal !== null),
+    vfile.messages.map((m) => m.message).join(', '),
+  );
   return ast;
 }
 
@@ -59,7 +62,9 @@ test('Transform text', () => {
 
 test('Transform link', () => {
   assert.deepInclude(assertOnlyChild(parse('[](#a)')), { type: 'link', labels: ['a'] });
-  assert.deepInclude(assertOnlyChild(parse('[main](#a#b)')), { type: 'link', labels: ['a', 'b'], root: 'main' });
+  assert.deepInclude(assertOnlyChild(parse('[](main.md#a#b)')), { type: 'link', labels: ['a', 'b'], root: 'main' });
+  assert.deepInclude(assertOnlyChild(parse('[](main#a#b)')), { type: 'link', labels: ['main', 'a', 'b'] });
+  assert.deepInclude(assertOnlyChild(parse('[](#main.md#a#b)')), { type: 'link', labels: ['mainmd', 'a', 'b'] });
   assert.deepInclude(
     assertOnlyChild(parse('[main](www.example.com)')),
     { type: 'text', text: '[main](www.example.com)' },
@@ -133,4 +138,19 @@ test('Transform heading levels', () => {
   assertBranch(level1.children[1] as LuaArray, 'e');
   assert.equal(level1.children[2].data?.label, 'f');
   assertBranch(level1.children[2] as LuaArray, 'g');
+});
+
+test('Functions', () => {
+  const parsed = parse('# func {}\n[{}](#func)\n\n[{a=1}](#func)\n');
+  assert.lengthOf(parsed.children, 2);
+  assert.deepInclude(parsed.children[0], { type: 'func', code: 'END()' });
+  assert.deepInclude(parsed.children[1], { type: 'array' });
+
+  const func = parsed.children[1] as LuaArray;
+  assert.isOk(func.data?.routine?.parameters);
+  assert.lengthOf(func.data?.routine?.parameters!, 0);
+  assert.lengthOf(func.children, 3);
+  assert.deepInclude(func.children[0], { type: 'link', labels: ['func'], params: '{}' });
+  assert.deepInclude(func.children[1], { type: 'link', labels: ['func'], params: '{a=1}' });
+  assert.deepInclude(func.children[2], { type: 'func', code: 'END()' });
 });

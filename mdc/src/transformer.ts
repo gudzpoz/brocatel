@@ -1,6 +1,6 @@
 import {
   Code,
-  Content, Heading, Link, Paragraph, Parent, PhrasingContent, Root,
+  Content, Heading, Link, Paragraph, PhrasingContent, Root,
 } from 'mdast';
 import { ContainerDirective } from 'mdast-util-directive';
 import { MDXTextExpression } from 'mdast-util-mdx-expression';
@@ -11,16 +11,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { VFile } from 'vfile';
 
 import {
-  LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaTags, LuaText, RelativePath, luaArray,
+  LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaTags, LuaText,
+  MarkdownNode, MarkdownParent, RelativePath, luaArray,
 } from './ast';
 import { toMarkdownString } from './expander';
-import { overwrite } from './utils';
-
-const normalLinkPattern = /^(?!mailto:)(?:http|https|ftp):\/\//;
-
-function isNormalLink(s: string) {
-  return normalLinkPattern.test(s) || s.startsWith('www.') || s.startsWith('./#');
-}
+import { isIdentifier } from './lua';
 
 /**
  * Converts from `A B` to `a-b`.
@@ -29,6 +24,89 @@ function isNormalLink(s: string) {
  */
 function fuzzyLabel(s: string) {
   return slug(s.replace(/_/g, '-').replace(/#/g, '_')).replace(/_/g, '#');
+}
+
+const normalLinkPattern = /^(?!mailto:)(?:http|https|ftp):\/\//;
+
+function isNormalLink(s: string) {
+  return normalLinkPattern.test(s) || s.startsWith('www.') || s.startsWith('./#');
+}
+
+/**
+ * Splits a url with `#`, where `#` is escaped by `\\#`.
+ */
+function parseLinkUrl(link: Link): string[] {
+  const tokens = link.url.match(/(\\.|[^#])+/g) || [];
+  return tokens.map((s) => fuzzyLabel(s.replace(/\\#/g, '#')));
+}
+
+function hasReturned(func: LuaArray): boolean {
+  const last = func.children[func.children.length - 1];
+  return last?.type === 'func' && last.code.trim() === 'END()';
+}
+
+function appendReturn(array: LuaArray) {
+  array.children.push({
+    type: 'func',
+    code: 'END()',
+    children: [],
+    node: array.node,
+  });
+}
+
+function asIs(node: MarkdownNode): LuaText {
+  return {
+    type: 'text',
+    text: toMarkdownString(node),
+    tags: {},
+    values: {},
+    node,
+  };
+}
+
+class HeadingStack {
+  vfile: VFile;
+  root: LuaArray;
+  depths: number[];
+  stack: LuaArray[];
+
+  constructor(block: MarkdownParent, vfile: VFile) {
+    this.vfile = vfile;
+    this.root = luaArray(block);
+    this.stack = [this.root];
+    this.depths = [0];
+  }
+
+  lastDepth() {
+    return this.depths[this.depths.length - 1];
+  }
+
+  last() {
+    return this.stack[this.stack.length - 1];
+  }
+
+  push(array: LuaArray, depth: number) {
+    this.depths.push(depth);
+    this.stack.push(array);
+  }
+
+  popUntil(depth: number) {
+    while (depth <= this.lastDepth()) {
+      const last = this.last();
+      /* Insert implicit returns at the end of a function:
+        * # non-function-1
+        * ## a-function {}
+        * <-- `---` implicitly inserted here
+        * # non-function-2
+        */
+      if (last.data?.routine && !hasReturned(last)) {
+        this.vfile.info('implicit return', last.node);
+        appendReturn(last);
+      }
+      this.depths.pop();
+      this.stack.pop();
+    }
+  }
 }
 
 class AstTransformer {
@@ -106,22 +184,25 @@ class AstTransformer {
   /**
    * Makes sure that the node and all nodes under matches the given condition.
    */
-  checkChildren(node: Content, condition: (node: Content) => boolean, msg: string) {
-    if (!condition(node)) {
-      this.vfile.message(msg, node);
-    }
-    if ((node as Parent).children) {
-      (node as Parent).children.forEach((child) => this.checkChildren(child, condition, msg));
+  checkChildren(node: MarkdownParent, condition: (node: Content) => boolean, msg: string) {
+    if (node.children) {
+      node.children.forEach((child) => {
+        if (!condition(child)) {
+          this.vfile.message(msg, node);
+        }
+        const parent = child as MarkdownParent;
+        if (parent.children) {
+          this.checkChildren(parent, condition, msg);
+        }
+      });
     }
   }
 
-  parseBlock(block: Parent): LuaArray {
-    const array = luaArray(block);
+  parseBlock(block: MarkdownParent): LuaArray {
+    const stack = new HeadingStack(block, this.vfile);
     // Levels of previous headings.
-    const headings = [0];
-    const stack = [array];
     block.children.forEach((node) => {
-      let current = stack[stack.length - 1];
+      let current = stack.last();
       switch (node.type) {
         case 'paragraph':
           current.children.push(this.parseParagraph(node));
@@ -136,26 +217,56 @@ class AstTransformer {
           current.children.push(this.parseDirective(node));
           break;
         case 'heading': {
-          while (node.depth <= headings[headings.length - 1]) {
-            headings.pop();
-            stack.pop();
-            current = stack[stack.length - 1];
+          stack.popUntil(node.depth);
+          const last = stack.last();
+          const nested = this.parseHeading(node);
+          if (nested.data?.routine && !hasReturned(last)) {
+            // Insert a return before function entry point.
+            appendReturn(last);
           }
-          const nested = luaArray(
-            node,
-            this.extractHeadingLabel(node),
-          );
-          current.children.push(nested);
-          headings.push(node.depth);
-          stack.push(nested);
+          last.children.push(nested);
+          stack.push(nested, node.depth);
           break;
         }
         default:
           this.vfile.message(`unsupported markdown type: ${node.type}`, node);
-          current.children.push(this.asIs(node));
+          current.children.push(asIs(node));
           break;
       }
     });
+    stack.popUntil(0);
+    return stack.root;
+  }
+
+  parseHeading(node: Heading): LuaArray {
+    if (node.children.some((child) => child.type === 'mdxTextExpression')) {
+      return this.parseFunctionHeading(node);
+    }
+    return luaArray(
+      node,
+      this.extractHeadingLabel(node),
+    );
+  }
+
+  parseFunctionHeading(node: Heading): LuaArray {
+    if (node.children.length !== 2
+        || node.children[0].type !== 'text'
+        || node.children[1].type !== 'mdxTextExpression') {
+      this.vfile.message('unexpected complex heading', node);
+      return luaArray(node);
+    }
+    const name = node.children[0].value.trim();
+    const params = node.children[1].value.split(',')
+      .map((s) => s.trim()).filter((s) => s);
+    const invalid = params.filter((s) => !isIdentifier(s));
+    if (invalid.length > 0) {
+      this.vfile.message(`not valid identifier: ${invalid.join(', ')}`)
+    }
+    const array = luaArray(
+      node,
+      name,
+      params,
+    );
     return array;
   }
 
@@ -185,10 +296,10 @@ class AstTransformer {
 
   parseDirective(node: ContainerDirective): LuaElement {
     if (node.name === 'nil') {
-      return this.asIs({
+      return asIs({
         ...node as any,
         type: 'paragraph',
-      })
+      });
     }
     const { label, list, func } = this.destructDirective(node);
     if (!list) {
@@ -252,7 +363,7 @@ class AstTransformer {
   parseCodeBlock(code: Code): LuaCode | LuaText {
     if (code.lang !== 'lua') {
       this.vfile.message('unsupported code block type');
-      return this.asIs(code);
+      return asIs(code);
     }
     let snippet;
     if (code.meta === 'global') {
@@ -268,16 +379,6 @@ class AstTransformer {
       code: snippet,
       children: [],
       node: code,
-    };
-  }
-
-  asIs(node: Content): LuaText {
-    return {
-      type: 'text',
-      text: toMarkdownString(node),
-      tags: {},
-      values: {},
-      node,
     };
   }
 
@@ -298,7 +399,7 @@ class AstTransformer {
   parseParagraph(para: Paragraph): LuaText | LuaLink {
     if (para.children.length === 1 && para.children[0].type === 'link') {
       if (isNormalLink(para.children[0].url)) {
-        return this.asIs(para);
+        return asIs(para);
       }
       return this.parseLink(para.children[0]);
     }
@@ -404,38 +505,32 @@ class AstTransformer {
    * @returns a link node
    */
   parseLink(link: Link): LuaLink {
-    let root = link.title || undefined;
-    if (!root && link.children.length > 0) {
-      const para: Paragraph = {
-        type: 'paragraph',
-        children: link.children,
-      };
-      root = toMarkdownString(para);
-    }
+    const labels = parseLinkUrl(link);
+    const match = link.url.match(/^([^#]+)\.md#./);
     const linkNode: LuaLink = {
       type: 'link',
-      labels: this.parseLinkUrl(link),
+      labels: match ? labels.slice(1) : labels,
       node: link,
-      root,
+      root: match ? match[1] : void 0,
     };
     if (!linkNode.root) {
       delete linkNode.root;
     }
+    const expr = link.children[0];
+    if (expr?.type === 'mdxTextExpression') {
+      if (link.children.length > 1) {
+        this.vfile.message('unexpected complex link content', link);
+      }
+      const params = expr.value.trim();
+      linkNode.params = `{${params}}`;
+    }
     return linkNode;
-  }
-
-  /**
-   * Splits a url with `#`, where `#` is escaped by `\\#`.
-   */
-  parseLinkUrl(link: Link): string[] {
-    const tokens = link.url.match(/(\\.|[^#])+/g) || [];
-    return tokens.map((s) => fuzzyLabel(s.replace(/\\#/g, '#')));
   }
 }
 
 const transformAst: Plugin = () => (node, vfile) => {
   const transformer = new AstTransformer(node as Root, vfile);
-  overwrite(node, transformer.transform());
+  return transformer.transform();
 };
 
 export default transformAst;

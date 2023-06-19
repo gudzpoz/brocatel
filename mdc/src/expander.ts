@@ -9,6 +9,7 @@ import { Plugin } from 'unified';
 import { Node as UnistNode } from 'unist';
 import { VFile } from 'vfile';
 
+import { MarkdownNode } from './ast';
 import { directiveLabel, directiveToMarkdown, isDirectiveLabel } from './directive';
 import { isIdentifier, runLua, wrap } from './lua';
 import { overwrite, shallowCopy, subParagraph } from './utils';
@@ -21,7 +22,7 @@ export function isBuiltInMacro(name: string): boolean {
   return name === 'do' || name === 'if' || name === 'nil';
 }
 
-export function toMarkdownString(node: Content): string {
+export function toMarkdownString(node: MarkdownNode): string {
   return toMarkdown(node, {
     extensions: [directiveToMarkdown, mdxExpressionToMarkdown],
   }).trim();
@@ -96,10 +97,10 @@ class MacroExpander {
   expandSyntacticSugar(node: Node, parent: Node) {
     return this.expandList(node, parent)
       || this.expandConditional(node)
-      || this.expandThematicBreak(node);
+      || MacroExpander.expandThematicBreak(node);
   }
 
-  expandThematicBreak(node: Node) {
+  static expandThematicBreak(node: Node) {
     if (node.type !== 'thematicBreak') {
       return false;
     }

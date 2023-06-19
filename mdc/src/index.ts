@@ -5,10 +5,14 @@ import remarkParse from 'remark-parse';
 import { Processor, unified } from 'unified';
 import { VFile } from 'vfile';
 
+import _fengari from 'fengari';
+import _fengari_js from 'fengari-interop';
 import astCompiler, { serializeTableInner } from './ast-compiler';
 import { directiveFromMarkdown } from './directive';
 import expandMacro from './expander';
 import transformAst from './transformer';
+
+import { convertSingleLuaValue } from './lua';
 
 const VERSION = 1;
 
@@ -143,10 +147,6 @@ return {[""]={version=${VERSION},entry=${JSON.stringify(removeMdExt(name))}},${c
     return file.toString();
   }
 }
-
-import _fengari from 'fengari';
-import _fengari_js from 'fengari-interop';
-import { convertSingleLuaValue } from './lua';
 _fengari.js = _fengari_js;
 _fengari.tojs = convertSingleLuaValue;
 export const fengari = _fengari;
