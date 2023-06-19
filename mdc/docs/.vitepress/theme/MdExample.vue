@@ -81,7 +81,7 @@ const handleChange = debounce(async (code: string) => {
       story.value = new Story(s, fengari.value);
       multiNext(10);
     } catch (e) {
-      console.log(e, compiled.toString());
+      console.log(e);
     }
   } catch (e) {
     console.log(e);
@@ -108,9 +108,11 @@ onUnmounted(() => observer.value?.disconnect());
 class Story {
   fengari: any;
   L: any;
+  code: string;
 
   constructor(story: string, fengari: any) {
     this.fengari = fengari;
+    this.code = story;
     const { lauxlib, lualib, lua, to_luastring } = fengari;
     const L = lauxlib.luaL_newstate();
     this.L = L;
@@ -126,7 +128,8 @@ class Story {
   doString(s: string) {
     const { lauxlib, lua, to_luastring } = this.fengari;
     if (lauxlib.luaL_dostring(this.L, to_luastring(s)) !== lua.LUA_OK) {
-      throw new Error(`${lua.lua_tojsstring(this.L, -1)}:\n${s}`);
+      console.log(new Error(`${lua.lua_tojsstring(this.L, -1)}:\n${s}`));
+      console.log(this.code);
     }
   }
 

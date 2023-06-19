@@ -112,7 +112,11 @@ test('Headings', async () => {
 
 test('Links', async () => {
   assert.equal(assertCompile('[](a)\n# A'), '{{labels={a={3}}},{link={"a"}},{{label="a"}}}');
-  assert.equal(assertCompile('[](type)\n# type'), '{{labels={type={3}}},{link={"type"}},{{label="type"}}}');
+  assert.equal(assertCompile('[](<#type> )\n# type'), '{{labels={type={3}}},{link={"type"}},{{label="type"}}}');
+  assert.equal(
+    assertCompile('[](<#Привет non-latin 你好>)\n# Привет non-latin 你好'),
+    '{{labels={["привет-non-latin-你好"]={3}}},{link={"привет-non-latin-你好"}},{{label="привет-non-latin-你好"}}}',
+  );
   const serialized = `
     {
       {labels={a={2}}},

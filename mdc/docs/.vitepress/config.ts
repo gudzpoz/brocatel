@@ -20,6 +20,13 @@ export default defineConfig({
         ],
       },
       {
+        text: 'Advanced Usages',
+        items: [
+          { text: 'Story Functions', link: '/function' },
+          { text: 'Caveats', link: '/caveat' },
+        ],
+      },
+      {
         text: 'Internals',
         items: [
           { text: 'Architecture', link: '/arch' },

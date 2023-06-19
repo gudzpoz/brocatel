@@ -4,11 +4,12 @@ import {
 } from 'mdast';
 import { ContainerDirective } from 'mdast-util-directive';
 import { MDXTextExpression } from 'mdast-util-mdx-expression';
+import { slug } from 'github-slugger';
+import { Plugin } from 'unified';
+import { visitParents } from 'unist-util-visit-parents';
 import { v4 as uuidv4 } from 'uuid';
 import { VFile } from 'vfile';
 
-import { Plugin } from 'unified';
-import { visitParents } from 'unist-util-visit-parents';
 import {
   LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaTags, LuaText, RelativePath, luaArray,
 } from './ast';
@@ -21,15 +22,13 @@ function isNormalLink(s: string) {
   return normalLinkPattern.test(s) || s.startsWith('www.') || s.startsWith('./#');
 }
 
-const fuzzyPattern = /\s|[!"#$%&'()*+,\-.\/:;<=>?@[\\\]^_`{|}~]/g;
-
 /**
  * Converts from `A B` to `a-b`.
  *
  * @param s the label
  */
 function fuzzyLabel(s: string) {
-  return s.toLowerCase().replace(fuzzyPattern, '-');
+  return slug(s.replace(/_/g, '-').replace(/#/g, '_')).replace(/_/g, '#');
 }
 
 class AstTransformer {
@@ -430,7 +429,7 @@ class AstTransformer {
    */
   parseLinkUrl(link: Link): string[] {
     const tokens = link.url.match(/(\\.|[^#])+/g) || [];
-    return tokens.map((s) => s.replace(/\\#/g, '#'));
+    return tokens.map((s) => fuzzyLabel(s.replace(/\\#/g, '#')));
   }
 }
 
