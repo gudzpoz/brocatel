@@ -264,7 +264,7 @@ class AstTransformer {
     }
     const array = luaArray(
       node,
-      name,
+      fuzzyLabel(name),
       params,
     );
     return array;

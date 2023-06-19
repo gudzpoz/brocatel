@@ -22,7 +22,7 @@ export default defineConfig({
       {
         text: 'Advanced Usages',
         items: [
-          { text: 'Story Functions', link: '/function' },
+          { text: 'Story Subroutines', link: '/subroutine' },
           { text: 'Caveats', link: '/caveat' },
         ],
       },
