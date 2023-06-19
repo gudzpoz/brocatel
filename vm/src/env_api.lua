@@ -28,6 +28,9 @@ return function (self)
     env:set_api("END", function(path)
         local IP = assert(env:get("IP"))
         if not path then
+            if self:pop_stack_frame() then
+                return
+            end
             IP:set(TablePath.from({ IP[1] }))
             return
         end

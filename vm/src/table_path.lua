@@ -17,12 +17,13 @@ TablePath.__index = TablePath
 --- @field plural string|nil
 --- @field values table<string, function>|nil
 ---
---- @field func function|nil
+--- @field func function|boolean|nil
 --- @field args Array[]|nil
 ---
 --- @field select Array[]|nil
 ---
 --- @field link TablePath|nil
+--- @field params function|nil
 --- @field root string|nil
 ---
 --- @field label string|nil

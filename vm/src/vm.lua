@@ -109,19 +109,19 @@ function VM:init()
     for _, thread in pairs(self.savedata.threads) do
         for _, co in ipairs(thread.coroutines) do
             co.ip = TablePath.from(co.ip)
+            co.ip:set_listener(function(old, new)
+                assert(self:ensure_root(new), "invalid ip assigned")
+                history.record_simple(self.savedata.stats, self.code, old, new)
+            end)
         end
     end
-    local ip = assert(self:get_coroutine()).ip
-    ip:set_listener(function(old, new)
-        assert(self:ensure_root(new), "invalid ip assigned")
-        history.record_simple(self.savedata.stats, self.code, old, new)
-    end)
     self:set_up_env_api()
     self.env:set_global_scope(self.savedata.globals)
     self.env:set_label_lookup(function(keys)
         return self:lookup_label(keys)
     end)
     self.env:set_init(false)
+    local ip = assert(self:get_coroutine()).ip
     local root = assert(self:ensure_root(ip))
     ip:step(root, true)
     self:set_env()
@@ -233,6 +233,34 @@ function VM:get_coroutine(thread_name, coroutine_id)
     return thread.coroutines[coroutine_id]
 end
 
+--- @param params table the parameters
+--- @param ip TablePath the return address
+function VM:push_stack_frame(params, ip)
+    local co = assert(self:get_coroutine())
+    local keys = self.get_keys(params)
+    co.stack[#co.stack + 1] = {
+        keys = keys,
+        values = params,
+        ret = ip:copy(),
+    }
+    self.env:push(keys, params)
+end
+
+--- @return boolean success false if no function call in stack
+function VM:pop_stack_frame()
+    local co = assert(self:get_coroutine())
+    if #co.stack == 0 then
+        return false
+    end
+    local ip = TablePath.from(co.stack[#co.stack].ret)
+    co.stack[#co.stack] = nil
+    self.env:pop()
+    local root = assert(self:ensure_root(ip))
+    ip:step(root)
+    co.ip:set(ip)
+    return true
+end
+
 --- Yields the next line.
 ---
 ---@param input number|nil
@@ -320,7 +348,11 @@ function VM:fetch_and_next(ip)
             assert(self:ensure_root(new_root_name))
         end
         local found = lookup.find_by_labels(root, new_root_name or ip, node.link)
-        assert(#found == 1, "aaa: " .. tostring(#found))
+        assert(#found == 1, "not found / found too many: " .. tostring(#found))
+        if node.params then
+            local params = node.params()
+            self:push_stack_frame(params, ip)
+        end
         ip:set(found[1])
         ip:step(root, true)
         return nil, true
@@ -409,7 +441,11 @@ end
 function VM:set_env()
     self.env:clear()
     self.env:push(self:get_thread().thread_locals.keys, self:get_thread().thread_locals.values)
-    self.env:push(self:get_coroutine().locals.keys, self:get_coroutine().locals.values)
+    local co = assert(self:get_coroutine())
+    self.env:push(co.locals.keys, self:get_coroutine().locals.values)
+    for _, frame in ipairs(co.stack) do
+        self.env:push(frame.keys, frame.values)
+    end
 end
 
 function VM:save()
