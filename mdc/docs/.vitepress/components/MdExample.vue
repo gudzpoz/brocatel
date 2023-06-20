@@ -3,6 +3,7 @@
   <div v-if="inSight" class="md-example" :style="{ height: props.height }">
     <vue-monaco-editor
       v-model:value="defaultCode"
+      @mount="monacoMount"
       @change="handleChange"
       :options="monacoOptions"
       :theme="isDark ? 'vs-dark' : 'light'"
@@ -34,6 +35,7 @@
 
 <script setup lang="ts">
 import { debounce } from '@github/mini-throttle';
+import { VFile } from 'vfile';
 import { useData } from 'vitepress';
 import { onMounted, onUnmounted, ref } from 'vue';
 
@@ -60,6 +62,39 @@ const monacoOptions: any = {
 
 // Automatically compile new script.
 const story = ref<Story>();
+let editor: any = null;
+let decorations: any = null;
+function monacoMount(monacoEditor: any) {
+  editor = monacoEditor;
+}
+function annotateErrors(vfile: VFile) {
+  if (!editor) {
+    return;
+  }
+  let annotations = vfile.messages.map((m) => {
+    if (!m.position) {
+      return null;
+    }
+    const range = {
+      endColumn: m.position.end.column,
+      endLineNumber: m.position.end.line,
+      startColumn: m.position.start.column,
+      startLineNumber: m.position.start.line,
+    };
+    return {
+      range,
+      options: {
+        hoverMessage: { value: m.message },
+        inlineClassName: 'md-warning',
+      },
+    };
+  }).filter((e) => e);
+
+  if (decorations) {
+    decorations.clear();
+  }
+  decorations = editor.createDecorationsCollection(annotations);
+}
 const handleChange = debounce(async (code: string) => {
   if (!code) {
     return;
@@ -67,13 +102,11 @@ const handleChange = debounce(async (code: string) => {
   clear();
   try {
     const compiled = await (await useCompiler()).compileAll('main', async () => code);
-    try {
-      const s = compiled.toString().trim()
-      story.value = new Story(s, await useFengari());
-      multiNext(10);
-    } catch (e) {
-      console.log(e);
-    }
+    defaultCode.value = code;
+    annotateErrors(compiled);
+    const s = compiled.toString().trim()
+    story.value = new Story(s, await useFengari());
+    multiNext(10);
   } catch (e) {
     console.log(e);
   }
@@ -218,5 +251,13 @@ function next(option?: number): boolean {
 .v-enter-from,
 .v-leave-to {
   opacity: 0;
+}
+
+/* Monaco styles */
+.md-warning {
+  text-decoration: red wavy underline;
+}
+.hover-contents p {
+  line-height: 1em;
 }
 </style>

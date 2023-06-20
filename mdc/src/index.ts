@@ -121,16 +121,54 @@ return {[""]={version=${VERSION},entry=${JSON.stringify(removeMdExt(name))}},${c
    */
   async compile(content: string): Promise<VFile> {
     let preprocessed = content.replace(/\r\n/g, '\n');
+    const originalLineNumbers: number[] = [];
+    const newLineNumbers: number[] = [];
     if (!this.config.noAutoNewLine) {
-      preprocessed = content
-        .replace(/\s+/g, (s) => {
-          if (s.startsWith('\n') && !s.includes('\n', 1)) {
-            return `\n${s}`;
-          }
-          return s;
-        });
+      const lines = preprocessed.split('\n');
+      const newLines: string[] = [];
+      const empty = /^\s+$/
+      for (let i = 0; i < lines.length; i += 1) {
+        const line = lines[i];
+        originalLineNumbers.push(i);
+        newLineNumbers.push(newLines.length);
+        newLines.push(line);
+        if (empty.test(line)) {
+          continue;
+        }
+        if (i + 1 >= lines.length || !empty.test(lines[i + 1])) {
+          newLines.push('');
+        }
+      }
+      preprocessed = newLines.join('\n');
     }
-    return this.remark.process(preprocessed);
+    const result = this.remark.process(preprocessed);
+    if (this.config.noAutoNewLine) {
+      return result;
+    }
+    function binarySearch(value: number, start: number, end: number): number {
+      if (end - start <= 1) {
+        return start;
+      }
+      if (newLineNumbers[start] === value) {
+        return start;
+      }
+      const middle = Math.floor((end + start) / 2);
+      if (newLineNumbers[middle] > value) {
+        return binarySearch(value, start, middle);
+      }
+      return binarySearch(value, middle, end);
+    }
+    return result.then((vfile) => {
+      vfile.messages.forEach((msg) => {
+        if (msg.position) {
+          msg.position.start.line =
+            originalLineNumbers[binarySearch(msg.position.start.line, 0, newLineNumbers.length)] + 1;
+          msg.position.end.line =
+            originalLineNumbers[binarySearch(msg.position.end.line, 0, newLineNumbers.length)] + 1;
+        }
+      });
+      return vfile;
+    });
   }
 
   /**

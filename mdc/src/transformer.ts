@@ -1,6 +1,5 @@
 import {
-  Code,
-  Content, Heading, Link, Paragraph, PhrasingContent, Root,
+  Code, Heading, Link, Paragraph, PhrasingContent, Root,
 } from 'mdast';
 import { ContainerDirective } from 'mdast-util-directive';
 import { MDXTextExpression } from 'mdast-util-mdx-expression';
@@ -181,23 +180,6 @@ class AstTransformer {
     });
   }
 
-  /**
-   * Makes sure that the node and all nodes under matches the given condition.
-   */
-  checkChildren(node: MarkdownParent, condition: (node: Content) => boolean, msg: string) {
-    if (node.children) {
-      node.children.forEach((child) => {
-        if (!condition(child)) {
-          this.vfile.message(msg, node);
-        }
-        const parent = child as MarkdownParent;
-        if (parent.children) {
-          this.checkChildren(parent, condition, msg);
-        }
-      });
-    }
-  }
-
   parseBlock(block: MarkdownParent): LuaArray {
     const stack = new HeadingStack(block, this.vfile);
     // Levels of previous headings.
@@ -228,6 +210,11 @@ class AstTransformer {
           stack.push(nested, node.depth);
           break;
         }
+        case 'html':
+          if (!node.value.trim().startsWith('<!--')) {
+            current.children.push(asIs(node));
+          }
+          break;
         default:
           this.vfile.message(`unsupported markdown type: ${node.type}`, node);
           current.children.push(asIs(node));
@@ -438,19 +425,14 @@ class AstTransformer {
    */
   toTextNode(para: Paragraph, tags: LuaTags): LuaText {
     const references: { [id: string]: [string, MDXTextExpression] } = {};
-    this.checkChildren(
-      para,
-      (n) => {
-        const node = n;
-        if (node.type === 'mdxTextExpression') {
-          const id = uuidv4();
-          references[id] = [node.value, node];
-          node.value = id;
-        }
-        return node.type !== 'link' && node.type !== 'inlineCode';
-      },
-      'links or inline code snippets in text are not supported',
-    );
+    visitParents(para, (n) => {
+      const node = n;
+      if (node.type === 'mdxTextExpression') {
+        const id = uuidv4();
+        references[id] = [node.value, node];
+        node.value = id;
+      }
+    });
     const [text, values, plural] = this.replaceReferences(toMarkdownString(para), references);
     const textNode: LuaText = {
       type: 'text',

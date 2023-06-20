@@ -157,10 +157,6 @@ class MacroExpander {
     }
     const { children } = node;
     if (children.length === 0 || children[0].type !== 'inlineCode') {
-      const code = children.find((child) => child.type === 'inlineCode');
-      if (code) {
-        this.vfile.message('unsupported embedded inline code', code);
-      }
       return false;
     }
     if (children.length === 1) {
