@@ -20,7 +20,10 @@ local function fuzzy_lookup(t, key)
     if v then
         return v
     end
-    key = string.gsub(string.gsub(string.lower(key), ' ', '-'), '%p', '')
+    key = string.lower(key)
+    key = string.gsub(key, '_', ' ')
+    key = string.gsub(key, '%p', '')
+    key = string.gsub(key, ' ', '-')
     return t[key]
 end
 
