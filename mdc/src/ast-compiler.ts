@@ -31,6 +31,14 @@ export function serializeTableInner<T>(
     .join(',');
 }
 
+function serializePosition(node: LuaElement) {
+  const position = node.position || node.node.position;
+  if (position) {
+    return `"${position.start.line}:${position.start.column}"`;
+  }
+  return '""';
+}
+
 class AstCompiler {
   root: LuaArray;
 
@@ -138,6 +146,19 @@ class AstCompiler {
           (p) => `{${p.map((s) => JSON.stringify(s)).join(',')}}`,
         );
         const attributes: string[] = [];
+        if (this.vfile.data.debug) {
+          const positions = [serializePosition(node)];
+          node.children.forEach((child) => positions.push(serializePosition(child)));
+          let prev = 0;
+          for (let i = 1; i < positions.length; i += 1) {
+            if (positions[prev] === positions[i]) {
+              positions[i] = '""';
+            } else {
+              prev = i;
+            }
+          }
+          attributes.push(`debug={${positions.join(',')}}`);
+        }
         if (node.data?.routine) {
           attributes.push('func=true');
         }

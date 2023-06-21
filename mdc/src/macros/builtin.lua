@@ -1,6 +1,8 @@
 --- @diagnostic disable-next-line: lowercase-global
 md = {}
 
+--- @class Position
+
 --- @class Node
 --- @field type string
 --- @field attributes table|nil
@@ -9,6 +11,7 @@ md = {}
 --- @field value string|nil
 --- @field url string|nil
 --- @field depth number|nil
+--- @field position Position|nil
 
 --- @param node Node
 --- @return string markdown stringified Markdown
@@ -66,15 +69,21 @@ end
 local loop_count = 0
 --- @param label string|nil the label
 --- @param children Node[] array of children
+--- @param label_pos Position|nil position of the label
+--- @param list_pos Position|nil position of the list
 --- @return Node blockquote a blockquote node that loops infinitely
-function md.loop(label, children)
+function md.loop(label, children, label_pos, list_pos)
   if not label then
     loop_count = loop_count + 1
     label = "\\#loop-" .. loop_count
   end
+  local heading = md.heading(label)
+  heading.position = label_pos
+  local list = md.block(children)
+  list.position = list_pos
   return md.block({
-    md.heading(label),
-    md.block(children),
+    heading,
+    list,
     md.paragraph({ md.link(label) }),
   })
 end
@@ -97,7 +106,7 @@ end
 --- @param arg Node a containerDirective node
 function md.destruct(arg)
   assert(arg.children and 1 <= #arg.children and #arg.children <= 2)
-  local label, list
+  local label, list, pos
   if #arg.children == 1 then
     list = arg.children[1]
     assert(list.type == "list")
@@ -106,16 +115,18 @@ function md.destruct(arg)
     list = arg.children[2]
     assert(label.data and label.data.directiveLabel)
     if label.type == "code" then
+      pos = label.position
       label = label.value
     elseif label.type == "paragraph" and #label.children == 1
         and label.children[1].type == "inlineCode" then
+      pos = label.children[1].position or label.position
       label = label.children[1].value
     else
       error("unexpected node")
     end
   end
   assert(list.type == "list")
-  return label, list
+  return label, list, pos
 end
 
 --- @param arg Node a containerDirective node
@@ -133,14 +144,14 @@ function loop(arg)
             - ...
   ]]
   --
-  local label, list = md.destruct(arg)
+  local label, list, pos = md.destruct(arg)
   local children = {}
   for _, item in ipairs(list.children) do
     for _, child in ipairs(item.children) do
       children[#children + 1] = child
     end
   end
-  return md.loop(label, children)
+  return md.loop(label, children, pos, list.position)
 end
 
 --- @param arg Node a containerDirective node

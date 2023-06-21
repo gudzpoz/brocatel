@@ -32,6 +32,7 @@ Markdown compiler implementation:
 - [X] Labels.
   - [ ] Compile-time label validity check.
 - [X] Macros.
+- [ ] Debug info generation.
 
 ### `v0.3.0`
 
@@ -76,6 +77,9 @@ Multi-thread (not *those* threads) support:
 - [ ] Multi-thread API design.
 - [ ] Multi-thread API implementation and thread-local variable support.
 - [ ] Story call and local variable support.
+  - [X] Function stack: call and return.
+  - [ ] Tail call support: jump to elsewhere, popping up a stack frame.
+  - [ ] Compiler error: forbid jumping from inside of a function.
 - [ ] Coroutine support.
 
 Some clarifications:

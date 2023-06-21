@@ -90,6 +90,7 @@ function parseDirectiveLine(line: Paragraph, vfile: VFile): ContainerDirective {
     type: 'containerDirective',
     name: '',
     children: [],
+    position: line.position,
   };
   const match = simpleDirectiveLineRegex.exec((line.children[0] as Text).value);
   if (match) {

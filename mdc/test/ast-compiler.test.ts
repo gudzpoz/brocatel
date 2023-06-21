@@ -9,6 +9,7 @@ import expandMacro from '../src/expander';
 import { detectLuaErrors } from '../src/lua';
 import transformAst from '../src/transformer';
 import astCompiler from '../src/ast-compiler';
+import { VFile } from 'vfile';
 
 const parser = unified()
   .use(remarkParse)
@@ -24,8 +25,12 @@ const parser = unified()
   .use(transformAst)
   .use(astCompiler);
 
-function assertCompile(markdown: string): string {
-  const vfile = parser.processSync(markdown);
+function assertCompile(markdown: string, debug?: boolean): string {
+  const input = new VFile(markdown);
+  if (debug) {
+    input.data.debug = true;
+  }
+  const vfile = parser.processSync(input);
   assert.isEmpty(
     vfile.messages.filter((e) => e.fatal !== null),
     vfile.messages.map((m) => m.message).join(', '),
@@ -264,4 +269,46 @@ test('Function', () => {
     + 'end},{{func=true,label="func"},{link={"func"},params=function()return{}end},{func=function(args)END()\n'
     + 'end}}}',
   );
+});
+
+test('Debug info', () => {
+  const compiled = assertCompile(
+    `# heading-1
+
+Line-2
+
+> Line-3
+
+:::loop \`loop-4\`
+
+- Line-5
+
+  Line-6
+
+- Line-7
+`,
+    true,
+  );
+  assert.equal(
+    compiled,
+    `
+    {{debug={"1:1",""},labels={["heading-1"]={2}}},
+      {{debug={"1:1","3:1","5:1","7:1"},label="heading-1",labels={["loop-4"]={4,2}}},
+        "Line-2",
+        {{debug={"5:1","5:3"}},
+          "Line-3"},
+        {{debug={"7:1","7:9"}},
+          {{debug={"7:9","9:1",""},label="loop-4"},
+            {{debug={"9:1","9:3","11:3","13:3"}},
+              "Line-5",
+              "Line-6",
+              "Line-7"},
+            {link={"loop-4"}}
+          }
+        }
+      }
+    }
+    `.replace(/\s/g, ''),
+  )
+  console.log(compiled);
 });

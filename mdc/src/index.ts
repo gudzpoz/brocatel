@@ -7,9 +7,11 @@ import { VFile } from 'vfile';
 
 import _fengari from 'fengari';
 import _fengari_js from 'fengari-interop';
+
 import astCompiler, { serializeTableInner } from './ast-compiler';
 import { directiveFromMarkdown } from './directive';
 import expandMacro from './expander';
+import remapLineNumbers from './line-remap';
 import transformAst from './transformer';
 
 import { convertSingleLuaValue } from './lua';
@@ -24,8 +26,16 @@ export interface CompilerConfig {
    * Requiring correct Markdown paragraphs.
    *
    * AutoNewLine adds line breaks, allowing the Markdown file to be more compact.
+   *
+   * Default: `true.
    */
-  noAutoNewLine?: boolean;
+  autoNewLine?: boolean;
+  /**
+   * Whether to attach debug info.
+   *
+   * Default: `true.
+   */
+  debug?: boolean;
 }
 
 function removeMdExt(name: string): string {
@@ -44,7 +54,11 @@ export class BrocatelCompiler {
   remark: Processor;
 
   constructor(config: CompilerConfig) {
-    this.config = config;
+    this.config = {
+      autoNewLine: true,
+      debug: true,
+      ...config,
+    };
     this.remark = unified()
       .use(remarkParse)
       .use(function remarkMdx() {
@@ -55,6 +69,7 @@ export class BrocatelCompiler {
         data.micromarkExtensions = [mdxExpression()];
       })
       .use(remarkJoinCJKLines)
+      .use(remapLineNumbers)
       .use(directiveFromMarkdown)
       .use(expandMacro)
       .use(transformAst)
@@ -120,10 +135,11 @@ return {[""]={version=${VERSION},entry=${JSON.stringify(removeMdExt(name))}},${c
    * @param content Markdown
    */
   async compile(content: string): Promise<VFile> {
-    let preprocessed = content.replace(/\r\n/g, '\n');
-    const originalLineNumbers: number[] = [];
-    const newLineNumbers: number[] = [];
-    if (!this.config.noAutoNewLine) {
+    const preprocessed = content.replace(/\r\n/g, '\n');
+    let vfile: VFile | null = null;
+    if (this.config.autoNewLine) {
+      const originalLineNumbers: number[] = [];
+      const newLineNumbers: number[] = [];
       const lines = preprocessed.split('\n');
       const newLines: string[] = [];
       const empty = /^\s+$/
@@ -139,36 +155,18 @@ return {[""]={version=${VERSION},entry=${JSON.stringify(removeMdExt(name))}},${c
           newLines.push('');
         }
       }
-      preprocessed = newLines.join('\n');
+      vfile = new VFile(newLines.join('\n'));
+      vfile.data.lineMapping = {
+        original: originalLineNumbers,
+        newLines: newLineNumbers,
+      };
+    } else {
+      vfile = new VFile(preprocessed);
     }
-    const result = this.remark.process(preprocessed);
-    if (this.config.noAutoNewLine) {
-      return result;
+    if (this.config.debug) {
+      vfile.data.debug = true;
     }
-    function binarySearch(value: number, start: number, end: number): number {
-      if (end - start <= 1) {
-        return start;
-      }
-      if (newLineNumbers[start] === value) {
-        return start;
-      }
-      const middle = Math.floor((end + start) / 2);
-      if (newLineNumbers[middle] > value) {
-        return binarySearch(value, start, middle);
-      }
-      return binarySearch(value, middle, end);
-    }
-    return result.then((vfile) => {
-      vfile.messages.forEach((msg) => {
-        if (msg.position) {
-          msg.position.start.line =
-            originalLineNumbers[binarySearch(msg.position.start.line, 0, newLineNumbers.length)] + 1;
-          msg.position.end.line =
-            originalLineNumbers[binarySearch(msg.position.end.line, 0, newLineNumbers.length)] + 1;
-        }
-      });
-      return vfile;
-    });
+    return this.remark.process(vfile);
   }
 
   /**

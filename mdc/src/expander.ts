@@ -45,13 +45,19 @@ class MacroExpander {
   }
 
   expand() {
-    visitParents(this.root, (node, parents) => {
+    visitParents(this.root, (n, parents) => {
+      const node = n;
       if (node.type === 'root') {
         return;
       }
+      let position = node.position;
       const parent = parents[parents.length - 1];
       while (this.expandSyntacticSugar(node, parent)
           || this.expandMacro(node)) {
+        if (!node.position && position) {
+          node.position = position;
+        }
+        position = node.position || position;
         // Until no further expansion is possible.
       }
     });

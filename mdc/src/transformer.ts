@@ -99,7 +99,6 @@ class HeadingStack {
         * # non-function-2
         */
       if (last.data?.routine && !hasReturned(last)) {
-        this.vfile.info('implicit return', last.node);
         appendReturn(last);
       }
       this.depths.pop();
