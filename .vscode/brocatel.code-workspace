@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../docs"
+		},
+		{
+			"path": "../mdc"
+		},
+		{
+			"path": "../mde"
+		},
+		{
+			"path": "../vm"
+		},
+	],
+	"settings": {
+		"licenser.author": "gudzpoz",
+		"licenser.license": "MIT",
+		"licenser.projectName": "brocatel",
+		"licenser.disableAutoHeaderInsertion": true,
+		"Lua.workspace.useGitIgnore": true,
+	}
+}

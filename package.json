@@ -1,0 +1,17 @@
+{
+  "name": "brocatel-root",
+  "version": "0.3.0",
+  "description": "The root workspace pseudo-project.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "gudzpoz",
+  "license": "MIT",
+  "pnpm": {
+    "patchedDependencies": {
+      "fengari@0.1.4": "mdc/patches/fengari@0.1.4.patch"
+    }
+  }
+}

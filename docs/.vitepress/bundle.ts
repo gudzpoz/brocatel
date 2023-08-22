@@ -4,7 +4,7 @@ import path from 'path';
 
 const dir = path.dirname(__filename);
 const destination = path.join(dir, 'cache', 'vm-bundle.lua');
-const root = path.normalize(path.join(dir, '..', '..', '..'));
+const root = path.normalize(path.join(dir, '..', '..'));
 const luaPath = path.join(root, 'vm', 'src');
 
 const result = bundle(

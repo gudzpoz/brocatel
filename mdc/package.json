@@ -45,10 +45,5 @@
     "unist-util-visit-parents": "^5.1.3",
     "uuid": "^9.0.0",
     "vfile": "^5.3.7"
-  },
-  "pnpm": {
-    "patchedDependencies": {
-      "fengari@0.1.4": "patches/fengari@0.1.4.patch"
-    }
   }
 }

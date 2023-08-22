@@ -14,7 +14,7 @@ function useMdc() {
 export function useCompiler() {
   if (!compiler) {
     compiler = useMdc().then((mdc) => new mdc.BrocatelCompiler({
-      noAutoNewLine: false,
+      autoNewLine: true,
     }));
   }
   return compiler;

@@ -2,8 +2,6 @@ name: Build Documentation
 
 on:
   workflow_dispatch:
-    branches:
-      - main
   push:
     paths:
       - 'mdc/docs/**'
@@ -25,23 +23,23 @@ jobs:
         with:
           version: 8.5.0
           run_install: false
+      - name: Setup PNPM Workspace
+        run: |
+          pnpm install
       - name: Build Brocatel Markdown Compiler
         run: |
           cd mdc
-          pnpm install
           pnpm build
       - name: Bundle Brocatel VM Runtime
         run: |
-          cd mdc/docs
-          pnpm install
+          cd docs
           pnpm bundle
       - name: Build VitePress
         run: |
-          cd mdc/docs
-          pnpm install
+          cd docs
           pnpm docs:build
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: mdc/docs/.vitepress/dist
+          folder: docs/.vitepress/dist
           single-commit: true
