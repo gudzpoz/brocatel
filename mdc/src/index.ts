@@ -1,8 +1,9 @@
-import { mdxExpressionFromMarkdown } from 'mdast-util-mdx-expression';
+import { Root } from 'mdast';
+import { mdxExpressionFromMarkdown, mdxExpressionToMarkdown } from 'mdast-util-mdx-expression';
 import { mdxExpression } from 'micromark-extension-mdx-expression';
 import remarkJoinCJKLines from 'remark-join-cjk-lines';
 import remarkParse from 'remark-parse';
-import { Processor, unified } from 'unified';
+import { Plugin, Processor, unified } from 'unified';
 import { VFile } from 'vfile';
 
 import _fengari from 'fengari';
@@ -12,9 +13,8 @@ import astCompiler, { serializeTableInner } from './ast-compiler';
 import { directiveFromMarkdown } from './directive';
 import expandMacro from './expander';
 import remapLineNumbers from './line-remap';
-import transformAst from './transformer';
-
 import { convertSingleLuaValue } from './lua';
+import transformAst from './transformer';
 
 const VERSION = 1;
 
@@ -45,6 +45,40 @@ function removeMdExt(name: string): string {
   return name;
 }
 
+const remarkMdx: Plugin<any[], Root> = function remarkMdx() {
+  // Remark-Mdx expects the expressions to be JS expressions,
+  // while we use them as Lua ones.
+  const data = this.data();
+  function addTo(field: string, ext: any) {
+    if (data[field]) {
+      (data[field] as Array<any>).push(ext);
+    } else {
+      data[field] = [ext];
+    }
+  }
+  // We only allow inline mdx (mdxTextExpression), ruling out mdxFlowExpression.
+  // Read the definition of mdxExpressionFromMarkdown, mdxExpressionToMarkdown
+  //   and mdxExpression to understand the code below.
+  addTo('fromMarkdownExtensions', [{
+    enter: {
+      mdxTextExpression: mdxExpressionFromMarkdown.enter?.mdxTextExpression,
+    },
+    exit: {
+      mdxTextExpression: mdxExpressionFromMarkdown.exit?.mdxTextExpression,
+      mdxTextExpressionChunk: mdxExpressionFromMarkdown.exit?.mdxTextExpressionChunk,
+    },
+  }]);
+  addTo('toMarkdownExtensions', {
+    extensions: [{
+      handlers: {
+        mdxTextExpression: (mdxExpressionToMarkdown.handlers as any)?.mdxTextExpression,
+      },
+      unsafe: mdxExpressionToMarkdown.unsafe,
+    }],
+  });
+  addTo('micromarkExtensions', { text: mdxExpression().text });
+};
+
 /**
  * The compiler.
  */
@@ -61,13 +95,7 @@ export class BrocatelCompiler {
     };
     this.remark = unified()
       .use(remarkParse)
-      .use(function remarkMdx() {
-        // Remark-Mdx expects the expressions to be JS expressions,
-        // while we use them as Lua ones.
-        const data = this.data();
-        data.fromMarkdownExtensions = [[mdxExpressionFromMarkdown]];
-        data.micromarkExtensions = [mdxExpression()];
-      })
+      .use(remarkMdx)
       .use(remarkJoinCJKLines)
       .use(remapLineNumbers)
       .use(directiveFromMarkdown)
@@ -142,17 +170,16 @@ return {[""]={version=${VERSION},entry=${JSON.stringify(removeMdExt(name))}},${c
       const newLineNumbers: number[] = [];
       const lines = preprocessed.split('\n');
       const newLines: string[] = [];
-      const empty = /^\s+$/
+      const empty = /^\s+$/;
       for (let i = 0; i < lines.length; i += 1) {
         const line = lines[i];
         originalLineNumbers.push(i);
         newLineNumbers.push(newLines.length);
         newLines.push(line);
-        if (empty.test(line)) {
-          continue;
-        }
-        if (i + 1 >= lines.length || !empty.test(lines[i + 1])) {
-          newLines.push('');
+        if (!empty.test(line)) {
+          if (i + 1 >= lines.length || !empty.test(lines[i + 1])) {
+            newLines.push('');
+          }
         }
       }
       vfile = new VFile(newLines.join('\n'));
@@ -186,3 +213,7 @@ return {[""]={version=${VERSION},entry=${JSON.stringify(removeMdExt(name))}},${c
 _fengari.js = _fengari_js;
 _fengari.tojs = convertSingleLuaValue;
 export const fengari = _fengari;
+
+export const plugins = {
+  remarkMdx,
+};

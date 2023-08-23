@@ -50,7 +50,7 @@ class MacroExpander {
       if (node.type === 'root') {
         return;
       }
-      let position = node.position;
+      let { position } = node;
       const parent = parents[parents.length - 1];
       while (this.expandSyntacticSugar(node, parent)
           || this.expandMacro(node)) {

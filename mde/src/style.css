@@ -1,0 +1,13 @@
+.outline-none {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+.milkdown-theme-nord p code[data-type="mdxTextExpression"]::before {
+    content: "{";
+    font-size: xx-small;
+}
+.milkdown-theme-nord p code[data-type="mdxTextExpression"]::after {
+    content: "}";
+    font-size: xx-small;
+}

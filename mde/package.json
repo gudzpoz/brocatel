@@ -1,12 +1,37 @@
 {
   "name": "brocatel-mde",
   "version": "0.3.0",
-  "description": "",
-  "main": "index.js",
+  "description": "A WYSIWYG-style editor for Brocatel Markdown.",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.59.1",
+    "@typescript-eslint/parser": "^5.59.1",
+    "eslint": "^8.39.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-airbnb-typescript": "^17.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5",
+    "vite-node": "^0.34.2",
+    "vite-plugin-dts": "^2.3.0"
+  },
+  "dependencies": {
+    "@milkdown/core": "^7.3.0",
+    "@milkdown/ctx": "^7.3.0",
+    "@milkdown/exception": "^7.3.0",
+    "@milkdown/plugin-listener": "^7.3.0",
+    "@milkdown/preset-commonmark": "^7.3.0",
+    "@milkdown/prose": "^7.3.0",
+    "@milkdown/theme-nord": "^7.3.0",
+    "@milkdown/transformer": "^7.3.0",
+    "@milkdown/utils": "^7.3.0",
+    "brocatel-mdc": "workspace:^",
+    "mdast-util-mdx-expression": "^1.3.2",
+    "unified": "^10.1.2"
+  }
 }
