@@ -2,6 +2,7 @@ import { mdxExpressionFromMarkdown } from 'mdast-util-mdx-expression';
 import { mdxExpression } from 'micromark-extension-mdx-expression';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
+import { VFile } from 'vfile';
 import { assert, test } from 'vitest';
 
 import { directiveFromMarkdown } from '../src/directive';
@@ -9,7 +10,6 @@ import expandMacro from '../src/expander';
 import { detectLuaErrors } from '../src/lua';
 import transformAst from '../src/transformer';
 import astCompiler from '../src/ast-compiler';
-import { VFile } from 'vfile';
 
 const parser = unified()
   .use(remarkParse)
@@ -262,7 +262,7 @@ Hello World!
 });
 
 test('Function', () => {
-  const compiled = assertCompile(`# func {}\n[{}](#func)\n\n---`);
+  const compiled = assertCompile('# func {}\n[{}](#func)\n\n---');
   assert.equal(
     compiled,
     '{{labels={func={3}}},{func=function(args)END()\n'
@@ -309,6 +309,5 @@ Line-2
       }
     }
     `.replace(/\s/g, ''),
-  )
-  console.log(compiled);
+  );
 });

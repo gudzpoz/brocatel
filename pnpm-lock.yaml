@@ -5,9 +5,12 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
+  '@milkdown/preset-commonmark@7.3.0':
+    hash: u3egw5ykfwph73pcd5qaju6opa
+    path: patches/@milkdown__preset-commonmark@7.3.0.patch
   fengari@0.1.4:
     hash: pdt37ua5x2o454b2tlukep72im
-    path: mdc/patches/fengari@0.1.4.patch
+    path: patches/fengari@0.1.4.patch
 
 importers:
 
@@ -154,7 +157,7 @@ importers:
         version: registry.npmmirror.com/@milkdown/plugin-listener@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0)
       '@milkdown/preset-commonmark':
         specifier: ^7.3.0
-        version: registry.npmmirror.com/@milkdown/preset-commonmark@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0)
+        version: registry.npmmirror.com/@milkdown/preset-commonmark@7.3.0(patch_hash=u3egw5ykfwph73pcd5qaju6opa)(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0)
       '@milkdown/prose':
         specifier: ^7.3.0
         version: registry.npmmirror.com/@milkdown/prose@7.3.0
@@ -1172,7 +1175,7 @@ packages:
       - '@milkdown/transformer'
     dev: false
 
-  registry.npmmirror.com/@milkdown/preset-commonmark@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0):
+  registry.npmmirror.com/@milkdown/preset-commonmark@7.3.0(patch_hash=u3egw5ykfwph73pcd5qaju6opa)(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0):
     resolution: {integrity: sha512-9ehBLkiLomp2av6E7YiRwihx/YsZ+LR80Y21e+Qzs5d6eq+payhblKQSaYYlVECA7gwLIOy67Lu8jxkOnO++rw==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/@milkdown/preset-commonmark/-/preset-commonmark-7.3.0.tgz}
     id: registry.npmmirror.com/@milkdown/preset-commonmark/7.3.0
     name: '@milkdown/preset-commonmark'
@@ -1194,6 +1197,7 @@ packages:
       tslib: registry.npmmirror.com/tslib@2.6.2
       unist-util-visit: registry.npmmirror.com/unist-util-visit@5.0.0
     dev: false
+    patched: true
 
   registry.npmmirror.com/@milkdown/prose@7.3.0:
     resolution: {integrity: sha512-YUx30G++v9RYw6mM5ybvvezaJBdSyhrDsVeuAzYkBRfV2fwEV1airBt96BqY+FeICYqE1eTCUty/gaPzpcwbPg==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/@milkdown/prose/-/prose-7.3.0.tgz}

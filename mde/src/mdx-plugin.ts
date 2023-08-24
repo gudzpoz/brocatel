@@ -1,5 +1,4 @@
 import { MilkdownPlugin } from '@milkdown/ctx';
-import { inlineCodeAttr } from '@milkdown/preset-commonmark';
 import { InputRule } from '@milkdown/prose/inputrules';
 import {
   $inputRule, $markAttr, $markSchema, $remark,
@@ -7,7 +6,7 @@ import {
 
 import { plugins } from 'brocatel-mdc/src/index';
 
-export const remarkMdxPlugin = $remark('remarkMdxPlugin', () => plugins.remarkMdx as any);
+export const remarkMdxPlugin = $remark('remarkMdxPlugin', () => plugins.remarkInlineMdx as any);
 
 const MDX_AST_TYPE = 'mdxTextExpression';
 

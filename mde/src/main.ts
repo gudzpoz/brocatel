@@ -5,6 +5,7 @@ import { nord } from '@milkdown/theme-nord';
 
 import '@milkdown/theme-nord/style.css';
 
+import { directivePlugin } from './directive-plugin';
 import { mdxPlugin } from './mdx-plugin';
 
 import './style.css';
@@ -23,5 +24,6 @@ Editor
   .config(nord)
   .use(commonmark)
   .use(listener)
+  .use(directivePlugin)
   .use(mdxPlugin)
   .create();

@@ -32,6 +32,7 @@ function handleDirective(node: ContainerDirective, _: any, state: State, info: I
     }));
     exit();
   }
+  value += tracker.move('\n');
   const shallow = labeled ? ({ ...node, children: node.children.slice(1) }) : node;
   value += tracker.move('\n');
   value += tracker.move(containerFlow(shallow, state, tracker.current()));
@@ -112,33 +113,43 @@ function parseDirectiveLine(line: Paragraph, vfile: VFile): ContainerDirective {
   return directive;
 }
 
-export const directiveFromMarkdown: Plugin = () => (root: Node, vfile: VFile) => {
-  visitParents(root as Root, (node) => {
-    const container = node as Parent;
-    const { children } = container;
-    if (children && children.some(isDirectiveLine)) {
-      const merged: Content[] = [];
-      let inDirective = false;
-      children.forEach((child) => {
-        if (inDirective) {
-          const directive = merged[merged.length - 1] as ContainerDirective;
-          directive.children.push(child as BlockContent);
-          inDirective = false;
-          if (child.type === 'code' && child.lang === 'lua' && child.meta === 'func'
-            && directive.children.length === 1) {
+export const directiveFromMarkdown: Plugin<any[], Root> = function directiveFromMarkdown() {
+  const data = this.data();
+  const extension = { extensions: [directiveToMarkdown] };
+  if (data.toMarkdownExtensions) {
+    (data.toMarkdownExtensions as Array<any>).push(extension);
+  } else {
+    data.toMarkdownExtensions = [extension];
+  }
+
+  return (root: Node, vfile: VFile) => {
+    visitParents(root as Root, (node) => {
+      const container = node as Parent;
+      const { children } = container;
+      if (children && children.some(isDirectiveLine)) {
+        const merged: Content[] = [];
+        let inDirective = false;
+        children.forEach((child) => {
+          if (inDirective) {
+            const directive = merged[merged.length - 1] as ContainerDirective;
+            directive.children.push(child as BlockContent);
+            inDirective = false;
+            if (child.type === 'code' && child.lang === 'lua' && child.meta === 'func'
+              && directive.children.length === 1) {
+              inDirective = true;
+            }
+          } else if (isDirectiveLine(child)) {
+            merged.push(parseDirectiveLine(child as Paragraph, vfile));
             inDirective = true;
+          } else {
+            merged.push(child);
           }
-        } else if (isDirectiveLine(child)) {
-          merged.push(parseDirectiveLine(child as Paragraph, vfile));
-          inDirective = true;
-        } else {
-          merged.push(child);
+        });
+        container.children = merged;
+        if (inDirective) {
+          vfile.message('container directive without content', children[children.length - 1]);
         }
-      });
-      container.children = merged;
-      if (inDirective) {
-        vfile.message('container directive without content', children[children.length - 1]);
       }
-    }
-  });
+    });
+  };
 };

@@ -11,7 +11,8 @@
   "license": "MIT",
   "pnpm": {
     "patchedDependencies": {
-      "fengari@0.1.4": "mdc/patches/fengari@0.1.4.patch"
+      "fengari@0.1.4": "patches/fengari@0.1.4.patch",
+      "@milkdown/preset-commonmark@7.3.0": "patches/@milkdown__preset-commonmark@7.3.0.patch"
     }
   }
 }

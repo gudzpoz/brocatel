@@ -1,0 +1,26 @@
+diff --git a/lib/index.es.js b/lib/index.es.js
+index 2d9a485d7f72a66ccd58190e1f2a39eb0adcbdbf..759bd7ad0e732637d59dab17b7ffc5df12d95471 100644
+--- a/lib/index.es.js
++++ b/lib/index.es.js
+@@ -1079,7 +1079,7 @@ n(We, {
+ });
+ const M = C("list_item", (t) => ({
+   group: "listItem",
+-  content: "paragraph block*",
++  content: "block+",
+   attrs: {
+     label: {
+       default: "•"
+diff --git a/src/node/list-item.ts b/src/node/list-item.ts
+index 941b7e9742fbfcb48b895d0bc99f4e747faf409b..5b15caca489c63617a007f20e6b9ff1d1157f460 100644
+--- a/src/node/list-item.ts
++++ b/src/node/list-item.ts
+@@ -18,7 +18,7 @@ withMeta(listItemAttr, {
+ /// Schema for list item node.
+ export const listItemSchema = $nodeSchema('list_item', ctx => ({
+   group: 'listItem',
+-  content: 'paragraph block*',
++  content: 'block+',
+   attrs: {
+     label: {
+       default: '•',

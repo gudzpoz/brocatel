@@ -45,7 +45,7 @@ function removeMdExt(name: string): string {
   return name;
 }
 
-const remarkMdx: Plugin<any[], Root> = function remarkMdx() {
+const remarkInlineMdx: Plugin<any[], Root> = function remarkInlineMdx() {
   // Remark-Mdx expects the expressions to be JS expressions,
   // while we use them as Lua ones.
   const data = this.data();
@@ -95,7 +95,7 @@ export class BrocatelCompiler {
     };
     this.remark = unified()
       .use(remarkParse)
-      .use(remarkMdx)
+      .use(remarkInlineMdx)
       .use(remarkJoinCJKLines)
       .use(remapLineNumbers)
       .use(directiveFromMarkdown)
@@ -215,5 +215,6 @@ _fengari.tojs = convertSingleLuaValue;
 export const fengari = _fengari;
 
 export const plugins = {
-  remarkMdx,
+  remarkInlineMdx,
+  remarkSimplifiedDirective: directiveFromMarkdown,
 };
