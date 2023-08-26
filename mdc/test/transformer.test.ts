@@ -10,7 +10,7 @@ import {
 } from '../src/ast';
 import { directiveFromMarkdown } from '../src/directive';
 import expandMacro from '../src/expander';
-import transformAst from '../src/transformer';
+import { transformAst } from '../src/transformer';
 
 const parser = unified()
   .use(remarkParse)

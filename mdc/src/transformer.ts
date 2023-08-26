@@ -2,7 +2,7 @@ import {
   Code, Heading, Link, Paragraph, PhrasingContent, Root,
 } from 'mdast';
 import { ContainerDirective } from 'mdast-util-directive';
-import { MDXTextExpression } from 'mdast-util-mdx-expression';
+import { MdxTextExpression } from 'mdast-util-mdx-expression';
 import { slug } from 'github-slugger';
 import { Plugin } from 'unified';
 import { visitParents } from 'unist-util-visit-parents';
@@ -14,6 +14,7 @@ import {
   MarkdownNode, MarkdownParent, RelativePath, luaArray,
 } from './ast';
 import { toMarkdownString } from './expander';
+import { HeadingStack, appendReturn, hasReturned } from './headings';
 import { isIdentifier } from './lua';
 
 /**
@@ -21,7 +22,7 @@ import { isIdentifier } from './lua';
  *
  * @param s the label
  */
-function fuzzyLabel(s: string) {
+export function fuzzyLabel(s: string) {
   return slug(s.replace(/_/g, '-').replace(/#/g, '_')).replace(/_/g, '#');
 }
 
@@ -39,20 +40,6 @@ function parseLinkUrl(link: Link): string[] {
   return tokens.map((s) => fuzzyLabel(s.replace(/\\#/g, '#')));
 }
 
-function hasReturned(func: LuaArray): boolean {
-  const last = func.children[func.children.length - 1];
-  return last?.type === 'func' && last.code.trim() === 'END()';
-}
-
-function appendReturn(array: LuaArray) {
-  array.children.push({
-    type: 'func',
-    code: 'END()',
-    children: [],
-    node: array.node,
-  });
-}
-
 function asIs(node: MarkdownNode): LuaText {
   return {
     type: 'text',
@@ -61,50 +48,6 @@ function asIs(node: MarkdownNode): LuaText {
     values: {},
     node,
   };
-}
-
-class HeadingStack {
-  vfile: VFile;
-  root: LuaArray;
-  depths: number[];
-  stack: LuaArray[];
-
-  constructor(block: MarkdownParent, vfile: VFile) {
-    this.vfile = vfile;
-    this.root = luaArray(block);
-    this.stack = [this.root];
-    this.depths = [0];
-  }
-
-  lastDepth() {
-    return this.depths[this.depths.length - 1];
-  }
-
-  last() {
-    return this.stack[this.stack.length - 1];
-  }
-
-  push(array: LuaArray, depth: number) {
-    this.depths.push(depth);
-    this.stack.push(array);
-  }
-
-  popUntil(depth: number) {
-    while (depth <= this.lastDepth()) {
-      const last = this.last();
-      /* Insert implicit returns at the end of a function:
-        * # non-function-1
-        * ## a-function {}
-        * <-- `---` implicitly inserted here
-        * # non-function-2
-        */
-      if (last.data?.routine && !hasReturned(last)) {
-        appendReturn(last);
-      }
-      this.depths.pop();
-      this.stack.pop();
-    }
-  }
 }
 
 class AstTransformer {
@@ -183,7 +126,7 @@ class AstTransformer {
     const stack = new HeadingStack(block, this.vfile);
     // Levels of previous headings.
     block.children.forEach((node) => {
-      let current = stack.last();
+      const current = stack.last();
       switch (node.type) {
         case 'paragraph':
           current.children.push(this.parseParagraph(node));
@@ -225,7 +168,7 @@ class AstTransformer {
   }
 
   parseHeading(node: Heading): LuaArray {
-    if (node.children.some((child) => child.type === 'mdxTextExpression')) {
+    if (node.children.some((child) => child.type as string === 'mdxTextExpression')) {
       return this.parseFunctionHeading(node);
     }
     return luaArray(
@@ -237,16 +180,16 @@ class AstTransformer {
   parseFunctionHeading(node: Heading): LuaArray {
     if (node.children.length !== 2
         || node.children[0].type !== 'text'
-        || node.children[1].type !== 'mdxTextExpression') {
+        || node.children[1].type as string !== 'mdxTextExpression') {
       this.vfile.message('unexpected complex heading', node);
       return luaArray(node);
     }
     const name = node.children[0].value.trim();
-    const params = node.children[1].value.split(',')
+    const params = (node.children[1] as unknown as MdxTextExpression).value.split(',')
       .map((s) => s.trim()).filter((s) => s);
     const invalid = params.filter((s) => !isIdentifier(s));
     if (invalid.length > 0) {
-      this.vfile.message(`not valid identifier: ${invalid.join(', ')}`)
+      this.vfile.message(`not valid identifier: ${invalid.join(', ')}`);
     }
     const array = luaArray(
       node,
@@ -423,10 +366,10 @@ class AstTransformer {
    * Converts children of a paragraph to a text node.
    */
   toTextNode(para: Paragraph, tags: LuaTags): LuaText {
-    const references: { [id: string]: [string, MDXTextExpression] } = {};
+    const references: { [id: string]: [string, MdxTextExpression] } = {};
     visitParents(para, (n) => {
-      const node = n;
-      if (node.type === 'mdxTextExpression') {
+      if (n.type as string === 'mdxTextExpression') {
+        const node = n as unknown as MdxTextExpression;
         const id = uuidv4();
         references[id] = [node.value, node];
         node.value = id;
@@ -446,7 +389,7 @@ class AstTransformer {
 
   replaceReferences(
     s: string,
-    references: { [id: string]: [string, MDXTextExpression] },
+    references: { [id: string]: [string, MdxTextExpression] },
   ): [string, { [id: string]: string }, string] {
     let i = 1;
     let str = s;
@@ -492,26 +435,24 @@ class AstTransformer {
       type: 'link',
       labels: match ? labels.slice(1) : labels,
       node: link,
-      root: match ? match[1] : void 0,
+      root: match ? match[1] : undefined,
     };
     if (!linkNode.root) {
       delete linkNode.root;
     }
     const expr = link.children[0];
-    if (expr?.type === 'mdxTextExpression') {
+    if (expr?.type as string === 'mdxTextExpression') {
       if (link.children.length > 1) {
         this.vfile.message('unexpected complex link content', link);
       }
-      const params = expr.value.trim();
+      const params = (expr as unknown as MdxTextExpression).value.trim();
       linkNode.params = `{${params}}`;
     }
     return linkNode;
   }
 }
 
-const transformAst: Plugin = () => (node, vfile) => {
+export const transformAst: Plugin = () => (node, vfile) => {
   const transformer = new AstTransformer(node as Root, vfile);
   return transformer.transform();
 };
-
-export default transformAst;

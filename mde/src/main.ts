@@ -5,12 +5,20 @@ import { nord } from '@milkdown/theme-nord';
 
 import '@milkdown/theme-nord/style.css';
 
+import { betterViewPlugin } from './views/better-view-plugin';
 import { directivePlugin } from './directive-plugin';
 import { mdxPlugin } from './mdx-plugin';
 
 import './style.css';
+import { normalizationPlugin } from './normalize-plugin';
 
-const markdown = '{ a + b }';
+const markdown = `Mdx: { a + b }
+
+# Heading 1
+
+### Heading 3
+
+[Link 1](#heading-1)`;
 
 Editor
   .make()
@@ -24,6 +32,8 @@ Editor
   .config(nord)
   .use(commonmark)
   .use(listener)
+  .use(normalizationPlugin)
+  .use(betterViewPlugin)
   .use(directivePlugin)
   .use(mdxPlugin)
   .create();

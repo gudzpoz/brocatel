@@ -22,5 +22,6 @@
 		"licenser.projectName": "brocatel",
 		"licenser.disableAutoHeaderInsertion": true,
 		"Lua.workspace.useGitIgnore": true,
+		"editor.tabSize": 2,
 	}
 }

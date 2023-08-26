@@ -8,7 +8,7 @@ import { assert, test } from 'vitest';
 import { directiveFromMarkdown } from '../src/directive';
 import expandMacro from '../src/expander';
 import { detectLuaErrors } from '../src/lua';
-import transformAst from '../src/transformer';
+import { transformAst } from '../src/transformer';
 import astCompiler from '../src/ast-compiler';
 
 const parser = unified()

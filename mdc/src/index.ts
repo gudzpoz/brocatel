@@ -14,7 +14,7 @@ import { directiveFromMarkdown } from './directive';
 import expandMacro from './expander';
 import remapLineNumbers from './line-remap';
 import { convertSingleLuaValue } from './lua';
-import transformAst from './transformer';
+import { fuzzyLabel, transformAst } from './transformer';
 
 const VERSION = 1;
 
@@ -217,4 +217,8 @@ export const fengari = _fengari;
 export const plugins = {
   remarkInlineMdx,
   remarkSimplifiedDirective: directiveFromMarkdown,
+};
+
+export const spec = {
+  anchorer: fuzzyLabel,
 };
