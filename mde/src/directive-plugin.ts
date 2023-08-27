@@ -12,29 +12,40 @@ import { plugins } from 'brocatel-mdc/src/index';
 
 export const remarkDirectivePlugin = $remark('remarkDirectivePlugin', () => plugins.remarkSimplifiedDirective as any);
 
-const DIRECTIVE_NAME_TYPE = 'directiveName';
-export const directiveNameAttr = $nodeAttr(DIRECTIVE_NAME_TYPE, () => ({ 'data-type': DIRECTIVE_NAME_TYPE }));
-export const directiveNameSchema = $nodeSchema(DIRECTIVE_NAME_TYPE, (ctx) => ({
+const DIRECTIVE_LABEL_TYPE = 'directiveLabel';
+export const directiveLabelAttr = $nodeAttr(DIRECTIVE_LABEL_TYPE, () => ({ 'data-type': DIRECTIVE_LABEL_TYPE }));
+export const directiveLabelSchema = $nodeSchema(DIRECTIVE_LABEL_TYPE, (ctx) => ({
+  priority: 100,
   content: 'text*',
   group: 'block',
-  defining: true,
-  parseDOM: [{ tag: `p[data-type="${DIRECTIVE_NAME_TYPE}"]` }],
-  toDOM: (node) => ['p', ctx.get(directiveNameAttr.key)(node), ['code', 0]],
+  parseDOM: [{ tag: `p[data-type="${DIRECTIVE_LABEL_TYPE}"]` }],
+  toDOM: (node) => ['p', ctx.get(directiveLabelAttr.key)(node), ['code', 0]],
   parseMarkdown: {
-    match: () => false,
-    runner: () => {},
+    match: (node) => node.type === 'paragraph' && node.data?.[DIRECTIVE_LABEL_TYPE] === true,
+    runner: (state, node, type) => {
+      let text;
+      if (node.children?.length === 1 && node.children[0].type === 'inlineCode') {
+        text = (node.children[0] as unknown as { value: string }).value.trim();
+      } else {
+        text = '';
+      }
+      state.openNode(type);
+      if (text !== '') {
+        state.addText(text);
+      }
+      state.closeNode();
+    },
   },
   toMarkdown: {
-    match: (node) => node.type.name === DIRECTIVE_NAME_TYPE,
+    match: (node) => node.type.name === DIRECTIVE_LABEL_TYPE,
     runner: (state, node) => {
-      const top = state.top();
-      if (top) {
-        const name = node.textContent || 'nil';
-        if (top.props) {
-          top.props.name = name;
-        } else {
-          top.props = { name };
-        }
+      const text = node.textContent.trim();
+      if (text !== '') {
+        state
+          .openNode('paragraph', undefined, { data: { [DIRECTIVE_LABEL_TYPE]: true } })
+          .openNode('inlineCode', text)
+          .closeNode()
+          .closeNode();
       }
     },
   },
@@ -43,10 +54,14 @@ export const directiveNameSchema = $nodeSchema(DIRECTIVE_NAME_TYPE, (ctx) => ({
 const DIRECTIVE_TYPE = 'containerDirective';
 export const directiveAttr = $nodeAttr(DIRECTIVE_TYPE, () => ({ 'data-type': DIRECTIVE_TYPE }));
 export const directiveSchema = $nodeSchema(DIRECTIVE_TYPE, (ctx) => ({
-  content: `${DIRECTIVE_NAME_TYPE} bullet_list`,
+  content: `${DIRECTIVE_LABEL_TYPE} bullet_list`,
   group: 'block',
-  defining: true,
   atom: false,
+  attrs: {
+    name: {
+      default: 'nil',
+    },
+  },
   parseDOM: [{
     tag: `div[data-type="${DIRECTIVE_TYPE}"]`,
   }],
@@ -55,11 +70,18 @@ export const directiveSchema = $nodeSchema(DIRECTIVE_TYPE, (ctx) => ({
     match: (node) => node.type === DIRECTIVE_TYPE,
     runner: (state, node, type) => {
       const { name } = node as any;
+      state.openNode(type, { name });
+      if (node.children?.[0]?.type !== 'paragraph') {
+        state.next({
+          type: 'paragraph',
+          data: { [DIRECTIVE_LABEL_TYPE]: true },
+          children: [{
+            type: 'inlineCode',
+            value: ' ',
+          }],
+        });
+      }
       state
-        .openNode(type, { name })
-        .openNode(directiveNameSchema.type(ctx))
-        .addText(name || 'nil')
-        .closeNode()
         .next(node.children)
         .closeNode();
     },
@@ -68,7 +90,7 @@ export const directiveSchema = $nodeSchema(DIRECTIVE_TYPE, (ctx) => ({
     match: (node) => node.type.name === DIRECTIVE_TYPE,
     runner: (state, node) => {
       state
-        .openNode(DIRECTIVE_TYPE)
+        .openNode(DIRECTIVE_TYPE, undefined, { name: node.attrs.name ?? 'nil' })
         .next(node.content)
         .closeNode();
     },
@@ -79,14 +101,14 @@ export const directiveInputRule = $inputRule((ctx) => new InputRule(
   /:::$/,
   (state, _, start, end) => {
     const pos = state.tr.doc.resolve(start);
-    if (pos.node(pos.depth - 1).type.name === DIRECTIVE_NAME_TYPE) {
+    if (pos.node(pos.depth - 1).type.name === DIRECTIVE_LABEL_TYPE) {
       return null;
     }
     const tr = state.tr.replaceRangeWith(
       start,
       end,
       directiveSchema.type(ctx).createChecked(null, [
-        directiveNameSchema.type(ctx).createChecked(),
+        directiveLabelSchema.type(ctx).createChecked(),
         bulletListSchema.type(ctx).createChecked(null, [
           listItemSchema.type(ctx).createChecked(null, [
             paragraphSchema.type(ctx).createChecked(),
@@ -99,8 +121,8 @@ export const directiveInputRule = $inputRule((ctx) => new InputRule(
 ));
 
 export const directivePlugin: MilkdownPlugin[] = [
-  directiveNameAttr,
-  directiveNameSchema,
+  directiveLabelAttr,
+  directiveLabelSchema,
 
   directiveAttr,
   directiveInputRule,

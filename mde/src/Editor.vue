@@ -28,6 +28,10 @@ const markdown = `Mdx: { a + b }
 :::loop
 - One
 - Two
+
+:::if \`true\`
+- True
+- False
 `;
 
 const nodeViewFactory = useNodeViewFactory();
@@ -42,9 +46,9 @@ useEditor((root) => Editor.make()
     });
   })
   .config(nord)
-  .use(commonmark)
   .use(listener)
   .use(useBetterViewPlugins(nodeViewFactory))
   .use(plugins)
+  .use(commonmark)
 );
 </script>

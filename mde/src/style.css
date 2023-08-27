@@ -24,15 +24,3 @@
     content: "}";
     font-size: xx-small;
 }
-
-/*
- * directive-plugin.ts: directive styles.
- */
-.ProseMirror div[data-type="containerDirective"] p[data-type="directiveName"] > code::before {
-    content: "::: ";
-    font-size: xx-small;
-}
-.ProseMirror div[data-type="containerDirective"] {
-    border-left: 0.2em solid lightgray;
-    padding-left: 0.5em;
-}
