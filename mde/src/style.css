@@ -6,6 +6,13 @@
     outline-offset: 2px;
 }
 
+/**
+ * @prosemirror-adapter/vue: minimize viinconvenience from node views.
+ */
+.ProseMirror div[data-node-view-root] {
+    display: flex;
+}
+
 /*
  * mdx-plugin.ts: inline mdx expression styles.
  */
@@ -28,60 +35,4 @@
 .ProseMirror div[data-type="containerDirective"] {
     border-left: 0.2em solid lightgray;
     padding-left: 0.5em;
-}
-
-/*
- * better-view-plugin.ts: styles for headings and links.
- */
-.ProseMirror .heading {
-    line-height: 1.2rem;
-    font-size: 1.2rem;
-}
-.ProseMirror h1.heading::before {
-    content: "# ";
-}
-.ProseMirror h2.heading::before {
-    content: "## ";
-}
-.ProseMirror h3.heading::before {
-    content: "### ";
-}
-.ProseMirror h4.heading::before {
-    content: "#### ";
-}
-.ProseMirror h5.heading::before {
-    content: "##### ";
-}
-.ProseMirror h6.heading::before {
-    content: "###### ";
-}
-.ProseMirror .heading > span {
-    margin-right: 1em;
-}
-.ProseMirror a.show-anchor.not-prose:not(:empty):before {
-    content: "#";
-}
-.ProseMirror a.show-anchor.not-prose {
-    font-size: 1.2rem;
-    font-weight: normal;
-    opacity: 0.8;
-    position: absolute;
-}
-.ProseMirror a.show-anchor.not-prose.copied:after {
-    /* TODO: Translatable texts should not appear in CSS. */
-    content: "Copied!";
-    margin-left: 1em;
-}
-p.link > span::before {
-    content: "[";
-}
-p.link > span::after {
-    content: "](";
-}
-p.link::after {
-    content: ")";
-}
-p.link > input {
-    border: none;
-    text-decoration: underline;
 }
