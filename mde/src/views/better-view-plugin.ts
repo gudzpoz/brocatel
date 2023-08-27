@@ -1,4 +1,4 @@
-import { MilkdownPlugin } from '@milkdown/ctx';
+import { type MilkdownPlugin } from '@milkdown/ctx';
 import { headingSchema, paragraphSchema } from '@milkdown/preset-commonmark';
 import { InputRule } from '@milkdown/prose/inputrules';
 import { $inputRule, $view } from '@milkdown/utils';

@@ -1,4 +1,4 @@
-import { MilkdownPlugin } from '@milkdown/ctx';
+import { type MilkdownPlugin } from '@milkdown/ctx';
 import {
   bulletListSchema, listItemSchema, paragraphSchema,
 } from '@milkdown/preset-commonmark';

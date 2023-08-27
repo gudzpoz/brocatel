@@ -1,5 +1,5 @@
 import { Node } from '@milkdown/prose/model';
-import { NodeView } from '@milkdown/prose/view';
+import { type NodeView } from '@milkdown/prose/view';
 import { spec } from 'brocatel-mdc/src/index';
 
 /**
@@ -29,6 +29,7 @@ export default class HeadingView implements NodeView {
     this.update(node);
   }
 
+  // eslint-disable-next-line class-methods-use-this
   ignoreMutation(mutation: MutationRecord) {
     const element = mutation.target as HTMLElement;
     return element.classList.contains('not-prose');

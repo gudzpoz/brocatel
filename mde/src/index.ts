@@ -1,4 +1,4 @@
-import { MilkdownPlugin } from '@milkdown/ctx';
+import { type MilkdownPlugin } from '@milkdown/ctx';
 import { directivePlugin } from './directive-plugin';
 import { mdxPlugin } from './mdx-plugin';
 import { normalizationPlugin } from './normalize-plugin';

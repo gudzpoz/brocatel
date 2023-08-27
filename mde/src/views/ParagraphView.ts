@@ -1,10 +1,9 @@
-import { commandsCtx } from "@milkdown/core";
-import { Ctx } from "@milkdown/ctx";
-import { updateLinkCommand } from "@milkdown/preset-commonmark";
-import { Node } from "@milkdown/prose/model";
-import { TextSelection } from "@milkdown/prose/state";
-import { EditorView, NodeView } from "@milkdown/prose/view";
-
+import { commandsCtx } from '@milkdown/core';
+import { Ctx } from '@milkdown/ctx';
+import { updateLinkCommand } from '@milkdown/preset-commonmark';
+import { Node } from '@milkdown/prose/model';
+import { TextSelection } from '@milkdown/prose/state';
+import { EditorView, type NodeView } from '@milkdown/prose/view';
 
 /**
  * A view for special paragraphs (containing only a link (a goto statement),
@@ -17,6 +16,8 @@ export default class ParagraphView implements NodeView {
 
   linkInput?: HTMLInputElement;
 
+  linkIcon?: HTMLAnchorElement;
+
   type: 'link' | 'code' | 'conditional' | 'normal';
 
   constructor(ctx: Ctx, node: Node, view: EditorView, getPos: () => number | undefined) {
@@ -24,15 +25,15 @@ export default class ParagraphView implements NodeView {
     this.contentDOM = this.dom;
     this.type = ParagraphView.getType(node);
     switch (this.type) {
-      case 'code':
-      case 'conditional':
-      case 'normal':
-        this.contentDOM = this.dom;
-        break;
-      case 'link':
+      case 'link': {
+        this.dom.classList.add('link');
         const link = document.createElement('span');
         const input = document.createElement('input');
         input.classList.add('not-prose');
+        const icon = document.createElement('a');
+        icon.classList.add('not-prose');
+        icon.innerText = '🔗';
+        icon.contentEditable = 'false';
         input.addEventListener('change', () => {
           const pos = getPos();
           if (pos) {
@@ -49,11 +50,18 @@ export default class ParagraphView implements NodeView {
             view.dispatch(state.tr.setSelection(new TextSelection(tr.doc.resolve(pos + 1))));
           }
         });
-        this.linkInput = input;
-        this.dom.append(link, input);
-        this.dom.classList.add('link');
         this.contentDOM = link;
+        this.linkInput = input;
+        this.linkIcon = icon;
+        this.dom.append(link, input, icon);
         this.update(node);
+        break;
+      }
+      case 'code':
+      case 'conditional':
+      case 'normal':
+      default:
+        this.contentDOM = this.dom;
         break;
     }
   }
@@ -63,13 +71,15 @@ export default class ParagraphView implements NodeView {
       return false;
     }
     if (this.type === 'link') {
-      const href = node.firstChild!.marks[0]!.attrs.href;
+      const { href } = node.firstChild!.marks[0]!.attrs;
       (this.contentDOM as HTMLAnchorElement).href = href;
       this.linkInput!.value = href;
+      this.linkIcon!.href = href;
     }
     return true;
   }
 
+  // eslint-disable-next-line class-methods-use-this
   ignoreMutation(mutation: MutationRecord) {
     return (mutation.target as HTMLElement).classList.contains('not-prose');
   }
@@ -96,9 +106,8 @@ export default class ParagraphView implements NodeView {
     if (ParagraphView.isMarkedText(node.child(0), 'inlineCode')) {
       if (count === 1) {
         return 'code';
-      } else {
-        return 'conditional';
       }
+      return 'conditional';
     }
     return 'normal';
   }

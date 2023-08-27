@@ -1,4 +1,4 @@
-import { MilkdownPlugin } from '@milkdown/ctx';
+import { type MilkdownPlugin } from '@milkdown/ctx';
 import { $remark } from '@milkdown/utils';
 import remarkSqueezeParagraphs from 'remark-squeeze-paragraphs';
 
