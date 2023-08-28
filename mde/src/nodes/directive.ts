@@ -9,7 +9,7 @@ import {
   $inputRule, $nodeAttr, $nodeSchema, $remark,
 } from '@milkdown/utils';
 
-import { plugins } from 'brocatel-mdc/src/index';
+import { plugins } from 'brocatel-mdc';
 
 export const remarkDirectivePlugin = $remark('remarkDirectivePlugin', () => plugins.remarkSimplifiedDirective as any);
 

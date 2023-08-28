@@ -8,7 +8,7 @@ import DirectiveView from './DirectiveView.vue';
 import HeadingView from './HeadingView.vue';
 import ParagraphView from './ParagraphView.vue';
 
-import { directiveSchema } from '../directive-plugin';
+import { directiveSchema } from '../nodes/directive';
 
 export const emptyLinkPlugin: MilkdownPlugin = $inputRule(() => new InputRule(/\[\]$/, '[\u200B]'));
 

@@ -1,15 +1,12 @@
 import { type MilkdownPlugin } from '@milkdown/ctx';
-import { directivePlugin } from './directive-plugin';
-import { mdxPlugin } from './mdx-plugin';
-import { normalizationPlugin } from './normalize-plugin';
+import Editor from './editor/Editor.vue';
+import brocatelPlugins from './plugins/index';
 
-export { directivePlugin } from './directive-plugin';
-export { mdxPlugin } from './mdx-plugin';
-export { normalizationPlugin } from './normalize-plugin';
-export { useBetterViewPlugins } from './views/better-view-plugin';
+export { directivePlugin } from './nodes/directive';
+export { mdxPlugin } from './nodes/mdx';
+export { normalizationPlugin } from './plugins/normalize';
+export { useBetterViewPlugins } from './views/index';
 
-export const plugins: MilkdownPlugin[] = [
-  directivePlugin,
-  mdxPlugin,
-  normalizationPlugin,
-].flat();
+export const BrocatelEditor = Editor;
+
+export const plugins: MilkdownPlugin[] = brocatelPlugins;

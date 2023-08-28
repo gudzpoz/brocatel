@@ -4,7 +4,7 @@ import {
   $inputRule, $markAttr, $markSchema, $remark,
 } from '@milkdown/utils';
 
-import { plugins } from 'brocatel-mdc/src/index';
+import { plugins } from 'brocatel-mdc';
 
 export const remarkMdxPlugin = $remark('remarkMdxPlugin', () => plugins.remarkInlineMdx as any);
 
@@ -42,10 +42,13 @@ export const mdxInlineSchema = $markSchema(MDX_AST_TYPE, (ctx) => ({
   },
 }));
 
+export const BIG_LEFT_BRACE = '\uFF5B';
+export const BIG_RIGHT_BRACE = '\uFF5D';
+
 // Workaround: no way to escape curly brackets.
 export const mdxInlineEscapeRule = [
-  $inputRule(() => new InputRule(/\\\{$/, '\uFF5B')),
-  $inputRule(() => new InputRule(/\uFF5B[^{]*(\})$/, '\uFF5D')),
+  $inputRule(() => new InputRule(/\\\{$/, BIG_LEFT_BRACE)),
+  $inputRule(() => new InputRule(/\uFF5B[^{]*(\})$/, BIG_RIGHT_BRACE)),
 ];
 
 // Workaround: mdx at the beginning of line not recognized.

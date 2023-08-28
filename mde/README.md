@@ -35,6 +35,7 @@ Generic directives/plugins syntax proposal](https://talk.commonmark.org/t/generi
 
 ## Maybe Later
 
+- [ ] A menu.
 - [ ] Link target autocomplete.
 - [ ] Lua highlighting.
 - [ ] Lua code autocomplete.

@@ -7,7 +7,7 @@
 }
 
 /**
- * @prosemirror-adapter/vue: minimize viinconvenience from node views.
+ * @prosemirror-adapter/vue: minimize inconvenience from node views.
  */
 .ProseMirror div[data-node-view-root] {
     display: flex;
