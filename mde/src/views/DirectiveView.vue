@@ -10,8 +10,6 @@ import { computed } from 'vue';
 
 const { contentRef, node, selected, setAttrs } = useNodeViewContext();
 
-console.log('view', node.value);
-
 const name = computed(() => node.value.attrs.name ?? '');
 function updateName(e: Event) {
   setAttrs({ name: (e.target as HTMLInputElement).value });
@@ -21,7 +19,7 @@ function updateName(e: Event) {
 .ProseMirror div.directive,
 .ProseMirror div.directive > .container,
 .ProseMirror div.directive > .container > div[data-node-view-content],
-.ProseMirror div.directive > .container > div[data-node-view-content] > p[data-type="directiveLabel"] {
+.ProseMirror div.directive > .container > div[data-node-view-content] > div[data-type="containerDirectiveLabel"] {
   display: inline;
 }
 .ProseMirror div.directive {
@@ -31,7 +29,7 @@ function updateName(e: Event) {
   content: "::: ";
   font-size: xx-small;
 }
-.ProseMirror div.directive p[data-type="directiveLabel"] {
+.ProseMirror div.directive div[data-type="containerDirectiveLabel"] {
   margin-left: 2em;
 }
 </style>

@@ -1,6 +1,6 @@
 import {
-  BlockContent,
-  Content, InlineCode, Paragraph, Parent, Root, Text,
+  BlockContent, Content,
+  InlineCode, Paragraph, Parent, PhrasingContent, Root, Text,
 } from 'mdast';
 import { ContainerDirective } from 'mdast-util-directive';
 import { Info, Options, State } from 'mdast-util-to-markdown';
@@ -12,9 +12,22 @@ import { Node } from 'unist';
 import { visitParents } from 'unist-util-visit-parents';
 import { VFile } from 'vfile';
 
+const directiveLabelType = 'containerDirectiveLabel';
+
+export interface ContainerDirectiveLabel extends Parent {
+  type: typeof directiveLabelType;
+  children: PhrasingContent[];
+}
+
+declare module 'mdast' {
+  interface BlockContentMap {
+    containerDirectiveLabel: ContainerDirectiveLabel;
+  }
+}
+
 export function isDirectiveLabel(para: Node | undefined): boolean {
   const labeled = para?.data?.directiveLabel;
-  return !!labeled && para.type === 'paragraph';
+  return para?.type === directiveLabelType || (!!labeled && para.type === 'paragraph');
 }
 
 function handleDirective(node: ContainerDirective, _: any, state: State, info: Info): string {
@@ -25,7 +38,7 @@ function handleDirective(node: ContainerDirective, _: any, state: State, info: I
   const labeled = isDirectiveLabel(label);
   if (labeled) {
     const exit = state.enter('label');
-    value += tracker.move(containerPhrasing(label as Paragraph, state, {
+    value += tracker.move(containerPhrasing(label as ContainerDirectiveLabel, state, {
       ...tracker.current(),
       before: value,
       after: '\n',
@@ -71,17 +84,16 @@ function isDirectiveLine(node: Content): boolean {
   return prefix.type === 'text' && prefix.value.startsWith(':::');
 }
 
-export function directiveLabel(value: string | InlineCode): Paragraph {
+export function directiveLabel(value: string | InlineCode): ContainerDirectiveLabel {
   const code: InlineCode = typeof value === 'string' ? {
     type: 'inlineCode',
     value,
   } : value;
-  const para: Paragraph = {
-    type: 'paragraph',
+  return {
+    type: directiveLabelType,
     children: [code],
     data: { directiveLabel: true },
   };
-  return para;
 }
 
 const simpleDirectiveLineRegex = /^:::(\S+)\s*$/;

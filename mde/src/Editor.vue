@@ -46,9 +46,9 @@ useEditor((root) => Editor.make()
     });
   })
   .config(nord)
+  .use(commonmark)
   .use(listener)
   .use(useBetterViewPlugins(nodeViewFactory))
   .use(plugins)
-  .use(commonmark)
 );
 </script>
