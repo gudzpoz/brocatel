@@ -5,10 +5,11 @@ import { unified } from 'unified';
 import { VFile } from 'vfile';
 import { assert, test } from 'vitest';
 
-import { directiveFromMarkdown } from '../src/directive';
+import { directiveForMarkdown } from 'brocatel-md';
+
 import expandMacro from '../src/expander';
 import { detectLuaErrors } from '../src/lua';
-import { transformAst } from '../src/transformer';
+import transformAst from '../src/transformer';
 import astCompiler from '../src/ast-compiler';
 
 const parser = unified()
@@ -20,7 +21,7 @@ const parser = unified()
     data.fromMarkdownExtensions = [[mdxExpressionFromMarkdown]];
     data.micromarkExtensions = [mdxExpression()];
   })
-  .use(directiveFromMarkdown)
+  .use(directiveForMarkdown)
   .use(expandMacro)
   .use(transformAst)
   .use(astCompiler);
@@ -41,37 +42,37 @@ function assertCompile(markdown: string, debug?: boolean): string {
 }
 
 test('Simple text', () => {
-  assert.equal(assertCompile('test'), '{{},"test"}');
+  assert.equal(assertCompile('test'), '{_,"test"}');
   assert.equal(
     assertCompile(
       '[c] [d] a {a?} b {b}',
     ),
-    '{{},{plural="v1",tags={c="",d=""},text="a {v1} b {v2}",'
+    '{_,{plural="v1",tags={c="",d=""},text="a {v1} b {v2}",'
     + 'values={v1=function()return(a)end,v2=function()return(b)end}}}',
   );
 });
 
 test('Simplest plain text', async () => {
-  assert.equal(assertCompile('hello'), '{{},"hello"}');
-  assert.equal(assertCompile('hello\n\nhello'), '{{},"hello","hello"}');
+  assert.equal(assertCompile('hello'), '{_,"hello"}');
+  assert.equal(assertCompile('hello\n\nhello'), '{_,"hello","hello"}');
   assert.equal(
     assertCompile('`true` True.\n\n`a = 1`'),
-    '{{},{function()return(true)end,{{},"True."}},{func=function(args)a = 1\nend}}',
+    '{_,{function()return(true)end,{_,"True."}},{func=function(args)a = 1\nend}}',
   );
 });
 
 test('Tagged text', async () => {
   assert.equal(
     assertCompile('[a] [b] c [d] e'),
-    '{{},{tags={a="",b=""},text="c \\\\[d] e"}}',
+    '{_,{tags={a="",b=""},text="c \\\\[d] e"}}',
   );
   assert.equal(
     assertCompile('\\[a] [b] c [d] e'),
-    '{{},{tags={a="",b=""},text="c \\\\[d] e"}}',
+    '{_,{tags={a="",b=""},text="c \\\\[d] e"}}',
   );
   assert.equal(
     assertCompile('\\\\[a] [b] c [d] e'),
-    '{{},"\\\\[a] \\\\[b] c \\\\[d] e"}',
+    '{_,"\\\\[a] \\\\[b] c \\\\[d] e"}',
   );
 });
 
@@ -79,11 +80,11 @@ test('Text with values', async () => {
   assert.throw(() => assertCompile('The {} Names of God'), 'empty expression');
   assert.equal(
     assertCompile('The {count} Names of God'),
-    '{{},{text="The {v1} Names of God",values={v1=function()return(count)end}}}',
+    '{_,{text="The {v1} Names of God",values={v1=function()return(count)end}}}',
   );
   assert.equal(
     assertCompile('The {count?} Names of God'),
-    '{{},{plural="v1",text="The {v1} Names of God",values={v1=function()return(count)end}}}',
+    '{_,{plural="v1",text="The {v1} Names of God",values={v1=function()return(count)end}}}',
   );
 });
 
@@ -160,23 +161,23 @@ test('Links', async () => {
 test('Lists', async () => {
   assert.equal(
     assertCompile('- a\n- b'),
-    '{{},{args={{},{{},"a"},{{},"b"}},func=function(args)FUNC.S_ONCE(args)\nend}}',
+    '{_,{args={_,{_,"a"},{_,"b"}},func=function(args)FUNC.S_ONCE(args)\nend}}',
   );
   assert.equal(
     assertCompile('- # A\n- [](a)').replace(/\n/g, ''),
     `{
       {labels={a={2,"args",2,2}}},
-      {args={{},
-        {{},{{label="a"}}},
-        {{},{link={"a"}}}},
+      {args={_,
+        {_,{{label="a"}}},
+        {_,{link={"a"}}}},
        func=function(args)FUNC.S_ONCE(args)end
       }
     }`.replace(/--.+/g, '').replace(/ |\n/g, ''),
   );
   assert.equal(
     assertCompile('1. `some` some\n2. else').replace(/\n/g, ''),
-    '{{},{args={{},{{},{function()return(some)end,{{},"some"}}},'
-    + '{{},"else"}},func=function(args)FUNC.S_RECUR(args)end}}',
+    '{_,{args={_,{_,{function()return(some)end,{_,"some"}}},'
+    + '{_,"else"}},func=function(args)FUNC.S_RECUR(args)end}}',
   );
 });
 
@@ -185,7 +186,7 @@ test('Code blocks', async () => {
   assert.throws(() => assertCompile('```lua\n(\n```\n'), 'unexpected symbol near <eof>');
   assert.equal(
     assertCompile('```lua\nprint()\n```\n'),
-    '{{},{func=function(args)print()\nend}}',
+    '{_,{func=function(args)print()\nend}}',
   );
 });
 
@@ -195,11 +196,11 @@ test('Directives', async () => {
     `{
       {labels={id={2,2}}},
       {
-        {},
+        _,
         {
           {label="id"},
-          {{},{args={{},
-            {{},"Hello"}},
+          {_,{args={_,
+            {_,"Hello"}},
             func=function(args)FUNC.S_ONCE(args)
           end}},
           {link={"id"}}
@@ -215,11 +216,11 @@ test('Directives', async () => {
 - False.
       `,
     ),
-    '{{},{function()return(true)end,{{},"True."},{{},"False."}}}',
+    '{_,{function()return(true)end,{_,"True."},{_,"False."}}}',
   );
   assert.equal(
     assertCompile(':::if`true`\n- True.'),
-    '{{},{function()return(true)end,{{},"True."}}}',
+    '{_,{function()return(true)end,{_,"True."}}}',
   );
   assert.equal(
     (assertCompile(
@@ -238,7 +239,7 @@ test('Directives', async () => {
   Three.
       `,
     )).replace(/\s/g, ''),
-    '{{},{args={{},{{},"One."},{{},"Two."},{{},"Three."}},'
+    '{_,{args={_,{_,"One."},{_,"Two."},{_,"Three."}},'
     + 'func=function(args)if(count==1)thenreturnIP:set(args:resolve(2))end'
     + 'if(count==2)thenreturnIP:set(args:resolve(3))end'
     + 'if(count==3)thenreturnIP:set(args:resolve(4))endend}}',

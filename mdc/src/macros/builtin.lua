@@ -5,6 +5,9 @@ md = {}
 
 --- @class Node
 --- @field type string
+--- @field name string|nil
+--- @field lang string|nil
+--- @field meta string|nil
 --- @field attributes table|nil
 --- @field children Node[]|nil
 --- @field data table|nil
@@ -113,8 +116,8 @@ function md.destruct(arg)
   else
     label = arg.children[1]
     list = arg.children[2]
-    assert(label.data and label.data.directiveLabel)
     if label.type == "code" then
+      assert(label.data and label.data.directiveLabel)
       pos = label.position
       label = label.value
     elseif label.type == "containerDirectiveLabel" and #label.children == 1

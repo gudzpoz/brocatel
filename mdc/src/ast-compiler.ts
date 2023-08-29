@@ -4,6 +4,7 @@ import {
   LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaText,
 } from './ast';
 import { detectLuaErrors, isIdentifier } from './lua';
+import LuaTableGenerator from './lua-table';
 
 function isEmpty(object: { [key: string]: any } | undefined): boolean {
   if (!object) {
@@ -19,6 +20,14 @@ function entryCompare(a: [string, any], b: [string, any]): number {
   return a[0].localeCompare(b[0]);
 }
 
+/**
+ * Utility function returning the inner part of the serialized table.
+ *
+ * If the object is empty, it returns ''.
+ *
+ * @param object the object to be serialized
+ * @param encoder the value encoder
+ */
 export function serializeTableInner<T>(
   object: { [key: string]: T },
   encoder: (s: T) => string,
@@ -44,23 +53,17 @@ class AstCompiler {
 
   vfile: VFile;
 
-  /**
-   * The string builder.
-   *
-   * It seems string concatenation is actually faster than buffering and `join('')`,
-   * so not bothering to use a buffer.
-   */
-  output: string;
+  private builder: LuaTableGenerator;
 
   constructor(root: LuaArray, vfile: VFile) {
     this.root = root;
     this.vfile = vfile;
-    this.output = '';
+    this.builder = new LuaTableGenerator('_');
   }
 
   compile() {
     this.visitAll();
-    return this.output;
+    return this.builder.toString();
   }
 
   visitAll() {
@@ -73,7 +76,6 @@ class AstCompiler {
       if (index === -1) {
         this.serialize(parent, false);
       } else if (index < parent.children.length) {
-        this.output += ',';
         const child = parent.children[index];
         switch (child.type) {
           case 'text':
@@ -104,48 +106,59 @@ class AstCompiler {
   }
 
   serializeLink(child: LuaLink) {
-    const root = child.root ? `,root=${JSON.stringify(child.root)}` : '';
-    const labels = child.labels.map((label) => JSON.stringify(label)).join(',');
-    const params = child.params ? `,params=function()return${child.params}end` : '';
-    this.output += `{link={${labels}}${params}${root}}`;
+    this.builder
+      .startTable()
+      .pair('link').startTable().raw(child.labels.map((label) => JSON.stringify(label)).join(','))
+      .endTable();
+    if (child.params) {
+      this.builder.pair('params').raw(`function()return${child.params}end`);
+    }
+    if (child.root) {
+      this.builder.pair('root').value(child.root);
+    }
+    this.builder.endTable();
   }
 
   serializeText(child: LuaText) {
-    const text = JSON.stringify(child.text);
     if (!child.plural && isEmpty(child.tags) && isEmpty(child.values)) {
-      this.output += text;
+      this.builder.value(child.text);
     } else {
-      // Keeps things alphabetical.
-      let prior = child.plural ? `plural=${JSON.stringify(child.plural)},` : '';
+      this.builder.startTable();
+      if (child.plural) {
+        this.builder.pair('plural').value(child.plural);
+      }
       const tags = serializeTableInner(child.tags, (s) => JSON.stringify(s));
-      prior += tags ? `tags={${tags}},` : '';
+      if (tags !== '') {
+        this.builder.pair('tags').startTable().raw(tags).endTable();
+      }
+      this.builder.pair('text').value(child.text);
       const values = serializeTableInner(
         child.values,
         (s) => `function()${this.checkLua(`return(${s})`, child)}end`,
       );
-      const post = values ? `,values={${values}}` : '';
-      this.output += `{${prior}text=${text}${post}}`;
+      if (values !== '') {
+        this.builder.pair('values').startTable().raw(values).endTable();
+      }
+      this.builder.endTable();
     }
   }
 
   serialize(node: LuaArray | LuaCode | LuaIfElse, exit: boolean) {
     if (exit) {
       if (node.type !== 'func') {
-        this.output += '}';
+        this.builder.endTable();
         return;
       }
-      this.output += node.children.length === 0 ? '' : '},';
-      this.output += `func=function(args)${this.checkLua(node.code.trim(), node)}\nend}`;
+      if (node.children.length !== 0) {
+        this.builder.endTable();
+      }
+      this.builder.pair('func').raw(`function(args)${this.checkLua(node.code.trim(), node)}\nend}`);
       return;
     }
 
     switch (node.type) {
       case 'array': {
-        const labels = serializeTableInner(
-          node.data?.labels || {},
-          (p) => `{${p.map((s) => JSON.stringify(s)).join(',')}}`,
-        );
-        const attributes: string[] = [];
+        this.builder.startTable().startTable();
         if (this.vfile.data.debug) {
           const positions = [serializePosition(node)];
           node.children.forEach((child) => positions.push(serializePosition(child)));
@@ -157,26 +170,33 @@ class AstCompiler {
               prev = i;
             }
           }
-          attributes.push(`debug={${positions.join(',')}}`);
+          this.builder.pair('debug').startTable().raw(positions.join(',')).endTable();
         }
         if (node.data?.routine) {
-          attributes.push('func=true');
+          this.builder.pair('func').value(true);
         }
         if (node.data?.label) {
-          attributes.push(`label=${JSON.stringify(node.data.label)}`);
+          this.builder.pair('label').value(node.data.label);
         }
+        const labels = serializeTableInner(
+          node.data?.labels || {},
+          (p) => `{${p.map((s) => JSON.stringify(s)).join(',')}}`,
+        );
         if (labels) {
-          attributes.push(`labels={${labels}}`);
+          this.builder.pair('labels').startTable().raw(labels).endTable();
         }
-        this.output += `{{${attributes.join(',')}}`;
+        this.builder.endTable();
         break;
       }
       case 'func':
-        this.output += node.children.length === 0 ? '{' : '{args={{}';
+        this.builder.startTable();
+        if (node.children.length !== 0) {
+          this.builder.pair('args').startTable().startTable().endTable();
+        }
         break;
       case 'if-else': {
         const body = this.checkLua(`return(${node.condition})`, node);
-        this.output += `{function()${body}end`;
+        this.builder.startTable().raw(`function()${body}end`);
         break;
       }
       default:

@@ -5,12 +5,13 @@ import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { VFile } from 'vfile';
 
-import { directiveFromMarkdown, directiveToMarkdown } from '../src/directive';
+import { directiveForMarkdown, directiveToMarkdown } from 'brocatel-md';
+
 import expandMacro from '../src/expander';
 
 const parser = unified()
   .use(remarkParse)
-  .use(directiveFromMarkdown)
+  .use(directiveForMarkdown)
   .use(expandMacro);
 
 function assertMatch(input: string, expectedOutput: string) {

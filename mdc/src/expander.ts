@@ -101,6 +101,7 @@ class MacroExpander {
       overwrite(node, generated);
     } catch (e) {
       this.vfile.message(e as Error, node);
+      return false;
     }
     return true;
   }

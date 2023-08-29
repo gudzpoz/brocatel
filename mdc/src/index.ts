@@ -115,6 +115,7 @@ export class BrocatelCompiler {
       return v.toString();
     });
     target.value = `${globalLua.join('\n')}
+_={}
 return {[""]={version=${VERSION},entry=${JSON.stringify(removeMdExt(name))}},${contents}}
 `;
     target.data.input = input;

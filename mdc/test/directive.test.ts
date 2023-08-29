@@ -6,11 +6,11 @@ import { ContainerDirective } from 'mdast-util-directive';
 import { toMarkdown } from 'mdast-util-to-markdown';
 import { VFile } from 'vfile';
 
-import { directiveFromMarkdown, directiveToMarkdown } from '../src/directive';
+import { directiveForMarkdown, directiveToMarkdown } from 'brocatel-md';
 
 const parser = unified()
   .use(remarkParse)
-  .use(directiveFromMarkdown);
+  .use(directiveForMarkdown);
 
 test('Parsing without label', () => {
   const ast = parser.runSync(parser.parse(':::a\n- a')) as Root;

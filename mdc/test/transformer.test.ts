@@ -5,12 +5,13 @@ import { unified } from 'unified';
 import { VFile } from 'vfile';
 import { assert, test } from 'vitest';
 
+import { directiveForMarkdown } from 'brocatel-md';
+
 import {
   LuaArray, LuaCode, LuaElement, LuaIfElse,
 } from '../src/ast';
-import { directiveFromMarkdown } from '../src/directive';
 import expandMacro from '../src/expander';
-import { transformAst } from '../src/transformer';
+import transformAst from '../src/transformer';
 
 const parser = unified()
   .use(remarkParse)
@@ -21,7 +22,7 @@ const parser = unified()
     data.fromMarkdownExtensions = [[mdxExpressionFromMarkdown]];
     data.micromarkExtensions = [mdxExpression()];
   })
-  .use(directiveFromMarkdown)
+  .use(directiveForMarkdown)
   .use(expandMacro)
   .use(transformAst);
 
