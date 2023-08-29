@@ -1,6 +1,6 @@
 <template>
   <div class="paragraph">
-    <p
+    <div
       :ref="contentRef"
       :class="{ selected,
                 link: type === 'link',
@@ -97,22 +97,22 @@ const href = computed(() => getLinkHref(node.value));
 .ProseMirror .paragraph div[data-node-view-content] {
   display: inline-block;
 }
-.ProseMirror .paragraph p {
+.ProseMirror .paragraph > div {
   margin: 0;
 }
-.ProseMirror p.link > div > a::before {
+.ProseMirror .link > div > a::before {
   content: "[";
 }
-.ProseMirror p.link > div > a::after {
+.ProseMirror .link > div > a::after {
   content: "]";
 }
-.ProseMirror p.link + span::before {
+.ProseMirror .link + span::before {
   content: "(";
 }
-.ProseMirror p.link + span::after {
+.ProseMirror .link + span::after {
   content: ")";
 }
-.ProseMirror p.link + span > input {
+.ProseMirror .link + span > input {
     border: none;
     outline: none;
     text-decoration: underline;
