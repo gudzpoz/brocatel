@@ -26,9 +26,8 @@ jobs:
       - name: Setup PNPM Workspace
         run: |
           pnpm install
-      - name: Build Brocatel Markdown Compiler
+      - name: Build Brocatel
         run: |
-          cd mdc
           pnpm build
       - name: Bundle Brocatel VM Runtime
         run: |
