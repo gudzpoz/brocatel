@@ -1,13 +1,15 @@
-import {
+import type {
   Code, Heading, Link, Paragraph, PhrasingContent, Root,
 } from 'mdast';
-import { ContainerDirective } from 'mdast-util-directive';
-import { MdxTextExpression } from 'mdast-util-mdx-expression';
-import { slug } from 'github-slugger';
-import { Plugin } from 'unified';
+import type { ContainerDirective } from 'mdast-util-directive';
+import type { MdxTextExpression } from 'mdast-util-mdx-expression';
+import type { Plugin } from 'unified';
+import type { VFile } from 'vfile';
+
 import { visitParents } from 'unist-util-visit-parents';
 import { v4 as uuidv4 } from 'uuid';
-import { VFile } from 'vfile';
+
+import { getAnchorString, isNormalLink } from 'brocatel-md';
 
 import {
   LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaTags, LuaText,
@@ -18,26 +20,11 @@ import { HeadingStack, appendReturn, hasReturned } from './headings';
 import { isIdentifier } from './lua';
 
 /**
- * Converts from `A B` to `a-b`.
- *
- * @param s the label
- */
-export function fuzzyLabel(s: string) {
-  return slug(s.replace(/_/g, '-').replace(/#/g, '_')).replace(/_/g, '#');
-}
-
-const normalLinkPattern = /^(?!mailto:)(?:http|https|ftp):\/\//;
-
-function isNormalLink(s: string) {
-  return normalLinkPattern.test(s) || s.startsWith('www.') || s.startsWith('./#');
-}
-
-/**
  * Splits a url with `#`, where `#` is escaped by `\\#`.
  */
 function parseLinkUrl(link: Link): string[] {
   const tokens = link.url.match(/(\\.|[^#])+/g) || [];
-  return tokens.map((s) => fuzzyLabel(s.replace(/\\#/g, '#')));
+  return tokens.map((s) => getAnchorString(s.replace(/\\#/g, '#')));
 }
 
 function asIs(node: MarkdownNode): LuaText {
@@ -193,7 +180,7 @@ class AstTransformer {
     }
     const array = luaArray(
       node,
-      fuzzyLabel(name),
+      getAnchorString(name),
       params,
     );
     return array;
@@ -288,7 +275,7 @@ class AstTransformer {
       this.vfile.message('unexpected complex heading', node);
       return '';
     }
-    return fuzzyLabel(node.children[0].value);
+    return getAnchorString(node.children[0].value);
   }
 
   parseCodeBlock(code: Code): LuaCode | LuaText {
@@ -454,7 +441,9 @@ class AstTransformer {
   }
 }
 
-export const transformAst: Plugin = () => (node, vfile) => {
+const transformAst: Plugin = () => (node, vfile) => {
   const transformer = new AstTransformer(node as Root, vfile);
   return transformer.transform();
 };
+
+export default transformAst;

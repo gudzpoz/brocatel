@@ -1,8 +1,8 @@
-import { Root } from "mdast";
-import { Plugin } from "unified";
-import { Node } from "unist";
-import { visitParents } from "unist-util-visit-parents";
-import { VFile } from "vfile";
+import { Root } from 'mdast';
+import { Plugin } from 'unified';
+import { Node } from 'unist';
+import { visitParents } from 'unist-util-visit-parents';
+import { VFile } from 'vfile';
 
 const remapLineNumbers: Plugin = () => (rootNode: Node, vfile: VFile) => {
   if (!vfile.data.lineMapping) {

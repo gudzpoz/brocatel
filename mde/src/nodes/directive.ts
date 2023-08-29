@@ -9,9 +9,9 @@ import {
   $inputRule, $nodeAttr, $nodeSchema, $remark,
 } from '@milkdown/utils';
 
-import { plugins } from 'brocatel-mdc';
+import { directiveForMarkdown } from 'brocatel-md';
 
-export const remarkDirectivePlugin = $remark('remarkDirectivePlugin', () => plugins.remarkSimplifiedDirective as any);
+export const remarkDirectivePlugin = $remark('remarkDirectivePlugin', () => directiveForMarkdown);
 
 const DIRECTIVE_LABEL_TYPE = 'containerDirectiveLabel';
 export const directiveLabelAttr = $nodeAttr(DIRECTIVE_LABEL_TYPE, () => ({ 'data-type': DIRECTIVE_LABEL_TYPE }));

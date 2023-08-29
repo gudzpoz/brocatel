@@ -19,5 +19,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": [".vitepress/bundle.ts"]
+  "include": ["src", "test"],
+  "extends": "./tsconfig.node.json"
 }

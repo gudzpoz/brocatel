@@ -9,8 +9,9 @@ import { Plugin } from 'unified';
 import { Node as UnistNode } from 'unist';
 import { VFile } from 'vfile';
 
+import { directiveLabel, directiveToMarkdown } from 'brocatel-md';
+
 import { MarkdownNode } from './ast';
-import { directiveLabel, directiveToMarkdown, isDirectiveLabel } from './directive';
 import { isIdentifier, runLua, wrap } from './lua';
 import { overwrite, shallowCopy, subParagraph } from './utils';
 
@@ -91,12 +92,16 @@ class MacroExpander {
       this.vfile.message('not a lua identifier', node);
       return false;
     }
-    const generated = runLua(node, [
-      builtInMacros as string,
-      ...this.macros,
-      `return ${node.name}(arg)`,
-    ], { TO_MARKDOWN: wrap(toMarkdownString) });
-    overwrite(node, generated);
+    try {
+      const generated = runLua(node, [
+        builtInMacros as string,
+        ...this.macros,
+        `return ${node.name}(arg)`,
+      ], { TO_MARKDOWN: wrap(toMarkdownString) });
+      overwrite(node, generated);
+    } catch (e) {
+      this.vfile.message(e as Error, node);
+    }
     return true;
   }
 
@@ -159,7 +164,7 @@ class MacroExpander {
    */
   // eslint-disable-next-line class-methods-use-this
   expandConditional(node: Node) {
-    if (node.type !== 'paragraph' || isDirectiveLabel(node)) {
+    if (node.type !== 'paragraph') {
       return false;
     }
     const { children } = node;

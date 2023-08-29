@@ -1,20 +1,18 @@
-import { Root } from 'mdast';
-import { mdxExpressionFromMarkdown, mdxExpressionToMarkdown } from 'mdast-util-mdx-expression';
-import { mdxExpression } from 'micromark-extension-mdx-expression';
 import remarkJoinCJKLines from 'remark-join-cjk-lines';
 import remarkParse from 'remark-parse';
-import { Plugin, Processor, unified } from 'unified';
+import { Processor, unified } from 'unified';
 import { VFile } from 'vfile';
 
 import _fengari from 'fengari';
 import _fengari_js from 'fengari-interop';
 
+import { directiveForMarkdown, mdxForMarkdown } from 'brocatel-md';
+
 import astCompiler, { serializeTableInner } from './ast-compiler';
-import { directiveFromMarkdown } from './directive';
 import expandMacro from './expander';
 import remapLineNumbers from './line-remap';
 import { convertSingleLuaValue } from './lua';
-import { fuzzyLabel, transformAst } from './transformer';
+import transformAst from './transformer';
 
 const VERSION = 1;
 
@@ -45,40 +43,6 @@ function removeMdExt(name: string): string {
   return name;
 }
 
-const remarkInlineMdx: Plugin<any[], Root> = function remarkInlineMdx() {
-  // Remark-Mdx expects the expressions to be JS expressions,
-  // while we use them as Lua ones.
-  const data = this.data();
-  function addTo(field: string, ext: any) {
-    if (data[field]) {
-      (data[field] as Array<any>).push(ext);
-    } else {
-      data[field] = [ext];
-    }
-  }
-  // We only allow inline mdx (mdxTextExpression), ruling out mdxFlowExpression.
-  // Read the definition of mdxExpressionFromMarkdown, mdxExpressionToMarkdown
-  //   and mdxExpression to understand the code below.
-  addTo('fromMarkdownExtensions', [{
-    enter: {
-      mdxTextExpression: mdxExpressionFromMarkdown.enter?.mdxTextExpression,
-    },
-    exit: {
-      mdxTextExpression: mdxExpressionFromMarkdown.exit?.mdxTextExpression,
-      mdxTextExpressionChunk: mdxExpressionFromMarkdown.exit?.mdxTextExpressionChunk,
-    },
-  }]);
-  addTo('toMarkdownExtensions', {
-    extensions: [{
-      handlers: {
-        mdxTextExpression: (mdxExpressionToMarkdown.handlers as any)?.mdxTextExpression,
-      },
-      unsafe: mdxExpressionToMarkdown.unsafe,
-    }],
-  });
-  addTo('micromarkExtensions', { text: mdxExpression().text });
-};
-
 /**
  * The compiler.
  */
@@ -95,10 +59,10 @@ export class BrocatelCompiler {
     };
     this.remark = unified()
       .use(remarkParse)
-      .use(remarkInlineMdx)
       .use(remarkJoinCJKLines)
       .use(remapLineNumbers)
-      .use(directiveFromMarkdown)
+      .use(directiveForMarkdown)
+      .use(mdxForMarkdown)
       .use(expandMacro)
       .use(transformAst)
       .use(astCompiler);
@@ -213,12 +177,3 @@ return {[""]={version=${VERSION},entry=${JSON.stringify(removeMdExt(name))}},${c
 _fengari.js = _fengari_js;
 _fengari.tojs = convertSingleLuaValue;
 export const fengari = _fengari;
-
-export const plugins = {
-  remarkInlineMdx,
-  remarkSimplifiedDirective: directiveFromMarkdown,
-};
-
-export const spec = {
-  anchorer: fuzzyLabel,
-};

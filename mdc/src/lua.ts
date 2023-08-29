@@ -93,6 +93,7 @@ export function isIdentifier(s: string): boolean {
  * Runs Lua snippets, passing the `arg` argument as the global value `arg`.
  *
  * @returns what the last snippet returns
+ * @throws when error happened during evaluation
  */
 export function runLua(
   arg: any,

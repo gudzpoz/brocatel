@@ -22,13 +22,14 @@
 </template>
 <script setup lang="ts">
 import { useNodeViewContext } from '@prosemirror-adapter/vue';
-import { spec } from 'brocatel-mdc';
 import { computed, ref } from 'vue';
+
+import { getAnchorString } from 'brocatel-md';
 
 const { contentRef, node, selected } = useNodeViewContext();
 
 const headingLevel = computed(() => Math.max(1, Math.min(6, node.value.attrs.level ?? 1)));
-const anchorId = computed(() => spec.anchorer(node.value.textContent.trim()));
+const anchorId = computed(() => getAnchorString(node.value.textContent));
 const anchorHash = computed(() => `#${anchorId.value}`);
 
 const copied = ref(0);

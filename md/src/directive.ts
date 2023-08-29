@@ -1,33 +1,37 @@
-import {
+import type {
   BlockContent, Content,
   InlineCode, Paragraph, Parent, PhrasingContent, Root, Text,
 } from 'mdast';
-import { ContainerDirective } from 'mdast-util-directive';
-import { Info, Options, State } from 'mdast-util-to-markdown';
+import type { ContainerDirective } from 'mdast-util-directive';
+import type { Info, Options, State } from 'mdast-util-to-markdown';
+import type { Plugin } from 'unified';
+import type { Node } from 'unist';
+import type { VFile } from 'vfile';
+
 import { containerFlow } from 'mdast-util-to-markdown/lib/util/container-flow';
 import { containerPhrasing } from 'mdast-util-to-markdown/lib/util/container-phrasing';
 import { track } from 'mdast-util-to-markdown/lib/util/track';
-import { Plugin } from 'unified';
-import { Node } from 'unist';
 import { visitParents } from 'unist-util-visit-parents';
-import { VFile } from 'vfile';
 
-const directiveLabelType = 'containerDirectiveLabel';
+export const directiveLabelType = 'containerDirectiveLabel';
 
+/**
+ * Directive label node.
+ */
 export interface ContainerDirectiveLabel extends Parent {
   type: typeof directiveLabelType;
   children: PhrasingContent[];
 }
 
 declare module 'mdast' {
-  interface BlockContentMap {
+  interface RootContentMap {
+    conteinerDirective: ContainerDirective;
     containerDirectiveLabel: ContainerDirectiveLabel;
   }
-}
-
-export function isDirectiveLabel(para: Node | undefined): boolean {
-  const labeled = para?.data?.directiveLabel;
-  return para?.type === directiveLabelType || (!!labeled && para.type === 'paragraph');
+  interface BlockContentMap {
+    conteinerDirective: ContainerDirective;
+    containerDirectiveLabel: ContainerDirectiveLabel;
+  }
 }
 
 function handleDirective(node: ContainerDirective, _: any, state: State, info: Info): string {
@@ -35,20 +39,22 @@ function handleDirective(node: ContainerDirective, _: any, state: State, info: I
   const containerExit = state.enter('containerDirective');
   let value = tracker.move(`:::${node.name}`);
   const label = node.children[0];
-  const labeled = isDirectiveLabel(label);
-  if (labeled) {
+  let content;
+  if (label.type === directiveLabelType) {
     const exit = state.enter('label');
-    value += tracker.move(containerPhrasing(label as ContainerDirectiveLabel, state, {
+    value += tracker.move(containerPhrasing(label, state, {
       ...tracker.current(),
       before: value,
       after: '\n',
     }));
     exit();
+    content = { ...node, children: node.children.slice(1) };
+  } else {
+    content = node;
   }
   value += tracker.move('\n');
-  const shallow = labeled ? ({ ...node, children: node.children.slice(1) }) : node;
   value += tracker.move('\n');
-  value += tracker.move(containerFlow(shallow, state, tracker.current()));
+  value += tracker.move(containerFlow(content, state, tracker.current()));
   containerExit();
   return value;
 }
@@ -85,6 +91,9 @@ function isDirectiveLine(node: Content): boolean {
   return prefix.type === 'text' && prefix.value.startsWith(':::');
 }
 
+/**
+ * Creates a directive label node.
+ */
 export function directiveLabel(value: string | InlineCode): ContainerDirectiveLabel {
   const code: InlineCode = typeof value === 'string' ? {
     type: 'inlineCode',
@@ -93,7 +102,6 @@ export function directiveLabel(value: string | InlineCode): ContainerDirectiveLa
   return {
     type: directiveLabelType,
     children: [code],
-    data: { directiveLabel: true },
   };
 }
 
@@ -126,7 +134,7 @@ function parseDirectiveLine(line: Paragraph, vfile: VFile): ContainerDirective {
   return directive;
 }
 
-export const directiveFromMarkdown: Plugin<any[], Root> = function directiveFromMarkdown() {
+export const directiveForMarkdown: Plugin<any[], Root> = function directiveFromMarkdown() {
   const data = this.data();
   const extension = { extensions: [directiveToMarkdown] };
   if (data.toMarkdownExtensions) {

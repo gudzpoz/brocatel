@@ -6,9 +6,9 @@ import {
   $inputRule, $markAttr, $markSchema, $remark,
 } from '@milkdown/utils';
 
-import { plugins } from 'brocatel-mdc';
+import { mdxForMarkdown } from 'brocatel-md';
 
-export const remarkMdxPlugin = $remark('remarkMdxPlugin', () => plugins.remarkInlineMdx as any);
+export const remarkMdxPlugin = $remark('remarkMdxPlugin', () => mdxForMarkdown);
 
 const MDX_AST_TYPE = 'mdxTextExpression';
 

@@ -4,7 +4,7 @@
   "description": "The root workspace pseudo-project.",
   "main": "index.js",
   "scripts": {
-    "build": "cd mdc && pnpm build && cd ../mde && pnpm build"
+    "build": "cd md && pnpm build && cd ../mdc && pnpm build && cd ../mde && pnpm build"
   },
   "keywords": [],
   "author": "gudzpoz",

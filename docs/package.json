@@ -6,24 +6,36 @@
   "scripts": {
     "bundle": "vite-node ./.vitepress/bundle.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "docs:dev": "vitepress dev",
-    "docs:build": "vitepress build",
-    "docs:preview": "vitepress preview"
+    "docs:dev": "pnpm bundle && vitepress dev",
+    "docs:build": "pnpm bundle && vitepress build",
+    "docs:preview": "pnpm bundle && vitepress preview"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^18.16.3",
+    "@rushstack/eslint-patch": "^1.3.3",
+    "@types/node": "^18.17.12",
+    "@typescript-eslint/eslint-plugin": "^6.5.0",
+    "@typescript-eslint/parser": "^6.5.0",
+    "@vue/eslint-config-typescript": "^11.0.3",
+    "@vue/tsconfig": "^0.4.0",
+    "eslint": "^8.48.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-airbnb-typescript": "^17.1.0",
+    "eslint-plugin-import": "^2.28.1",
+    "eslint-plugin-vue": "^9.17.0",
     "luabundle": "^1.6.0",
-    "vite-node": "^0.32.0",
+    "typescript": "^5.2.2",
+    "vite-node": "^0.32.4",
     "vitepress": "1.0.0-beta.2",
-    "vue": "^3.3.4"
+    "vue": "^3.3.4",
+    "vue-tsc": "^1.8.8"
   },
   "dependencies": {
-    "@github/mini-throttle": "^2.1.0",
-    "@guolao/vue-monaco-editor": "^1.1.3",
+    "@github/mini-throttle": "^2.1.1",
     "brocatel-mdc": "workspace:^",
+    "brocatel-mde": "workspace:^",
     "remark": "^14.0.3",
     "remark-html": "^15.0.2",
     "vfile": "^5.3.7"
