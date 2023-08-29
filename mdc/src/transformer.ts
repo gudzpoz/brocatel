@@ -214,6 +214,8 @@ class AstTransformer {
         func = true;
       } else if (first.type === 'paragraph' && first.children[0].type === 'inlineCode') {
         label = first.children[0].value;
+      } else if (first.type === 'containerDirectiveLabel' && first.children[0].type === 'inlineCode') {
+        label = first.children[0].value;
       }
     }
     if (list?.type !== 'list') {

@@ -117,7 +117,7 @@ function md.destruct(arg)
     if label.type == "code" then
       pos = label.position
       label = label.value
-    elseif label.type == "paragraph" and #label.children == 1
+    elseif label.type == "containerDirectiveLabel" and #label.children == 1
         and label.children[1].type == "inlineCode" then
       pos = label.children[1].position or label.position
       label = label.children[1].value

@@ -84,7 +84,7 @@ useEditor((root) => {
   if (props.nord) {
     editor = editor.config(nordConfig);
   }
-  props.configs.forEach((config) => {
+  props.configs.forEach((config: Config) => {
     editor = editor.config(config);
   });
   editor = editor

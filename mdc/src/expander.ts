@@ -83,7 +83,7 @@ class MacroExpander {
         this.vfile.message('expecting a list inside the macro node', node);
         return false;
       }
-    } else if (node.children[0]?.type !== 'paragraph' || node.children[1]?.type !== 'list') {
+    } else if (node.children[0]?.type !== 'containerDirectiveLabel' || node.children[1]?.type !== 'list') {
       this.vfile.message('invalid macro node', node);
       return false;
     }
@@ -157,6 +157,7 @@ class MacroExpander {
    * @param node the current node
    * @returns whether any expansion occurred
    */
+  // eslint-disable-next-line class-methods-use-this
   expandConditional(node: Node) {
     if (node.type !== 'paragraph' || isDirectiveLabel(node)) {
       return false;

@@ -4,7 +4,7 @@
   "description": "A WYSIWYG-style editor for Brocatel Markdown.",
   "type": "module",
   "main": "dist/brocatel-mde.es.js",
-  "types": "dist/brocatel/mde/src/index.d.ts",
+  "types": "dist/index.d.ts",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

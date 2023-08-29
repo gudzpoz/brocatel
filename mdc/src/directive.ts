@@ -56,6 +56,7 @@ function handleDirective(node: ContainerDirective, _: any, state: State, info: I
 export const directiveToMarkdown: Options = {
   handlers: {
     containerDirective: handleDirective,
+    containerDirectiveLabel: () => '',
   },
   unsafe: [
     {

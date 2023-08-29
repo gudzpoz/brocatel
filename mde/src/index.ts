@@ -7,6 +7,6 @@ export { mdxPlugin } from './nodes/mdx';
 export { normalizationPlugin } from './plugins/normalize';
 export { useBetterViewPlugins } from './views/index';
 
-export const BrocatelEditor = Editor;
+export const BrocatelEditor: typeof Editor = Editor;
 
 export const plugins: MilkdownPlugin[] = brocatelPlugins;

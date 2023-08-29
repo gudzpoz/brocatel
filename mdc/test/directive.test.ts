@@ -27,7 +27,7 @@ test('Parsing with a label', () => {
   assert.equal(node.type, 'containerDirective');
   assert.lengthOf(node.children, 2);
   const para = node.children[0] as Paragraph;
-  assert.equal(para.type, 'paragraph');
+  assert.equal(para.type, 'containerDirectiveLabel');
   assert.lengthOf(para.children, 1);
   assert.equal(para.children[0].type, 'inlineCode');
 });
@@ -46,23 +46,27 @@ function assertMatch(input: string) {
 
 test('Parsing and generating', () => {
   assertMatch('a');
-  assertMatch(':::a\n*   a');
-  assertMatch(':::a\n1.  a');
-  assertMatch(':::a`10`\n*   a');
+  assertMatch(':::a\n\n*   a');
+  assertMatch(':::a\n\n1.  a');
+  assertMatch(':::a`10`\n\n*   a');
 
   assertMatch(`
 > :::a\`10\`
+>
 > *   a`);
 
   assertMatch(`
 :::a\`10\`
+
 *   b
 
     :::c\`10\`
+
     *   d`);
 
   assertMatch(`
 :::a
+
 \`\`\`lua func
 IP:set(arg:resolve(2))
 \`\`\`
@@ -71,7 +75,9 @@ IP:set(arg:resolve(2))
 
   assertMatch(`
 :::loop\`10\`
+
 *   :::switch\`a\`
+
     *   \`10\`
 
         b

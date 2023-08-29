@@ -26,7 +26,7 @@ function assertMatch(input: string, expectedOutput: string) {
 }
 
 test('Expand list', () => {
-  assertMatch('- a\n- b', ':::do`FUNC.S_ONCE`\n*   a\n*   b');
+  assertMatch('- a\n- b', ':::do`FUNC.S_ONCE`\n\n*   a\n*   b');
 });
 
 test('Expand code', () => {
@@ -34,8 +34,8 @@ test('Expand code', () => {
 });
 
 test('Expand conditional', () => {
-  assertMatch('`a` _**b**_', ':::if`a`\n*   ***b***');
-  assertMatch('`a` `b` c', ':::if`a`\n*   :::if`b`\n    *   c');
+  assertMatch('`a` _**b**_', ':::if`a`\n\n*   ***b***');
+  assertMatch('`a` `b` c', ':::if`a`\n\n*   :::if`b`\n\n    *   c');
 });
 
 test('Expand macro', () => {
@@ -49,6 +49,7 @@ test('Expand macro', () => {
 
   assertMatch(':::switch`a = 0`\n- `a == 1`\n\n  ok\n- `a == 0`\n\n  ok', `
 :::do
+
 \`\`\`lua func
 a = 0
 if(
