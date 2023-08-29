@@ -1,10 +1,10 @@
 <template>
-  <Editor v-model="markdown" />
+  <BrocatelEditor v-model="markdown" />
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import Editor from './editor/Editor.vue';
+import BrocatelEditor from './editor/BrocatelEditor.vue';
 
 const markdown = ref(`Mdx: { a + b } \\{ a + b \\}
 

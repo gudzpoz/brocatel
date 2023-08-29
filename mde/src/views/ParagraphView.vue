@@ -1,14 +1,26 @@
 <template>
   <div class="paragraph">
-    <p :ref="contentRef" :class="{ selected,
-      link: type === 'link',
-      conditional: type === 'conditional',
-      code: type === 'code',
-    }"></p>
+    <p
+      :ref="contentRef"
+      :class="{ selected,
+                link: type === 'link',
+                conditional: type === 'conditional',
+                code: type === 'code',
+      }"
+    />
     <span v-if="type === 'link'">
-      <input type="text" :value="href" @change="updateHref" class="not-prose">
+      <input
+        type="text"
+        :value="href"
+        class="not-prose"
+        @change="updateHref"
+      >
     </span>
-    <a v-if="type === 'link'" :href="href" contenteditable="false">🔗</a>
+    <a
+      v-if="type === 'link'"
+      :href="href"
+      contenteditable="false"
+    >🔗</a>
   </div>
 </template>
 <script setup lang="ts">
@@ -20,11 +32,11 @@ import { useInstance } from '@milkdown/vue';
 import { useNodeViewContext } from '@prosemirror-adapter/vue';
 import { computed } from 'vue';
 
-const { contentRef, getPos, node, selected, view } = useNodeViewContext();
+const {
+  contentRef, getPos, node, selected, view,
+} = useNodeViewContext();
 
 const [, useEditor] = useInstance();
-const type = computed(() => getType(node.value));
-const href = computed(() => getLinkHref(node.value));
 
 function updateHref(e: Event) {
   const editor = useEditor();
@@ -41,31 +53,31 @@ function updateHref(e: Event) {
   });
 }
 
-function getLinkHref(node: Node) {
-  const href = node.firstChild?.marks[0]?.attrs?.href;
+function getLinkHref(n: Node) {
+  const href = n.firstChild?.marks[0]?.attrs?.href;
   return typeof href === 'string' ? href : '#';
 }
 
-function isMarkedText(node: Node, mark: 'inlineCode' | 'link') {
-  if (node?.isText) {
-    if (node.marks.length === 1 && node.marks[0].type.name === mark) {
+function isMarkedText(n: Node, mark: 'inlineCode' | 'link') {
+  if (n?.isText) {
+    if (n.marks.length === 1 && n.marks[0].type.name === mark) {
       return true;
     }
   }
   return false;
 }
 
-function getType(node: Node): 'link' | 'code' | 'conditional' | 'normal' {
-  const count = node.childCount;
+function getType(n: Node): 'link' | 'code' | 'conditional' | 'normal' {
+  const count = n.childCount;
   if (count === 0) {
     return 'normal';
   }
   if (count === 1) {
-    if (isMarkedText(node.child(0), 'link')) {
+    if (isMarkedText(n.child(0), 'link')) {
       return 'link';
     }
   }
-  if (isMarkedText(node.child(0), 'inlineCode')) {
+  if (isMarkedText(n.child(0), 'inlineCode')) {
     if (count === 1) {
       return 'code';
     }
@@ -73,6 +85,9 @@ function getType(node: Node): 'link' | 'code' | 'conditional' | 'normal' {
   }
   return 'normal';
 }
+
+const type = computed(() => getType(node.value));
+const href = computed(() => getLinkHref(node.value));
 </script>
 <style>
 .ProseMirror .paragraph {

@@ -1,14 +1,26 @@
 <template>
   <div class="directive">
-    <input :value="name" @change="updateName" type="text" size="8" class="not-prose" placeholder="macro name">
-    <div :ref="contentRef" :class="{ selected, container: true }"></div>
+    <input
+      :value="name"
+      type="text"
+      size="8"
+      class="not-prose"
+      placeholder="macro name"
+      @change="updateName"
+    >
+    <div
+      :ref="contentRef"
+      :class="{ selected, container: true }"
+    />
   </div>
 </template>
 <script setup lang="ts">
 import { useNodeViewContext } from '@prosemirror-adapter/vue';
 import { computed } from 'vue';
 
-const { contentRef, node, selected, setAttrs } = useNodeViewContext();
+const {
+  contentRef, node, selected, setAttrs,
+} = useNodeViewContext();
 
 const name = computed(() => node.value.attrs.name ?? '');
 function updateName(e: Event) {
@@ -19,7 +31,8 @@ function updateName(e: Event) {
 .ProseMirror div.directive,
 .ProseMirror div.directive > .container,
 .ProseMirror div.directive > .container > div[data-node-view-content],
-.ProseMirror div.directive > .container > div[data-node-view-content] > div[data-type="containerDirectiveLabel"] {
+.ProseMirror div.directive > .container > div[data-node-view-content]
+> div[data-type="containerDirectiveLabel"] {
   display: inline;
 }
 .ProseMirror div.directive {

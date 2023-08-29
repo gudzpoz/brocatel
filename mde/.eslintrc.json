@@ -2,11 +2,20 @@
   "root": true,
   "extends": [
     "eslint:recommended",
+    "plugin:import/typescript",
     "airbnb-base",
-    "airbnb-typescript/base"
+    "airbnb-typescript/base",
+    "plugin:vue/vue3-recommended",
+    "@vue/eslint-config-typescript"
   ],
-  "parser": "@typescript-eslint/parser",
-  "parserOptions": { "project": ["./tsconfig.json"] },
+  "parser": "vue-eslint-parser",
+  "parserOptions": {
+    "parser": "@typescript-eslint/parser",
+    "project": ["./tsconfig.json"]
+  },
+  "rules": {
+    "import/no-unresolved": "off"
+  },
   "plugins": [
     "@typescript-eslint"
   ],

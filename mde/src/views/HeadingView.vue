@@ -1,9 +1,22 @@
 <template>
-  <component :is="`h${headingLevel}`" class="heading" :id="anchorId">
-    <span :ref="contentRef" :class="{ selected }"></span>
-    <a class="show-anchor not-prose" :href="anchorHash">{{ anchorId }}</a>
+  <component
+    :is="`h${headingLevel}`"
+    :id="anchorId"
+    class="heading"
+  >
+    <span
+      :ref="contentRef"
+      :class="{ selected }"
+    />
+    <a
+      class="show-anchor not-prose"
+      :href="anchorHash"
+    >{{ anchorId }}</a>
   </component>
-  <button @click="copy" title="Copy the anchor">
+  <button
+    title="Copy the anchor"
+    @click="copy"
+  >
     {{ copied > 0 ? '✅' : '📋' }}
   </button>
 </template>
@@ -22,7 +35,9 @@ const copied = ref(0);
 function copy() {
   navigator.clipboard.writeText(anchorHash.value);
   copied.value += 1;
-  setTimeout(() => copied.value -= 1, 1000);
+  setTimeout(() => {
+    copied.value -= 1;
+  }, 1000);
 }
 </script>
 <style>

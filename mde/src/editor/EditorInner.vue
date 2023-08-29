@@ -1,28 +1,65 @@
 <template>
+  <div
+    v-if="props.menu"
+    class="milkdown-menu"
+  >
+    <button @click="call(toggleEmphasisCommand)">
+      Italics
+    </button>
+    <button @click="call(toggleStrongCommand)">
+      Bold
+    </button>
+    <button @click="call(wrapInHeadingCommand)">
+      Heading
+    </button>
+    <button @click="toggleLink">
+      Link
+    </button>
+    <button @click="call(toggleInlineCodeCommand)">
+      Code
+    </button>
+    <button @click="call(toggleMdxInlineCommand)">
+      Expr
+    </button>
+    <button @click="call(insertDirectiveCommand)">
+      Directive
+    </button>
+  </div>
   <Milkdown />
 </template>
 
 <script setup lang="ts">
-import { Editor, defaultValueCtx, rootCtx, type Config } from '@milkdown/core';
+import {
+  Editor, defaultValueCtx, rootCtx, type Config,
+} from '@milkdown/core';
 import type { MilkdownPlugin } from '@milkdown/ctx';
 import { listenerCtx, listener } from '@milkdown/plugin-listener';
-import { commonmark } from '@milkdown/preset-commonmark';
-import { nord } from '@milkdown/theme-nord';
-import { replaceAll } from '@milkdown/utils';
-import { Milkdown, useEditor } from '@milkdown/vue';
+import {
+  commonmark, toggleEmphasisCommand,
+  toggleInlineCodeCommand,
+  toggleLinkCommand, toggleStrongCommand, wrapInHeadingCommand,
+} from '@milkdown/preset-commonmark';
+import { nord as nordConfig } from '@milkdown/theme-nord';
+import { callCommand, replaceAll, type $Command } from '@milkdown/utils';
+import { Milkdown, useEditor, useInstance } from '@milkdown/vue';
 import { useNodeViewFactory } from '@prosemirror-adapter/vue';
 import { watch } from 'vue';
 
-import plugins from '../plugins/index';
+import brocatelPlugins from '../plugins/index';
+import { insertDirectiveCommand } from '../nodes/directive';
+import { toggleMdxInlineCommand } from '../nodes/mdx';
 import { useBetterViewPlugins } from '../views/index';
 
 import '@milkdown/theme-nord/style.css';
 
 const props = defineProps<{
   modelValue: string;
+  menu: boolean;
   nord: boolean;
   plugins: MilkdownPlugin[];
   configs: Config[];
+
+  prompt(message: string): string | null;
 }>();
 
 const emit = defineEmits<{
@@ -30,7 +67,6 @@ const emit = defineEmits<{
 }>();
 
 let markdown = props.modelValue;
-let setMarkdown: (s: string) => void | undefined;
 
 const nodeViewFactory = useNodeViewFactory();
 useEditor((root) => {
@@ -44,27 +80,42 @@ useEditor((root) => {
           emit('update:modelValue', md);
         }
       });
-      setMarkdown = (markdown) => replaceAll(markdown)(ctx);
     });
   if (props.nord) {
-    editor = editor.config(nord)
+    editor = editor.config(nordConfig);
   }
-  props.configs.forEach((config) => editor = editor.config(config));
+  props.configs.forEach((config) => {
+    editor = editor.config(config);
+  });
   editor = editor
     .use(commonmark)
     .use(listener)
     .use(useBetterViewPlugins(nodeViewFactory))
-    .use(plugins);
+    .use(brocatelPlugins);
   editor = editor.use(props.plugins);
   return editor;
 });
 
+const [, editor] = useInstance();
+
 watch(() => props.modelValue, (value) => {
   if (value !== markdown) {
     markdown = value;
-    if (setMarkdown) {
-      setMarkdown(value);
-    }
+    editor()?.action((ctx) => replaceAll(value)(ctx));
   }
 });
+
+function call<T>(command: $Command<T>, payload?: T) {
+  return editor()?.action(callCommand(command.key, payload));
+}
+function toggleLink() {
+  try {
+    call(toggleLinkCommand);
+  } catch (_) {
+    const href = props.prompt('Link Url');
+    if (href && href !== '') {
+      call(toggleLinkCommand, { href });
+    }
+  }
+}
 </script>

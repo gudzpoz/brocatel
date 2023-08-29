@@ -1,6 +1,8 @@
 import { type MilkdownPlugin } from '@milkdown/ctx';
+import { toggleMark } from '@milkdown/prose/commands';
 import { InputRule } from '@milkdown/prose/inputrules';
 import {
+  $command,
   $inputRule, $markAttr, $markSchema, $remark,
 } from '@milkdown/utils';
 
@@ -59,6 +61,11 @@ export const mdxInlineInputRule = $inputRule((ctx) => new InputRule(
     .delete(start, start + 1),
 ));
 
+export const toggleMdxInlineCommand = $command(
+  'toggleMdxInlineCommand',
+  (ctx) => () => toggleMark(mdxInlineSchema.type(ctx)),
+);
+
 // We need no input rules since the inline-sync plugin does it for us.
 
 export const mdxPlugin: MilkdownPlugin[] = [
@@ -67,4 +74,5 @@ export const mdxPlugin: MilkdownPlugin[] = [
   mdxInlineEscapeRule,
   mdxInlineInputRule,
   mdxInlineSchema,
+  toggleMdxInlineCommand,
 ].flat();
