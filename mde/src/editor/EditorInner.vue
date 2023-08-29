@@ -1,31 +1,33 @@
 <template>
-  <div
-    v-if="props.menu"
-    class="milkdown-menu"
-  >
-    <button @click="call(toggleEmphasisCommand)">
-      Italics
-    </button>
-    <button @click="call(toggleStrongCommand)">
-      Bold
-    </button>
-    <button @click="call(wrapInHeadingCommand)">
-      Heading
-    </button>
-    <button @click="toggleLink">
-      Link
-    </button>
-    <button @click="call(toggleInlineCodeCommand)">
-      Code
-    </button>
-    <button @click="call(toggleMdxInlineCommand)">
-      Expr
-    </button>
-    <button @click="call(insertDirectiveCommand)">
-      Directive
-    </button>
+  <div class="brocatel-editor">
+    <div
+      v-if="props.menu"
+      class="milkdown-menu"
+    >
+      <button @click="call(toggleEmphasisCommand)">
+        Italics
+      </button>
+      <button @click="call(toggleStrongCommand)">
+        Bold
+      </button>
+      <button @click="call(wrapInHeadingCommand)">
+        Heading
+      </button>
+      <button @click="toggleLink">
+        Link
+      </button>
+      <button @click="call(toggleInlineCodeCommand)">
+        Code
+      </button>
+      <button @click="call(toggleMdxInlineCommand)">
+        Expr
+      </button>
+      <button @click="call(insertDirectiveCommand)">
+        Directive
+      </button>
+    </div>
+    <Milkdown />
   </div>
-  <Milkdown />
 </template>
 
 <script setup lang="ts">
@@ -119,3 +121,15 @@ function toggleLink() {
   }
 }
 </script>
+<style>
+.brocatel-editor{
+  height: 100%;
+  overflow: scroll;
+}
+.brocatel-editor > .milkdown-menu {
+  position: sticky;
+  top: 0;
+  margin: 0.2em;
+  z-index: 1;
+}
+</style>

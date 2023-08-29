@@ -22,8 +22,6 @@ import { ProsemirrorAdapterProvider } from '@prosemirror-adapter/vue';
 
 import EditorInner from './EditorInner.vue';
 
-import './style.css';
-
 const props = withDefaults(defineProps<{
   modelValue?: string;
   menu?: boolean;
@@ -50,3 +48,31 @@ function updateValue(value: string) {
   emit('update:modelValue', value);
 }
 </script>
+<style>
+/*
+ * Removes browser default editor border.
+ */
+ .ProseMirror.outline-none {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+/**
+* @prosemirror-adapter/vue: minimize inconvenience from node views.
+*/
+.ProseMirror div[data-node-view-root] {
+  display: flex;
+}
+
+/*
+* mdx-plugin.ts: inline mdx expression styles.
+*/
+.ProseMirror.milkdown-theme-nord p code[data-type="mdxTextExpression"]::before {
+  content: "{";
+  font-size: xx-small;
+}
+.ProseMirror.milkdown-theme-nord p code[data-type="mdxTextExpression"]::after {
+  content: "}";
+  font-size: xx-small;
+}
+</style>
