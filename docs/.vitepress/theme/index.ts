@@ -10,7 +10,7 @@ export default {
     // https://vitepress.dev/guide/extending-default-theme#layout-slots
   }),
   enhanceApp({ app }) {
-    app.component('VueMonacoEditor', defineAsyncComponent(() => import('@guolao/vue-monaco-editor')));
+    app.component('BrocatelEditor', defineAsyncComponent(async () => (await import('brocatel-mde')).BrocatelEditor));
     // @ts-ignore
     app.component('MdExample', defineAsyncComponent(() =>  import('../components/MdExample.vue')));
   },

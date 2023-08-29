@@ -32,7 +32,11 @@ export default defineConfig({
           { text: 'Architecture', link: '/arch' },
           { text: 'Road Map', link: '/roadmap' },
         ],
-      }
+      },
+      {
+        text: 'Playground',
+        link: '/playground',
+      },
     ],
 
     socialLinks: [

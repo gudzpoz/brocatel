@@ -1,15 +1,8 @@
 <template>
   <pre ref="defaultText" style="display: none"><slot></slot></pre>
   <div v-if="inSight" class="md-example" :style="{ height: props.height }">
-    <vue-monaco-editor
-      v-model:value="defaultCode"
-      @mount="monacoMount"
-      @change="handleChange"
-      :options="monacoOptions"
-      :theme="isDark ? 'vs-dark' : 'light'"
-      language="markdown"
-      width=""
-      height=""
+    <brocatel-editor
+      v-model="markdown"
     />
     <div ref="output" class="md-output">
       <div class="lines">
@@ -36,94 +29,56 @@
 <script setup lang="ts">
 import { debounce } from '@github/mini-throttle';
 import { VFile } from 'vfile';
-import { useData } from 'vitepress';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 
 import { useCompiler, useFengari } from './compiler';
 import { parse } from './markdown';
 import Story from './story';
+
+import 'brocatel-mde/dist/style.css';
 
 const props = defineProps<{
   height?: string,
   autoScroll?: boolean,
 }>();
 
-const { isDark } = useData();
-const monacoOptions: any = {
-  folding: false,
-  fontSize: 10.5,
-  glyphMargin: false,
-  lineNumbers: 'on',
-  lineDecorationsWidth: 1,
-  minimap: { enabled: false },
-  scrollBeyondLastLine: true,
-  wordWrap: 'bounded',
-};
-
+const markdown = ref('');
 // Automatically compile new script.
 const story = ref<Story>();
-let editor: any = null;
-let decorations: any = null;
-function monacoMount(monacoEditor: any) {
-  editor = monacoEditor;
-}
-function annotateErrors(vfile: VFile) {
-  if (!editor) {
-    return;
-  }
-  let annotations = vfile.messages.map((m) => {
-    if (!m.position) {
-      return null;
-    }
-    const range = {
-      endColumn: m.position.end.column,
-      endLineNumber: m.position.end.line,
-      startColumn: m.position.start.column,
-      startLineNumber: m.position.start.line,
-    };
-    return {
-      range,
-      options: {
-        hoverMessage: { value: m.message },
-        inlineClassName: 'md-warning',
-      },
-    };
-  }).filter((e) => e);
 
-  if (decorations) {
-    decorations.clear();
+function annotateErrors(vfile: VFile) {
+  if (vfile.messages.length !== 0) {
+    console.log(vfile.messages);
   }
-  decorations = editor.createDecorationsCollection(annotations);
 }
 const handleChange = debounce(async (code: string) => {
-  if (!code) {
-    return;
-  }
   clear();
   try {
     const compiled = await (await useCompiler()).compileAll('main', async () => code);
-    defaultCode.value = code;
+    markdown.value = code;
     annotateErrors(compiled);
     const s = compiled.toString().trim()
     story.value = new Story(s, await useFengari());
     multiNext(10);
   } catch (e) {
+    console.log(code);
     console.log(e);
   }
 }, 1000);
+watch(() => markdown.value, (md) => {
+  handleChange(md);
+});
 
 // Automatic compilation on mount and update.
-const defaultCode = ref('');
 const defaultText = ref<HTMLPreElement>();
 const hindsight = ref<HTMLButtonElement>();
 let preObserver: MutationObserver | null = null;
 let sightObserver: IntersectionObserver | null = null;
 const inSight = ref(false);
 function refetch(intoView?: boolean) {
-  const pre = defaultText.value?.querySelector('pre');
-  if (pre && (inSight || intoView)) {
-    defaultCode.value = pre.innerText;
-    handleChange(defaultCode.value);
+  if (defaultText.value && (inSight.value || intoView)) {
+    const pre = defaultText.value?.querySelector('pre');
+    markdown.value = pre ? pre.innerText : '';
     inSight.value = true;
   }
 }
@@ -259,5 +214,8 @@ function next(option?: number): boolean {
 }
 .hover-contents p {
   line-height: 1em;
+}
+.brocatel-editor {
+  margin: 0.2em 0.5em 0.2em 0.5em;
 }
 </style>

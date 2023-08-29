@@ -21,7 +21,8 @@ Here is an example story, just enough to demonstrate how Markdown marks up the t
 
 ~~~markdown
 :::nil
-### A Brief Introduction To Markdown
+- ### A Brief Introduction To Markdown
+
 # heading
 
 - Styled texts
@@ -64,9 +65,9 @@ Here is an example story, just enough to demonstrate how Markdown marks up the t
      3. Item 3, and so on
      ```
      :::nil
-     1. Item 1
-     2. Item 2
-     3. Item 3, and so on
+     - 1. Item 1
+       2. Item 2
+       3. Item 3, and so on
      You may also start an ordered list with `1)`.
   2. An unordered one
      ```markdown
@@ -95,12 +96,12 @@ Here is an example story, just enough to demonstrate how Markdown marks up the t
   ```
   ````
   :::nil
-  1. The ```` ```markdown meta```` part signifies the start of a code block. The first word `markdown` tells the Markdown processor what language the block contains, while the second word is optional, telling about *meta* things (that differ between differenct processors).
-  2. The final ```` ``` ```` signifies the end of the block.
-  It looks like this:
-  ```markdown
-  **bold** _italics_
-  ```
+  - 1. The ```` ```markdown meta```` part signifies the start of a code block. The first word `markdown` tells the Markdown processor what language the block contains, while the second word is optional, telling about *meta* things (that differ between differenct processors).
+    2. The final ```` ``` ```` signifies the end of the block.
+    It looks like this:
+    ```markdown
+    **bold** _italics_
+    ```
 - `CHOICE_COUNT == 0` Done!
   [](#end)
 
