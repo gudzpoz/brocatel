@@ -50,8 +50,8 @@ describe("Module labels", function()
                 { { labels = { c = { 2 } } },       "" },
             }
         }, 2)
-        assert.equals(2, #results)
-        assert.equals(3, #results[1])
+        assert.equal(2, #results)
+        assert.equal(3, #results[1])
         -- Not necessarily in order
         if results[1][2] == 2 then
             assert.same({

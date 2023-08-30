@@ -1,5 +1,39 @@
 local savedata = {}
 
+local TablePath = require("table_path");
+
+--- Initializes a savedata table from metadata.
+---
+--- @param meta table
+--- @return table
+function savedata.init(meta)
+    local ip = TablePath.from({ meta.entry })
+    local save = {
+        version = meta.version,
+        current_thread = "",
+        current = {
+            input = nil,
+            output = nil,
+        },
+        threads = {
+            [""] = {
+                current_coroutine = 1,
+                coroutines = {
+                    {
+                        ip = ip,
+                        locals = { keys = {}, values = {} },
+                        stack = {},
+                    },
+                },
+                thread_locals = { keys = {}, values = {} },
+            },
+        },
+        stats = {},
+        globals = {},
+    }
+    return save
+end
+
 --- Checks if the key has a savable type.
 ---
 --- @param key any
@@ -114,7 +148,10 @@ end
 --- @param s string code
 --- @return function
 function savedata.load_with_env(env, s)
+    ---@diagnostic disable-next-line: deprecated
+    local setfenv = setfenv
     if setfenv then
+        ---@diagnostic disable-next-line: deprecated
         local chunk = assert(loadstring(s))
         setfenv(chunk, env)
         return chunk

@@ -3,6 +3,7 @@ local savedata = require("savedata")
 --- @param func function
 ---@param layer number
 local function foreach_index(func, layer)
+    ---@diagnostic disable-next-line: deprecated
     for i = 1, math.pow(layer, layer) do
         local indices = {}
         local j = i
@@ -36,7 +37,7 @@ end
 local function test_save_load(table, saved, loaded)
     local s = savedata.save(table)
     if saved then
-        assert.equals(saved, s)
+        assert.equal(saved, s)
     end
     if type(table) == "function" then
         assert.same(loaded, savedata.load(s))
@@ -75,7 +76,7 @@ describe("Module savedata", function()
     end)
 
     it("loads with environment", function()
-        assert.equals("helloworld", savedata.load_with_env({ a = "hello" }, "return a .. 'world'")())
+        assert.equal("helloworld", savedata.load_with_env({ a = "hello" }, "return a .. 'world'")())
         assert.error(function() savedata.load("return assert({})") end)
         assert.no_error(function() savedata.load_with_env({ assert = assert }, "return assert({})") end)
     end)

@@ -14,7 +14,7 @@ brocatel.TablePath = TablePath
 --- The brocatel runtime VM.
 ---
 --- @class VM
---- @field code table the compiled brocatel scripts
+--- @field code table<string, table> the compiled brocatel scripts
 --- @field env StackedEnv the environment handle
 --- @field savedata table save data
 --- @field flags table inner api for data storage, cleaned on each `next` call
@@ -27,7 +27,7 @@ VM.set_up_env_api = require("env_api")
 
 --- Creates a VM from compiled brocatel scripts, in brocatel runtime format.
 ---
---- @param compiled_chunk table the loaded chunk
+--- @param compiled_chunk table<string, table> the loaded chunk
 --- @param env StackedEnv the environment used to load the chunk
 --- @return VM vm the created VM
 function VM.new(compiled_chunk, env)
@@ -40,10 +40,38 @@ function VM.new(compiled_chunk, env)
         env = env,
         flags = {},
         gettext = {},
+        savedata = savedata.init(assert(compiled_chunk[""], "invalidate runtime format")),
     }
     setmetatable(vm, VM)
     vm:init()
     return vm
+end
+
+--- Initializes the VM state.
+function VM:init()
+    if self.savedata.version > VM.version then
+        error("library version outdated")
+    end
+    -- Re-attaches type info (TablePaths stored as plain table in savedata).
+    for _, thread in pairs(self.savedata.threads) do
+        for _, co in ipairs(thread.coroutines) do
+            co.ip = TablePath.from(co.ip)
+            co.ip:set_listener(function(old, new)
+                assert(self:ensure_root(new), "invalid ip assigned")
+                history.record_simple(self.savedata.stats, self.code, old, new)
+            end)
+        end
+    end
+    self:set_up_env_api()
+    self.env:set_global_scope(self.savedata.globals)
+    self.env:set_label_lookup(function(keys)
+        return self:lookup_label(keys)
+    end)
+    self.env:set_init(false)
+    local ip = assert(self:get_coroutine()).ip
+    local root = assert(self:ensure_root(ip))
+    ip:step(root, true)
+    self:set_env()
 end
 
 --- Fetches the root, ensuring existence of the specified root node.
@@ -73,60 +101,6 @@ function VM:ensure_root(name)
     error("expecting a table or a function")
 end
 
---- Initializes the VM state.
-function VM:init()
-    if not self.savedata then
-        local meta = assert(self:ensure_root(""), "invalidate runtime format")[""] --- @type table
-        local ip = TablePath.from({ meta.entry })
-        local save = {
-            version = meta.version,
-            current_thread = "",
-            current = {
-                input = nil,
-                output = nil,
-            },
-            threads = {
-                [""] = {
-                    current_coroutine = 1,
-                    coroutines = {
-                        {
-                            ip = ip,
-                            locals = { keys = {}, values = {} },
-                            stack = {},
-                        },
-                    },
-                    thread_locals = { keys = {}, values = {} },
-                },
-            },
-            stats = {},
-            globals = {},
-        }
-        self.savedata = save
-    end
-    if self.savedata.version > VM.version then
-        error("library version outdated")
-    end
-    for _, thread in pairs(self.savedata.threads) do
-        for _, co in ipairs(thread.coroutines) do
-            co.ip = TablePath.from(co.ip)
-            co.ip:set_listener(function(old, new)
-                assert(self:ensure_root(new), "invalid ip assigned")
-                history.record_simple(self.savedata.stats, self.code, old, new)
-            end)
-        end
-    end
-    self:set_up_env_api()
-    self.env:set_global_scope(self.savedata.globals)
-    self.env:set_label_lookup(function(keys)
-        return self:lookup_label(keys)
-    end)
-    self.env:set_init(false)
-    local ip = assert(self:get_coroutine()).ip
-    local root = assert(self:ensure_root(ip))
-    ip:step(root, true)
-    self:set_env()
-end
-
 --- @param values table
 --- @return table keys
 function VM.get_keys(values)
@@ -150,6 +124,7 @@ function VM:call_with_env(env, func, ...)
     self.env:push(self.get_keys(env), env)
     local result = { func(...) }
     self.env:pop()
+    ---@diagnostic disable-next-line: deprecated
     return (unpack or table.unpack)(result)
 end
 
@@ -175,8 +150,8 @@ function VM:eval_with_env(env, ip, env_keys)
 end
 
 --- @class Gettext
---- @field gettext fun(msgid: string):string
---- @field ngettext fun(msgid: string, count: number):string
+--- @field gettext nil | fun(msgid: string):string
+--- @field ngettext nil | fun(msgid: string, count: number):string
 
 --- Configures the gettext functionality.
 ---
@@ -483,6 +458,7 @@ function brocatel.load_vm(content, save, extra_env)
         next = next,
         pairs = pairs,
         select = select,
+        ---@diagnostic disable-next-line: deprecated
         unpack = unpack,
         pcall = pcall,
         xpcall = xpcall,

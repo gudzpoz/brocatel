@@ -58,10 +58,11 @@ describe("VM", function()
 
     describe("provides a runtime for functions", function()
         it("like a global IP (instruction pointer)", function()
-            local vm = nil
+            local vm = nil --- @type VM
             vm = wrap({
                 {},
                 {
+                    ---@param args TablePath
                     func = function(args)
                         vm.env:get("IP"):set(args:resolve(3))
                     end,
@@ -77,14 +78,15 @@ describe("VM", function()
             assert.same({ "arg 2", "end" }, utils.gather_til_end(vm))
         end)
         it("like manual evaluation", function()
-            local vm = nil
+            local vm = nil --- @type VM
             vm = wrap({
                 {},
                 {
+                    ---@param args TablePath
                     func = function(args)
-                        local eval = vm.env:get("EVAL")
-                        assert.equals("arg 1", eval(args:copy():resolve(2)))
-                        assert.equals("arg 2", eval(args:copy():resolve(3)))
+                        local eval = assert(vm.env:get("EVAL"))
+                        assert.equal("arg 1", eval(args:copy():resolve(2)))
+                        assert.equal("arg 2", eval(args:copy():resolve(3)))
                         assert.is_nil(eval(args:copy():resolve(4)))
                     end,
                     args = {
@@ -99,14 +101,15 @@ describe("VM", function()
             assert.same({ "end" }, utils.gather_til_end(vm))
         end)
         it("like custom data storage", function()
-            local vm = nil
+            local vm = nil --- @type VM
             vm = wrap({
                 { labels = { a = { 2, "args", 2 } } },
                 {
+                    ---@param args TablePath
                     func = function(args)
-                        local get = vm.env:get("GET")
-                        local set = vm.env:get("SET")
-                        local ip = vm.env:get("IP")
+                        local get = assert(vm.env:get("GET"))
+                        local set = assert(vm.env:get("SET"))
+                        local ip = assert(vm.env:get("IP"))
                         assert.is_nil(get(args, "k"))
                         set(args, "k", "v")
                         ip:set(args:resolve(2))
@@ -114,12 +117,13 @@ describe("VM", function()
                     args = { {}, { {}, "Hello" } },
                 },
                 {
+                    ---@param args TablePath
                     func = function(args)
-                        local get = vm.env:get("GET")
+                        local get = assert(vm.env:get("GET"))
                         assert.is_nil(get(args, "k"))
-                        assert.equals("v", get(args:resolve(nil, nil, 2, "args"), "k"))
-                        local visited = vm.env:get("VISITS")
-                        assert.equals(1, visited(vm.env:get("a")))
+                        assert.equal("v", get(args:resolve(nil, nil, 2, "args"), "k"))
+                        local visited = assert(vm.env:get("VISITS"))
+                        assert.equal(1, visited(vm.env:get("a")))
                         assert.error(function() vm.env:set("GET", 0) end)
                         assert.no_error(function() vm.env:set("_GET", 0) end)
                     end
@@ -177,12 +181,12 @@ describe("VM", function()
             utils.gather_til_end(vm, 10)
         )
         local _, line = vm:lookup_label({ "first" })
-        assert.equals("Hello", line)
+        assert.equal("Hello", line)
         _, line = vm:lookup_label({ "main", "last" })
-        assert.not_nil(line.link)
+        assert.is_not_nil(line.link)
         _, line = vm:lookup_label({ "curious", "first" })
-        assert.equals(1, #line)
-        assert.equals(0, #line[1])
+        assert.equal(1, #line)
+        assert.equal(0, #line[1])
     end)
 
     it("with translation", function()
@@ -192,6 +196,7 @@ describe("VM", function()
             {},
             { function() call_count = call_count + 1 end },
             {
+                ---@param args TablePath
                 func = function(args)
                     call_count = call_count + 1
                     assert(args:equals(TablePath.from({ "main", 3, "args" })))
@@ -203,15 +208,16 @@ describe("VM", function()
         local as_is = function() return "is" end
         vm:set_gettext(as_is, as_is)
         assert.same({ "is" }, utils.gather_til_end(vm))
-        assert.equals(2, call_count)
+        assert.equal(2, call_count)
     end)
 
     it("with select function", function()
         local call_count = 0
-        local vm = nil
+        local vm = nil --- @type VM
         vm = wrap({
             {},
             {
+                ---@param args TablePath
                 func = function(args) vm.env:get("FUNC").S_ONCE(args) end,
                 args = {
                     {},
@@ -245,8 +251,8 @@ describe("VM", function()
                 { key = 6, option = "Selection #4" },
             },
         }, output)
-        assert.equals("Result #3", vm:next(5).text)
-        assert.equals("Hello", vm:next().text)
+        assert.equal("Result #3", vm:next(5).text)
+        assert.equal("Hello", vm:next().text)
 
         assert.same({
             tags = true,
@@ -255,8 +261,8 @@ describe("VM", function()
                 { key = 6, option = "Selection #4" },
             },
         }, vm:next())
-        assert.equals("Result #4", vm:next(6).text)
-        assert.equals("Hello", vm:next().text)
+        assert.equal("Result #4", vm:next(6).text)
+        assert.equal("Hello", vm:next().text)
         assert.same({
             tags = true,
             select = {
@@ -264,8 +270,8 @@ describe("VM", function()
                 { key = 6, option = "Selection #4" },
             },
         }, vm:next())
-        assert.equals("Result #4", vm:next(6).text)
-        assert.equals("Hello", vm:next().text)
+        assert.equal("Result #4", vm:next(6).text)
+        assert.equal("Hello", vm:next().text)
 
         assert.same({
             tags = true,
@@ -273,9 +279,9 @@ describe("VM", function()
                 { key = 2, option = "Selection #1" },
             },
         }, vm:next())
-        assert.equals("Result #1", vm:next(2).text)
-        assert.equals("Hello", vm:next().text)
+        assert.equal("Result #1", vm:next(2).text)
+        assert.equal("Hello", vm:next().text)
         -- Options exhausted
-        assert.equals("Hello", vm:next().text)
+        assert.equal("Hello", vm:next().text)
     end)
 end)
