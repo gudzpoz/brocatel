@@ -255,6 +255,15 @@ importers:
       '@milkdown/exception':
         specifier: ^7.3.0
         version: registry.npmmirror.com/@milkdown/exception@7.3.0
+      '@milkdown/plugin-clipboard':
+        specifier: ^7.3.0
+        version: registry.npmmirror.com/@milkdown/plugin-clipboard@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0)
+      '@milkdown/plugin-cursor':
+        specifier: ^7.3.0
+        version: registry.npmmirror.com/@milkdown/plugin-cursor@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0)
+      '@milkdown/plugin-history':
+        specifier: ^7.3.0
+        version: registry.npmmirror.com/@milkdown/plugin-history@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0)
       '@milkdown/plugin-listener':
         specifier: ^7.3.0
         version: registry.npmmirror.com/@milkdown/plugin-listener@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0)
@@ -1033,6 +1042,62 @@ packages:
     version: 7.3.0
     dependencies:
       tslib: registry.npmmirror.com/tslib@2.6.2
+    dev: false
+
+  registry.npmmirror.com/@milkdown/plugin-clipboard@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0):
+    resolution: {integrity: sha512-KTvoOC8bJyOLqejpKWK1PAqoNH6WKdS7dGByy92rI3zQeJn9QPdzR2w2mi3d4j3AJHVxEimApGJRHrAOcb+i1w==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/@milkdown/plugin-clipboard/-/plugin-clipboard-7.3.0.tgz}
+    id: registry.npmmirror.com/@milkdown/plugin-clipboard/7.3.0
+    name: '@milkdown/plugin-clipboard'
+    version: 7.3.0
+    peerDependencies:
+      '@milkdown/core': ^7.2.0
+      '@milkdown/prose': ^7.2.0
+    dependencies:
+      '@milkdown/core': registry.npmmirror.com/@milkdown/core@7.3.0(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0)
+      '@milkdown/prose': registry.npmmirror.com/@milkdown/prose@7.3.0
+      '@milkdown/utils': registry.npmmirror.com/@milkdown/utils@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0)
+      tslib: registry.npmmirror.com/tslib@2.6.2
+    transitivePeerDependencies:
+      - '@milkdown/ctx'
+      - '@milkdown/transformer'
+    dev: false
+
+  registry.npmmirror.com/@milkdown/plugin-cursor@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0):
+    resolution: {integrity: sha512-TpaTfsyYAdQi+66tQszNTpMYqdhKdQu+cZhmfBQ+zaknt7tfxDynFxgOhzP2sCfNXSYYpnLbF96YM7MQpNzgEA==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/@milkdown/plugin-cursor/-/plugin-cursor-7.3.0.tgz}
+    id: registry.npmmirror.com/@milkdown/plugin-cursor/7.3.0
+    name: '@milkdown/plugin-cursor'
+    version: 7.3.0
+    peerDependencies:
+      '@milkdown/core': ^7.2.0
+      '@milkdown/ctx': ^7.2.0
+      '@milkdown/prose': ^7.2.0
+    dependencies:
+      '@milkdown/core': registry.npmmirror.com/@milkdown/core@7.3.0(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0)
+      '@milkdown/ctx': registry.npmmirror.com/@milkdown/ctx@7.3.0
+      '@milkdown/prose': registry.npmmirror.com/@milkdown/prose@7.3.0
+      '@milkdown/utils': registry.npmmirror.com/@milkdown/utils@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0)
+      tslib: registry.npmmirror.com/tslib@2.6.2
+    transitivePeerDependencies:
+      - '@milkdown/transformer'
+    dev: false
+
+  registry.npmmirror.com/@milkdown/plugin-history@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0):
+    resolution: {integrity: sha512-iKevzmS0+uhCssk8J+Z40ZgoRIzvSLAS3t3s5LWJ5tzgIP3UxYQLxUeQw5UOLga7v48FUDQfoEPmBs6n6Da2Cw==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/@milkdown/plugin-history/-/plugin-history-7.3.0.tgz}
+    id: registry.npmmirror.com/@milkdown/plugin-history/7.3.0
+    name: '@milkdown/plugin-history'
+    version: 7.3.0
+    peerDependencies:
+      '@milkdown/core': ^7.2.0
+      '@milkdown/ctx': ^7.2.0
+      '@milkdown/prose': ^7.2.0
+    dependencies:
+      '@milkdown/core': registry.npmmirror.com/@milkdown/core@7.3.0(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0)
+      '@milkdown/ctx': registry.npmmirror.com/@milkdown/ctx@7.3.0
+      '@milkdown/prose': registry.npmmirror.com/@milkdown/prose@7.3.0
+      '@milkdown/utils': registry.npmmirror.com/@milkdown/utils@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0)
+      tslib: registry.npmmirror.com/tslib@2.6.2
+    transitivePeerDependencies:
+      - '@milkdown/transformer'
     dev: false
 
   registry.npmmirror.com/@milkdown/plugin-listener@7.3.0(@milkdown/core@7.3.0)(@milkdown/ctx@7.3.0)(@milkdown/prose@7.3.0)(@milkdown/transformer@7.3.0):
@@ -2789,7 +2854,7 @@ packages:
     dependencies:
       confusing-browser-globals: registry.npmmirror.com/confusing-browser-globals@1.0.11
       eslint: registry.npmmirror.com/eslint@8.48.0
-      eslint-plugin-import: registry.npmmirror.com/eslint-plugin-import@2.28.1(@typescript-eslint/parser@6.5.0)(eslint@8.48.0)
+      eslint-plugin-import: registry.npmmirror.com/eslint-plugin-import@2.28.1(@typescript-eslint/parser@5.62.0)(eslint@8.48.0)
       object.assign: registry.npmmirror.com/object.assign@4.1.4
       object.entries: registry.npmmirror.com/object.entries@1.1.7
       semver: registry.npmmirror.com/semver@6.3.1

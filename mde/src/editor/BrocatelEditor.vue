@@ -2,12 +2,12 @@
   <MilkdownProvider>
     <ProsemirrorAdapterProvider>
       <EditorInner
-        :model-value="props.modelValue"
-        :menu="props.menu"
-        :nord="props.nord"
-        :plugins="props.plugins"
-        :configs="props.configs"
-        :prompt="props.prompt"
+        :model-value="modelValue"
+        :menu="menu"
+        :nord="nord"
+        :plugins="plugins"
+        :configs="configs"
+        :prompt="prompt"
         @update:model-value="updateValue"
       />
     </ProsemirrorAdapterProvider>
@@ -17,12 +17,15 @@
 <script setup lang="ts">
 import type { MilkdownPlugin } from '@milkdown/ctx';
 import type { Config } from '@milkdown/core';
+import { clipboard } from '@milkdown/plugin-clipboard';
+import { cursor } from '@milkdown/plugin-cursor';
+import { history } from '@milkdown/plugin-history';
 import { MilkdownProvider } from '@milkdown/vue';
 import { ProsemirrorAdapterProvider } from '@prosemirror-adapter/vue';
 
 import EditorInner from './EditorInner.vue';
 
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   modelValue?: string;
   menu?: boolean;
   nord?: boolean;
@@ -34,7 +37,7 @@ const props = withDefaults(defineProps<{
   modelValue: '',
   menu: true,
   nord: true,
-  plugins: () => [],
+  plugins: () => [clipboard, cursor, history].flat(),
   configs: () => [],
   // eslint-disable-next-line no-alert
   prompt: (s: string) => window.prompt(s),
@@ -67,11 +70,11 @@ function updateValue(value: string) {
 /*
 * mdx-plugin.ts: inline mdx expression styles.
 */
-.ProseMirror.milkdown-theme-nord p code[data-type="mdxTextExpression"]::before {
+.ProseMirror.milkdown-theme-nord div.paragraph code[data-type="mdxTextExpression"]::before {
   content: "{";
   font-size: xx-small;
 }
-.ProseMirror.milkdown-theme-nord p code[data-type="mdxTextExpression"]::after {
+.ProseMirror.milkdown-theme-nord div.paragraph code[data-type="mdxTextExpression"]::after {
   content: "}";
   font-size: xx-small;
 }
