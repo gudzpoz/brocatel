@@ -6,7 +6,7 @@
 --- @field lua table the Lua environment
 --- @field global table the global scope
 --- @field label fun(table):table label lookup function
---- @field stack table some normal scopes that pose no requirements
+--- @field stack table<table> some normal scopes that pose no requirements
 --- @field env table the environment to be used
 --- @field api table<string, boolean> keys that forbid overriding
 --- @field init boolean whether in initialing state
@@ -150,13 +150,18 @@ function StackedEnv:get(key)
     if self.init then
         return self.lua[key]
     end
-    -- Function-locals and thread-locals.
-    local stack = self.stack
-    for i = #stack, 1, -1 do
-        local scope = stack[i]
-        local value, ok = get_with(scope, key)
+    if #self.stack > 0 then
+        -- Function-local.
+        local v, ok = get_with(self.stack[#self.stack], key)
         if ok then
-            return value
+            return v
+        end
+        -- Thread-local.
+        if #self.stack ~= 1 then
+            v, ok = get_with(self.stack[1], key)
+            if ok then
+                return v
+            end
         end
     end
     -- Labels.
@@ -190,11 +195,13 @@ function StackedEnv:set(key, value)
         self.lua[key] = value
         return
     end
-    -- Function-locals and thread-locals.
-    local stack = self.stack
-    for i = #stack, 1, -1 do
-        local scope = stack[i]
-        if set_with(scope, key, value) then
+    if #self.stack > 0 then
+        -- Function-local.
+        if set_with(self.stack[#self.stack], key, value) then
+            return
+        end
+        --- Thread-local.
+        if #self.stack ~= 1 and set_with(self.stack[1], key, value) then
             return
         end
     end
