@@ -53,7 +53,7 @@ export class HeadingStack {
         * <-- `---` implicitly inserted here
         * # non-function-2
         */
-      if (last.data?.routine && !hasReturned(last)) {
+      if (!hasReturned(last)) {
         appendReturn(last);
       }
       this.depths.pop();
