@@ -37,6 +37,12 @@ export default defineConfig({
         text: 'Playground',
         link: '/playground',
       },
+      {
+        text: 'Archives',
+        items: [
+          { text: 'The Old Tutorial', link: '/tutorial_old' },
+        ],
+      },
     ],
 
     socialLinks: [

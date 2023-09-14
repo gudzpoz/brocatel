@@ -93,6 +93,7 @@ const href = computed(() => getLinkHref(node.value));
 .ProseMirror .paragraph {
   padding-top: 0.5em;
   display: flex;
+  flex-wrap: wrap;
 }
 .ProseMirror .paragraph div[data-node-view-content] {
   display: inline-block;

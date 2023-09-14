@@ -5,25 +5,28 @@
       class="milkdown-menu"
     >
       <button @click="call(toggleEmphasisCommand)">
-        Italics
+        <i>Italics</i>
       </button>
       <button @click="call(toggleStrongCommand)">
-        Bold
+        <b>Bold</b>
       </button>
       <button @click="call(wrapInHeadingCommand)">
-        Heading
+        <b>#</b>Heading
       </button>
       <button @click="toggleLink">
-        Link
+        <u>Link</u>
+      </button>
+      <button @click="call(wrapInBulletListCommand)">
+        <b>-</b>Choices
       </button>
       <button @click="call(toggleInlineCodeCommand)">
-        Code
+        <code>`Code`</code>
       </button>
       <button @click="call(toggleMdxInlineCommand)">
-        Expr
+        <code>{Expr}</code>
       </button>
       <button @click="call(insertDirectiveCommand)">
-        Directive
+        <b>:::</b>Directive
       </button>
     </div>
     <Milkdown />
@@ -38,8 +41,8 @@ import type { MilkdownPlugin } from '@milkdown/ctx';
 import { listenerCtx, listener } from '@milkdown/plugin-listener';
 import {
   commonmark, toggleEmphasisCommand,
-  toggleInlineCodeCommand,
-  toggleLinkCommand, toggleStrongCommand, wrapInHeadingCommand,
+  toggleInlineCodeCommand, toggleLinkCommand,
+  toggleStrongCommand, wrapInHeadingCommand, wrapInBulletListCommand,
 } from '@milkdown/preset-commonmark';
 import { nord as nordConfig } from '@milkdown/theme-nord';
 import { callCommand, replaceAll, type $Command } from '@milkdown/utils';

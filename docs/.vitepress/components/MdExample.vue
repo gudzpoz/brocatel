@@ -2,25 +2,34 @@
   <pre ref="defaultText" style="display: none"><slot></slot></pre>
   <div v-if="inSight" class="md-example" :style="{ height: props.height }">
     <brocatel-editor
-      v-model="markdown"
+      :modelValue="markdown"
+      @update:modelValue="(s: string) => handleChange(s)"
     />
     <div ref="output" class="md-output">
-      <div class="lines">
-        <TransitionGroup>
-          <p v-for="line, i in lines" :key="i" v-html="parse(line.text)" :style="line.tags"></p>
-        </TransitionGroup>
-      </div>
-      <Transition>
-        <div v-show="options.length > 0">
-          <button v-for="option in options" :key="option.option"
-            @click="multiNext(10, option.key)" v-html="parse(option.option, true)">
-          </button>
+      <div><b>Story Output:</b></div>
+      <div class="output-container">
+        <div class="lines">
+          <TransitionGroup>
+            <p v-for="line, i in lines" :key="i" v-html="parse(line.text)" :style="line.tags"></p>
+          </TransitionGroup>
         </div>
-      </Transition>
-      <button v-show="options.length === 0 && story && completed && !ended" @click="multiNext(10)">
-        Next Few Lines
-      </button>
-      <Transition><div v-show="ended">~~ ended ~~</div></Transition>
+        <Transition>
+          <div v-show="options.length > 0">
+            <button v-for="option in options" :key="option.option"
+              @click="multiNext(10, option.key)" v-html="parse(option.option, true)">
+            </button>
+          </div>
+        </Transition>
+        <button v-show="options.length === 0 && story && completed && !ended" @click="multiNext(10)">
+          Next Few Lines
+        </button>
+        <Transition>
+          <div v-show="ended">
+            <div>~~ ended ~~</div>
+            <button @click="handleChangeNow(markdown)">Restart</button>
+          </div>
+        </Transition>
+      </div>
     </div>
   </div>
   <button v-else ref="hindsight" @click="refetch(true)">Load Example</button>
@@ -29,7 +38,7 @@
 <script setup lang="ts">
 import { debounce } from '@github/mini-throttle';
 import { VFile } from 'vfile';
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 import { useCompiler, useFengari } from './compiler';
 import { parse } from './markdown';
@@ -51,11 +60,14 @@ function annotateErrors(vfile: VFile) {
     console.log(vfile.messages);
   }
 }
-const handleChange = debounce(async (code: string) => {
+async function handleChangeNow(code: string) {
+  if (code.trim() === '') {
+    return;
+  }
+  markdown.value = code;
   clear();
   try {
     const compiled = await (await useCompiler()).compileAll('main', async () => code);
-    markdown.value = code;
     annotateErrors(compiled);
     const s = compiled.toString().trim()
     story.value = new Story(s, await useFengari());
@@ -64,10 +76,8 @@ const handleChange = debounce(async (code: string) => {
     console.log(code);
     console.log(e);
   }
-}, 1000);
-watch(() => markdown.value, (md) => {
-  handleChange(md);
-});
+}
+const handleChange = debounce(handleChangeNow, 1000);
 
 // Automatic compilation on mount and update.
 const defaultText = ref<HTMLPreElement>();
@@ -78,7 +88,7 @@ const inSight = ref(false);
 function refetch(intoView?: boolean) {
   if (defaultText.value && (inSight.value || intoView)) {
     const pre = defaultText.value?.querySelector('pre');
-    markdown.value = pre ? pre.innerText : '';
+    handleChangeNow(pre ? pre.innerText : '');
     inSight.value = true;
   }
 }
@@ -159,6 +169,7 @@ function next(option?: number): boolean {
 .md-example {
   margin: 1em 0 1em 0;
   box-shadow: 0 0 2px var(--vp-c-brand);
+  background-color: var(--vp-c-bg);
   height: 50vh;
   display: flex;
   flex-direction: row;
@@ -166,13 +177,20 @@ function next(option?: number): boolean {
 .md-example>div {
   width: 50%;
 }
-.md-example .monaco-editor .margin .line-numbers {
-  text-align: left;
-  padding-left: 1em;
-}
 .md-output {
-  padding: 1em;
-  overflow-y: scroll;
+  border-left: 1px solid var(--vp-c-brand-dimm);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+.md-output .output-container {
+  overflow: scroll;
+  background-color: var(--vp-c-bg-alt);
+  padding: 0;
+}
+.md-output .output-container p {
+  margin: 0;
+  padding: 0.2em;
 }
 @media only screen and (max-width: 640px) {
   .md-example {
@@ -182,6 +200,9 @@ function next(option?: number): boolean {
   .md-example>div {
     width: 100%;
     height: 40vh;
+  }
+  .md-output {
+    border-left: none;
   }
 }
 
@@ -208,14 +229,35 @@ function next(option?: number): boolean {
   opacity: 0;
 }
 
-/* Monaco styles */
-.md-warning {
-  text-decoration: red wavy underline;
-}
-.hover-contents p {
-  line-height: 1em;
-}
+/* mde styles */
 .brocatel-editor {
-  margin: 0.2em 0.5em 0.2em 0.5em;
+  margin: 0;
+}
+.brocatel-editor > .milkdown-menu {
+  margin: 0;
+  background-color: var(--vp-c-bg);
+}
+.brocatel-editor div[data-milkdown-root] {
+  margin: 0.2em 0 0.2em 0;
+  padding: 0.2em 0.5em 0.2em 0.5em;
+  background-color: var(--vp-c-bg-alt);
+}
+.milkdown-menu button {
+  border: 1px solid var(--vp-c-brand-darker);
+  background-color: var(--vp-c-bg-alt);
+  margin: 0.2em;
+  padding: 0 1em 0 1em;
+  transition: all 0.2s;
+  box-shadow: var(--vp-shadow-1);
+}
+.milkdown-menu button:hover {
+  background-color: var(--vp-c-bg);
+}
+.brocatel-editor div[data-milkdown-root] ul {
+  border: 1px solid var(--vp-c-gray);
+}
+.brocatel-editor h1, .brocatel-editor h2, .brocatel-editor h3, .brocatel-editor h4, .brocatel-editor h5, .brocatel-editor h6 {
+  margin: 0;
+  padding: 0;
 }
 </style>
