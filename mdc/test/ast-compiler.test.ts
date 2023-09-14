@@ -100,22 +100,28 @@ test('Headings', async () => {
       }},
       {
         {label="a",labels={
-          b={2},
-          e={3}
+          b={3},
+          e={5}
         }},
+        {func=function(args)END()\\nend},
         {
           {label="b",labels={
-            c={2},
-            d={3}
+            c={3},
+            d={5}
           }},
-          {{label="c"}},
-          {{label="d"}}
+          {func=function(args)END()\\nend},
+          {{label="c"},{func=function(args)END()\\nend}},
+          {func=function(args)END()\\nend},
+          {{label="d"},{func=function(args)END()\\nend}},
+          {func=function(args)END()\\nend}
         },
-        {{label="e"}}
+        {func=function(args)END()\\nend},
+        {{label="e"},{func=function(args)END()\\nend}},
+        {func=function(args)END()\\nend}
       },
       {{label="f"}}
     }
-    `.replace(/--.+/g, '').replace(/ |\n/g, ''),
+    `.replace(/--.+/g, '').replace(/ |\n/g, '').replace(/\\n/g, '\n'),
   );
 });
 
@@ -130,16 +136,21 @@ test('Links', async () => {
     {
       {labels={a={2}}},
       {
-        {label="a",labels={b={2}}},
+        {label="a",labels={b={3}}},
+        {func=function(args)END()\\nend},
         {
-          {label="b",labels={c={2}}},
+          {label="b",labels={c={3}}},
+          {func=function(args)END()\\nend},
           {
-            {label="c",labels={d={2}}},
+            {label="c",labels={d={3}}},
+            {func=function(args)END()\\nend},
             {
-              {label="d",labels={e={3}}},
+              {label="d",labels={e={4}}},
               {link={"e","f"}},
+              {func=function(args)END()\\nend},
               {
-                {label="e",labels={f={2}}},
+                {label="e",labels={f={3}}},
+                {func=function(args)END()\\nend},
                 {{label="f"}}
               }
             }
@@ -147,7 +158,7 @@ test('Links', async () => {
         }
       }
     }
-    `.replace(/--.+/g, '').replace(/ |\n/g, '');
+    `.replace(/--.+/g, '').replace(/ |\n/g, '').replace(/\\n/g, '\n');
   assert.equal(
     assertCompile('# A\n## B\n### C\n#### D\n[](e#f)\n##### E\n###### F'),
     serialized,
@@ -257,7 +268,9 @@ Hello World!
 [](#hello-world#inner)`);
   assert.equal(
     compiled,
-    '{{labels={["hello-world"]={2}}},{{label="hello-world",labels={inner={2}}},{{label="inner"},'
+    '{{labels={["hello-world"]={2}}},{{label="hello-world",labels={inner={3}}},'
+    + '{func=function(args)END()\nend},'
+    + '{{label="inner"},'
     + '"Hello World!",{link={"hello-world","inner"}}}}}',
   );
 });
@@ -266,9 +279,9 @@ test('Function', () => {
   const compiled = assertCompile('# func {}\n[{}](#func)\n\n---');
   assert.equal(
     compiled,
-    '{{labels={func={3}}},{func=function(args)END()\n'
-    + 'end},{{func=true,label="func"},{link={"func"},params=function()return{}end},{func=function(args)END()\n'
-    + 'end}}}',
+    '{{labels={func={3}}},{func=function(args)END()\nend},'
+    + '{{func=true,label="func"},{link={"func"},params=function()return{}end},'
+    + '{func=function(args)END()\nend}}}',
   );
 });
 

@@ -131,7 +131,7 @@ class AstTransformer {
           stack.popUntil(node.depth);
           const last = stack.last();
           const nested = this.parseHeading(node);
-          if (!hasReturned(last)) {
+          if ((stack.lastDepth() !== 0 || nested.data?.routine) && !hasReturned(last)) {
             // Insert a return before function entry point.
             appendReturn(last);
           }

@@ -48,12 +48,12 @@ export class HeadingStack {
     while (depth <= this.lastDepth()) {
       const last = this.last();
       /* Insert implicit returns at the end of a function:
-        * # non-function-1
-        * ## a-function {}
-        * <-- `---` implicitly inserted here
-        * # non-function-2
-        */
-      if (!hasReturned(last)) {
+       * # non-function-1
+       * ## a-function {}
+       * <-- `---` implicitly inserted here
+       * # non-function-2
+       */
+      if ((depth !== 0 || last.data?.routine) && !hasReturned(last)) {
         appendReturn(last);
       }
       this.depths.pop();

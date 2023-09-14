@@ -84,8 +84,11 @@ function assertBranch(node: LuaArray | undefined, text: string) {
   const array = node!;
   assert.deepInclude(array, { type: 'array' });
   const inner = array.children;
-  assert.lengthOf(inner, 1);
   assert.deepInclude(inner[0], { type: 'text', text });
+  assert.isBelow(inner.length, 3);
+  if (inner.length === 2) {
+    assert.deepInclude(inner[1], { type: 'func', code: 'END()' });
+  }
 }
 
 test('Transform simple if-else', () => {
@@ -133,12 +136,12 @@ test('Transform heading levels', () => {
   assert.deepInclude(parsed.children[0], { type: 'text', text: 'a' });
   const level1 = parsed.children[1] as LuaArray;
   assert.equal(level1.data?.label, 'b');
-  assert.lengthOf(level1.children, 3);
+  assert.lengthOf(level1.children, 5);
   assert.deepInclude(level1.children[0], { type: 'text', text: 'c' });
-  assert.equal(level1.children[1].data?.label, 'd');
-  assertBranch(level1.children[1] as LuaArray, 'e');
-  assert.equal(level1.children[2].data?.label, 'f');
-  assertBranch(level1.children[2] as LuaArray, 'g');
+  assert.equal(level1.children[2].data?.label, 'd');
+  assertBranch(level1.children[2] as LuaArray, 'e');
+  assert.equal(level1.children[4].data?.label, 'f');
+  assertBranch(level1.children[4] as LuaArray, 'g');
 });
 
 test('Functions', () => {
