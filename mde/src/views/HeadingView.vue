@@ -24,7 +24,7 @@
 import { useNodeViewContext } from '@prosemirror-adapter/vue';
 import { computed, ref } from 'vue';
 
-import { getAnchorString } from 'brocatel-md';
+import { getAnchorString } from '@brocatel/md';
 
 const { contentRef, node, selected } = useNodeViewContext();
 

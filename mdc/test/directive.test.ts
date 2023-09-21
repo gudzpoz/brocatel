@@ -6,7 +6,7 @@ import { ContainerDirective } from 'mdast-util-directive';
 import { toMarkdown } from 'mdast-util-to-markdown';
 import { VFile } from 'vfile';
 
-import { directiveForMarkdown, directiveToMarkdown } from 'brocatel-md';
+import { directiveForMarkdown, directiveToMarkdown } from '@brocatel/md';
 
 const parser = unified()
   .use(remarkParse)

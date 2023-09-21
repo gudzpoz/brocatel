@@ -48,7 +48,7 @@ import { nord as nordConfig } from '@milkdown/theme-nord';
 import { callCommand, replaceAll, type $Command } from '@milkdown/utils';
 import { Milkdown, useEditor, useInstance } from '@milkdown/vue';
 import { useNodeViewFactory } from '@prosemirror-adapter/vue';
-import { watch } from 'vue';
+import { provide, ref, watch } from 'vue';
 
 import brocatelPlugins from '../plugins/index';
 import { insertDirectiveCommand } from '../nodes/directive';
@@ -61,6 +61,7 @@ const props = defineProps<{
   modelValue: string;
   menu: boolean;
   nord: boolean;
+  linkAutoComplete: boolean;
   plugins: MilkdownPlugin[];
   configs: Config[];
 
@@ -73,6 +74,9 @@ const emit = defineEmits<{
 
 let markdown = props.modelValue;
 
+const headings = ref<string[]>([]);
+provide('headings', headings);
+
 const nodeViewFactory = useNodeViewFactory();
 useEditor((root) => {
   let editor = Editor.make()
@@ -83,6 +87,7 @@ useEditor((root) => {
         if (markdown !== md) {
           markdown = md;
           emit('update:modelValue', md);
+          headings.value = Array.from(root.getElementsByClassName('heading')).filter((e) => e.id).map((e) => e.id);
         }
       });
     });

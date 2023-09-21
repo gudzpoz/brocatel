@@ -6,7 +6,7 @@ import { VFile } from 'vfile';
 import _fengari from 'fengari';
 import _fengari_js from 'fengari-interop';
 
-import { directiveForMarkdown, mdxForMarkdown } from 'brocatel-md';
+import { directiveForMarkdown, mdxForMarkdown } from '@brocatel/md';
 
 import astCompiler, { serializeTableInner } from './ast-compiler';
 import expandMacro from './expander';

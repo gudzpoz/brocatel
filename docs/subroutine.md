@@ -1,5 +1,7 @@
 # Story Subroutines (draft)
 
+**Outdated**
+
 In programming lanuages, we call them "functions".
 In Ink, they are called "tunnels".
 But anyway, this kind of structure allows you to reuse stories quite efficiently.
@@ -14,13 +16,19 @@ This currently usually leads to unexpected results.
 
 ```markdown
 # Main Story
+
 Statistics:
+
 [{ money = 10 }](#stats)
+
 Done!
+
 ---
 
 ## stats {money}
+
 Budget: ${money}!
+
 ---
 ```
 
@@ -34,7 +42,9 @@ In normal stories, headings does not stop the story flow:
 
 ```markdown
 Line 1.
+
 # any heading
+
 Then Line 2.
 ```
 

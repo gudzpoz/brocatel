@@ -1,10 +1,11 @@
 {
-  "name": "brocatel-root",
+  "name": "@brocatel/root",
   "version": "0.3.0",
   "description": "The root workspace pseudo-project.",
   "main": "index.js",
   "scripts": {
-    "build": "cd md && pnpm build && cd ../mdc && pnpm build && cd ../mde && pnpm build"
+    "build": "cd md && pnpm build && cd ../mdc && pnpm build && cd ../mde && pnpm build",
+    "bundle": "cd docs && pnpm docs:build && cp .vitepress/cache/vm-bundle.lua ../mdc/dist/"
   },
   "keywords": [],
   "author": "gudzpoz",

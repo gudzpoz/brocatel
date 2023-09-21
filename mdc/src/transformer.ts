@@ -9,7 +9,7 @@ import type { VFile } from 'vfile';
 import { visitParents } from 'unist-util-visit-parents';
 import { v4 as uuidv4 } from 'uuid';
 
-import { getAnchorString, isNormalLink } from 'brocatel-md';
+import { getAnchorString, isNormalLink } from '@brocatel/md';
 
 import {
   LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaTags, LuaText,

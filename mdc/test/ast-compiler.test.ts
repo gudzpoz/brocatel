@@ -5,7 +5,7 @@ import { unified } from 'unified';
 import { VFile } from 'vfile';
 import { assert, test } from 'vitest';
 
-import { directiveForMarkdown } from 'brocatel-md';
+import { directiveForMarkdown } from '@brocatel/md';
 
 import expandMacro from '../src/expander';
 import { detectLuaErrors } from '../src/lua';

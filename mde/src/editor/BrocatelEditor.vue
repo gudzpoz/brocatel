@@ -5,6 +5,7 @@
         :model-value="modelValue"
         :menu="menu"
         :nord="nord"
+        :link-auto-complete="linkAutoComplete"
         :plugins="plugins"
         :configs="configs"
         :prompt="prompt"
@@ -31,12 +32,14 @@ withDefaults(defineProps<{
   nord?: boolean;
   plugins?: MilkdownPlugin[];
   configs?: Config[];
+  linkAutoComplete?: boolean;
 
   prompt?:(message: string) => string | null;
 }>(), {
   modelValue: '',
   menu: true,
   nord: true,
+  linkAutoComplete: true,
   plugins: () => [clipboard, cursor, history].flat(),
   configs: () => [],
   // eslint-disable-next-line no-alert

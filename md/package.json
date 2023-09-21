@@ -1,10 +1,15 @@
 {
-  "name": "brocatel-md",
+  "name": "@brocatel/md",
   "version": "0.3.0",
   "description": "Custom Markdown syntax for brocatel scripts.",
   "type": "module",
   "main": "dist/brocatel-md.es.js",
   "types": "dist/src/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gudzpoz/brocatel",
+    "directory": "md"
+  },
   "scripts": {
     "build": "vite build",
     "compile": "vite-node ./src/cli.ts",

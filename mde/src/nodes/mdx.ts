@@ -6,7 +6,7 @@ import {
   $inputRule, $markAttr, $markSchema, $remark,
 } from '@milkdown/utils';
 
-import { mdxForMarkdown } from 'brocatel-md';
+import { mdxForMarkdown } from '@brocatel/md';
 
 export const remarkMdxPlugin = $remark('remarkMdxPlugin', () => mdxForMarkdown);
 

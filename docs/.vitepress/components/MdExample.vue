@@ -44,7 +44,7 @@ import { useCompiler, useFengari } from './compiler';
 import { parse } from './markdown';
 import Story from './story';
 
-import 'brocatel-mde/dist/style.css';
+import '@brocatel/mde/dist/style.css';
 
 const props = defineProps<{
   height?: string,

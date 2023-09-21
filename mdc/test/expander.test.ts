@@ -5,7 +5,7 @@ import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { VFile } from 'vfile';
 
-import { directiveForMarkdown, directiveToMarkdown } from 'brocatel-md';
+import { directiveForMarkdown, directiveToMarkdown } from '@brocatel/md';
 
 import expandMacro from '../src/expander';
 

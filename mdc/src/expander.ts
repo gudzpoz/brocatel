@@ -9,7 +9,7 @@ import { Plugin } from 'unified';
 import { Node as UnistNode } from 'unist';
 import { VFile } from 'vfile';
 
-import { directiveLabel, directiveToMarkdown } from 'brocatel-md';
+import { directiveLabel, directiveToMarkdown } from '@brocatel/md';
 
 import { MarkdownNode } from './ast';
 import { isIdentifier, runLua, wrap } from './lua';

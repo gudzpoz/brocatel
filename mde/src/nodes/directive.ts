@@ -9,7 +9,7 @@ import {
   $inputRule, $nodeAttr, $nodeSchema, $remark,
 } from '@milkdown/utils';
 
-import { directiveForMarkdown } from 'brocatel-md';
+import { directiveForMarkdown } from '@brocatel/md';
 
 export const remarkDirectivePlugin = $remark('remarkDirectivePlugin', () => directiveForMarkdown);
 
