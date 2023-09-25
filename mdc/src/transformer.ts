@@ -330,24 +330,42 @@ class AstTransformer {
     if (!node || node.type !== 'text') {
       return {};
     }
+
     const textNode = node;
-    textNode.value = textNode.value.trimStart();
-    if (textNode.value.startsWith('\\')) {
-      textNode.value = textNode.value.substring(1).trimStart();
+    let text = textNode.value;
+    text = text.trimStart();
+    if (text.startsWith('\\')) {
+      textNode.value = text.substring(1).trimStart();
       return {};
     }
 
     const tags: LuaTags = {};
-    while (textNode.value.startsWith('[')) {
-      const i = textNode.value.indexOf(']');
-      if (i === -1) {
+    while (text.startsWith('[')) {
+      const i = /]|:/.exec(text)?.index;
+      if (!i) {
         this.vfile.message('possibly incomplete tag', textNode);
         break;
       }
-      const [key, value] = textNode.value.substring(1, i).split(':', 2);
-      tags[key] = value || '';
-      textNode.value = textNode.value.substring(i + 1).trimStart();
+      const key = text.substring(1, i).trim();
+      text = text.substring(i);
+      let value;
+      if (text.startsWith(':')) {
+        const match = /^:\s*(("(?:[^\\]|\\.)+")|(?:[^\]]*))\s*]/.exec(text);
+        if (match) {
+          value = match[1].trim();
+          text = text.substring(match.index + match[0].length).trimStart();
+        } else {
+          this.vfile.message('possibly incomplete tag', textNode);
+          break;
+        }
+      } else {
+        value = '';
+        text = text.substring(1).trimStart();
+      }
+      tags[key] = value[0] === '"' ? JSON.parse(value) : value;
     }
+
+    textNode.value = text;
     return tags;
   }
 

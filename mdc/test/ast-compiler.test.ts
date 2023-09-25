@@ -71,6 +71,10 @@ test('Tagged text', async () => {
     '{_,{tags={a="",b=""},text="c \\\\[d] e"}}',
   );
   assert.equal(
+    assertCompile('\\[a: a] [b: "[B\\n]"] c [d] e'),
+    '{_,{tags={a="a",b="[B\\n]"},text="c \\\\[d] e"}}',
+  );
+  assert.equal(
     assertCompile('\\\\[a] [b] c [d] e'),
     '{_,"\\\\[a] \\\\[b] c \\\\[d] e"}',
   );
