@@ -2,8 +2,14 @@ import type {
   BlockContent, Content,
   InlineCode, Paragraph, Parent, PhrasingContent, Root, Text,
 } from 'mdast';
-import type { ContainerDirective } from 'mdast-util-directive';
+import {
+  directiveFromMarkdown as allDirectivesFromMarkdown,
+  directiveToMarkdown as allDirectivesToMarkdown,
+  type ContainerDirective,
+} from 'mdast-util-directive';
+import type { Extension as FromExtension, Handle as FromHandle } from 'mdast-util-from-markdown';
 import type { Info, Options, State } from 'mdast-util-to-markdown';
+import { directive as allDirectivesMircomark } from 'micromark-extension-directive';
 import type { Plugin } from 'unified';
 import type { Node } from 'unist';
 import type { VFile } from 'vfile';
@@ -59,8 +65,13 @@ function handleDirective(node: ContainerDirective, _: any, state: State, info: I
   return value;
 }
 
+/**
+ * A `mdast-util-to-markdown` extension that serializes `textDirective`
+ * and `containerDirective` to Markdown.
+ */
 export const directiveToMarkdown: Options = {
   handlers: {
+    textDirective: allDirectivesToMarkdown.handlers!.textDirective,
     containerDirective: handleDirective,
     containerDirectiveLabel: () => '',
   },
@@ -134,14 +145,45 @@ function parseDirectiveLine(line: Paragraph, vfile: VFile): ContainerDirective {
   return directive;
 }
 
-export const directiveForMarkdown: Plugin<any[], Root> = function directiveFromMarkdown() {
+function filterFields(
+  obj: Record<string, FromHandle>,
+  keyPrefix: string,
+): Record<string, FromHandle> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([key]) => key.startsWith(keyPrefix)),
+  );
+}
+
+/**
+ * A `mdast-util-from-markdown` extension that parses `textDirective` nodes.
+ */
+export const tagDirectiveFromMarkdown: FromExtension = {
+  canContainEols: ['textDirective'],
+  enter: filterFields(allDirectivesFromMarkdown.enter!, 'directiveText'),
+  exit: filterFields(allDirectivesFromMarkdown.exit!, 'directiveText'),
+};
+
+/**
+ * A `remark` plugins that installs the following extensions:
+ *
+ * - `micromark`: `textDirective`,
+ * - `mdast-util-from-markdown`: `textDirective`,
+ * - `mdast-util-to-markdown`: `textDirective`, `containerDirective`,
+ * - `remark`: a transformer that parses `containerDirective`.
+ */
+// eslint-disable-next-line func-names
+export const directiveForMarkdown: Plugin<any[], Root> = function () {
   const data = this.data();
-  const extension = { extensions: [directiveToMarkdown] };
-  if (data.toMarkdownExtensions) {
-    (data.toMarkdownExtensions as Array<any>).push(extension);
-  } else {
-    data.toMarkdownExtensions = [extension];
+  function addTo(field: string, ext: any) {
+    if (data[field]) {
+      (data[field] as Array<any>).push(ext);
+    } else {
+      data[field] = [ext];
+    }
   }
+  addTo('toMarkdownExtensions', { extensions: [directiveToMarkdown] });
+  addTo('fromMarkdownExtensions', tagDirectiveFromMarkdown);
+  addTo('micromarkExtensions', { text: allDirectivesMircomark().text });
 
   return (root: Node, vfile: VFile) => {
     visitParents(root as Root, (node) => {

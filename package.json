@@ -17,7 +17,8 @@
   "pnpm": {
     "patchedDependencies": {
       "fengari@0.1.4": "patches/fengari@0.1.4.patch",
-      "@milkdown/preset-commonmark@7.3.0": "patches/@milkdown__preset-commonmark@7.3.0.patch"
+      "@milkdown/preset-commonmark@7.3.0": "patches/@milkdown__preset-commonmark@7.3.0.patch",
+      "decode-named-character-reference@1.0.2": "patches/decode-named-character-reference@1.0.2.patch"
     }
   }
 }

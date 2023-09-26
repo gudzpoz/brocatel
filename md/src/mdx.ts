@@ -1,4 +1,4 @@
-import { Root } from 'mdast';
+import type { Root } from 'mdast';
 import { mdxExpressionFromMarkdown, mdxExpressionToMarkdown } from 'mdast-util-mdx-expression';
 import { mdxExpression } from 'micromark-extension-mdx-expression';
 import type { Plugin } from 'unified';
