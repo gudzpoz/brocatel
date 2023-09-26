@@ -1,5 +1,5 @@
 import type {
-  Code, Heading, Link, Paragraph, PhrasingContent, Root,
+  Code, Heading, Link, Paragraph, Root,
 } from 'mdast';
 import type { ContainerDirective } from 'mdast-util-directive';
 import type { MdxTextExpression } from 'mdast-util-mdx-expression';
@@ -321,51 +321,36 @@ class AstTransformer {
       }
       return this.parseLink(para.children[0]);
     }
-    const tags = this.extractTags(para.children[0]);
+    const tags = this.extractTags(para);
     const text = this.toTextNode(para, tags);
     return text;
   }
 
-  extractTags(node: PhrasingContent | undefined): LuaTags {
-    if (!node || node.type !== 'text') {
-      return {};
-    }
-
-    const textNode = node;
-    let text = textNode.value;
-    text = text.trimStart();
-    if (text.startsWith('\\')) {
-      textNode.value = text.substring(1).trimStart();
-      return {};
-    }
-
+  extractTags(node: Paragraph): LuaTags {
+    const para = node;
     const tags: LuaTags = {};
-    while (text.startsWith('[')) {
-      const i = /]|:/.exec(text)?.index;
-      if (!i) {
-        this.vfile.message('possibly incomplete tag', textNode);
-        break;
+    let i = 0;
+    let tag = para.children[i];
+    while (tag?.type === 'textDirective') {
+      if (tag.attributes && Object.entries(tag.attributes).length !== 0) {
+        this.vfile.message('directive attribute not supported');
       }
-      const key = text.substring(1, i).trim();
-      text = text.substring(i);
-      let value;
-      if (text.startsWith(':')) {
-        const match = /^:\s*(("(?:[^\\]|\\.)+")|(?:[^\]]*))\s*]/.exec(text);
-        if (match) {
-          value = match[1].trim();
-          text = text.substring(match.index + match[0].length).trimStart();
+      tags[tag.name] = (
+        tag.children.length === 0 ? ''
+          : toMarkdownString({ type: 'paragraph', children: tag.children })
+      );
+      i += 1;
+      const gap = para.children[i];
+      if (gap?.type === 'text') {
+        if (/^\s[,;]?\s*$/.test(gap.value)) {
+          i += 1;
         } else {
-          this.vfile.message('possibly incomplete tag', textNode);
-          break;
+          gap.value = gap.value.trimStart();
         }
-      } else {
-        value = '';
-        text = text.substring(1).trimStart();
       }
-      tags[key] = value[0] === '"' ? JSON.parse(value) : value;
+      tag = para.children[i];
     }
-
-    textNode.value = text;
+    para.children = i === 0 ? para.children : para.children.slice(i);
     return tags;
   }
 

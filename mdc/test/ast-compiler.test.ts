@@ -1,11 +1,9 @@
-import { mdxExpressionFromMarkdown } from 'mdast-util-mdx-expression';
-import { mdxExpression } from 'micromark-extension-mdx-expression';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { VFile } from 'vfile';
 import { assert, test } from 'vitest';
 
-import { directiveForMarkdown } from '@brocatel/md';
+import { directiveForMarkdown, mdxForMarkdown } from '@brocatel/md';
 
 import expandMacro from '../src/expander';
 import { detectLuaErrors } from '../src/lua';
@@ -14,13 +12,7 @@ import astCompiler from '../src/ast-compiler';
 
 const parser = unified()
   .use(remarkParse)
-  .use(function remarkMdx() {
-    // Remark-Mdx expects the expressions to be JS expressions,
-    // while we use them as Lua ones.
-    const data = this.data();
-    data.fromMarkdownExtensions = [[mdxExpressionFromMarkdown]];
-    data.micromarkExtensions = [mdxExpression()];
-  })
+  .use(mdxForMarkdown)
   .use(directiveForMarkdown)
   .use(expandMacro)
   .use(transformAst)
@@ -45,7 +37,7 @@ test('Simple text', () => {
   assert.equal(assertCompile('test'), '{_,"test"}');
   assert.equal(
     assertCompile(
-      '[c] [d] a {a?} b {b}',
+      ':c :d a {a?} b {b}',
     ),
     '{_,{plural="v1",tags={c="",d=""},text="a {v1} b {v2}",'
     + 'values={v1=function()return(a)end,v2=function()return(b)end}}}',
@@ -63,20 +55,20 @@ test('Simplest plain text', async () => {
 
 test('Tagged text', async () => {
   assert.equal(
-    assertCompile('[a] [b] c [d] e'),
-    '{_,{tags={a="",b=""},text="c \\\\[d] e"}}',
+    assertCompile(':a :b c :d e'),
+    '{_,{tags={a="",b=""},text="c :d e"}}',
   );
   assert.equal(
-    assertCompile('\\[a] [b] c [d] e'),
-    '{_,{tags={a="",b=""},text="c \\\\[d] e"}}',
+    assertCompile('\\:a :b c :d e'),
+    '{_,"\\\\:a :b c :d e"}',
   );
   assert.equal(
-    assertCompile('\\[a: a] [b: "[B\\n]"] c [d] e'),
-    '{_,{tags={a="a",b="[B\\n]"},text="c \\\\[d] e"}}',
+    assertCompile(':a[a] :b[[B\\n]] c :d e'),
+    '{_,{tags={a="a",b="\\\\[B\\\\n]"},text="c :d e"}}',
   );
   assert.equal(
-    assertCompile('\\\\[a] [b] c [d] e'),
-    '{_,"\\\\[a] \\\\[b] c \\\\[d] e"}',
+    assertCompile(':a :b :c[c]'),
+    '{_,{tags={a="",b="",c="c"},text=""}}',
   );
 });
 

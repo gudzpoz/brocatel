@@ -48,13 +48,13 @@ test('Transform text', () => {
     { type: 'text', text: 'a {v1} b {v2}', values: { v1: 'a', v2: 'b' } },
   );
   assert.deepInclude(
-    assertOnlyChild(parse('[a] [b] a {a} b {b}')),
+    assertOnlyChild(parse(':a :b a {a} b {b}')),
     {
       type: 'text', text: 'a {v1} b {v2}', values: { v1: 'a', v2: 'b' }, tags: { a: '', b: '' },
     },
   );
   assert.deepInclude(
-    assertOnlyChild(parse('[a] [b] a {a .. b?} b {b}')),
+    assertOnlyChild(parse(':a :b a {a .. b?} b {b}')),
     {
       type: 'text', text: 'a {v1} b {v2}', values: { v1: 'a .. b', v2: 'b' }, tags: { a: '', b: '' }, plural: 'v1',
     },
