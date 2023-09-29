@@ -8,6 +8,8 @@ import BrocatelEditor from './editor/BrocatelEditor.vue';
 
 const markdown = ref(`Mdx: { a + b } \\{ a + b \\}
 
+:tag[content] Tagged text
+
 # Heading 1
 
 ### Heading 3

@@ -71,7 +71,7 @@ function updateValue(value: string) {
 }
 
 /*
-* mdx-plugin.ts: inline mdx expression styles.
+* mdx.ts: inline mdx expression styles.
 */
 .ProseMirror.milkdown-theme-nord div.paragraph code[data-type="mdxTextExpression"]::before {
   content: "{";
@@ -80,5 +80,18 @@ function updateValue(value: string) {
 .ProseMirror.milkdown-theme-nord div.paragraph code[data-type="mdxTextExpression"]::after {
   content: "}";
   font-size: xx-small;
+}
+
+/**
+ * tag.ts: text directive styles.
+ */
+.ProseMirror span[data-type="textDirective"]::before {
+  content: ":";
+}
+.ProseMirror span[data-type="textDirective"] > span[data-type="textDirectiveName"]::after {
+  content: "[";
+}
+.ProseMirror span[data-type="textDirective"]::after {
+  content: "]";
 }
 </style>
