@@ -1,5 +1,9 @@
 # The Tutorial
 
+:::danger
+Many many things in this tutorial can be outdated since we are still rapidly updating things and changing the syntax.
+:::
+
 Brocatel lets you write interactive stories (choice-based interactive fictions) in [Markdown](https://en.wikipedia.org/wiki/Markdown).
 It itself is written in [Lua](https://en.wikipedia.org/wiki/Lua_(programming_language)) and should run on almost every platform.
 And that means you can try things out in your browser, right in this web page, in any of the examples below, interactively.
@@ -45,7 +49,7 @@ _italics_
 
 ### Tags
 
-You may tag texts with brackets like `[narration]` or `[color: red]`.
+You may tag texts with brackets like `:narration` or `:color[red]`.
 Tags means nothing on their own - they are merely information attached to a paragraph.
 But if you are looking to integrate your story into a larger game,
 where you want to specify where your texts are positioned, what avatars to display, etc.,
@@ -60,7 +64,7 @@ which allows you to, for example, make texts <span style="color: red">red</span>
 ```markdown
 But you don't stop. You don't even slow down as you fly into the intersection, and the light stays an unmistakable red...
 
-[background-color: red] [color: black] [text-align: center] **RED**
+:background-color[red] :color[black] :text-align[center] **RED**
 
 (Quoted from Photopia ([https://ifdb.org/viewgame?id=ju778uv5xaswnlpl](https://ifdb.org/viewgame?id=ju778uv5xaswnlpl)).)
 ```
