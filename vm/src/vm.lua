@@ -444,7 +444,7 @@ end
 
 --- @param content string the compile brocatel chunk
 --- @param save string|nil the savedata content
---- @param extra_env table|nil extra Lua environment globals (only `print` and `require` permitted)
+--- @param extra_env table|nil extra Lua environment globals (only `extern`, `print` and `require` permitted)
 --- @return VM vm
 function brocatel.load_vm(content, save, extra_env)
     local env = StackedEnv.new()
@@ -467,6 +467,7 @@ function brocatel.load_vm(content, save, extra_env)
         type = type,
         print = extra_env.print,
         require = extra_env.require,
+        extern = extra_env.extern,
 
         os = { time = os.time },
         math = shallow_copy(math),
