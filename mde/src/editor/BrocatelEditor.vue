@@ -94,6 +94,11 @@ function updateValue(value: string) {
 .ProseMirror span[data-type="textDirective"]::after {
   content: "]";
 }
+.ProseMirror span[data-type="textDirective"] > span[data-type="textDirectiveName"],
+.ProseMirror span[data-type="textDirective"]::before,
+.ProseMirror span[data-type="textDirective"]::after {
+  font-family: monospace;
+}
 
 /**
  * gapcursor.css: styling the gap cursor.

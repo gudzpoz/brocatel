@@ -17,7 +17,8 @@ export function useBetterViewPlugins(nodeViewFactory: NodeViewFactory): Milkdown
     return $view(schema.node, () => nodeViewFactory({
       component,
       stopEvent(e) {
-        return (e.target as HTMLElement).classList.contains('not-prose');
+        const target = e.target as (HTMLElement | null);
+        return target?.closest('.not-prose') !== null;
       },
     }));
   }

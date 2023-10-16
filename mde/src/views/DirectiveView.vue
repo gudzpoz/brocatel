@@ -8,7 +8,8 @@
     />
     <div
       :ref="contentRef"
-      :class="{ selected, container: true }"
+      class="container"
+      :class="{ selected }"
     />
   </div>
 </template>
@@ -30,10 +31,17 @@ function updateName(v: string) {
 <style>
 .ProseMirror div.directive,
 .ProseMirror div.directive > .container,
-.ProseMirror div.directive > .container > div[data-node-view-content],
-.ProseMirror div.directive > .container > div[data-node-view-content]
-> div[data-type="containerDirectiveLabel"] {
+.ProseMirror div.directive > .container > div[data-node-view-content] {
   display: inline;
+}
+.ProseMirror div.directive div[data-type="containerDirectiveLabel"],
+.ProseMirror div.directive div[data-type="containerDirectiveLabel"] > span {
+  font-family: monospace;
+  white-space: normal;
+  display: inline-block;
+}
+.ProseMirror div.directive div[data-type="containerDirectiveLabel"] {
+  margin-left: 1em;
 }
 .ProseMirror div.directive {
   margin-top: 1em;
@@ -42,9 +50,15 @@ function updateName(v: string) {
   content: "::: ";
   font-size: xx-small;
 }
-.ProseMirror div.directive div[data-type="containerDirectiveLabel"] > code::before,
-.ProseMirror div.directive div[data-type="containerDirectiveLabel"] > code::after {
+.ProseMirror div.directive div[data-type="containerDirectiveLabel"]::before,
+.ProseMirror div.directive div[data-type="containerDirectiveLabel"]::after {
   content: "`";
+  display: inline;
+}
+.ProseMirror div.directive div[data-type="containerDirectiveLabel"] > span > br {
+  display: none;
+}
+.ProseMirror div.directive div[data-type="containerDirectiveLabel"] > span > br:only-child {
   display: inline;
 }
 </style>

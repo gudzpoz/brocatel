@@ -22,7 +22,7 @@ export const directiveLabelSchema = $nodeSchema(DIRECTIVE_LABEL_TYPE, (ctx) => (
   defining: true,
   code: true,
   parseDOM: [{ tag: `div[data-type="${DIRECTIVE_LABEL_TYPE}"]` }],
-  toDOM: (node) => ['div', ctx.get(directiveLabelAttr.key)(node), ['code', 0]],
+  toDOM: (node) => ['div', ctx.get(directiveLabelAttr.key)(node), ['span', 0]],
   parseMarkdown: {
     match: (node) => node.type === DIRECTIVE_LABEL_TYPE,
     runner: (state, node, type) => {
@@ -42,7 +42,7 @@ export const directiveLabelSchema = $nodeSchema(DIRECTIVE_LABEL_TYPE, (ctx) => (
   toMarkdown: {
     match: (node) => node.type.name === DIRECTIVE_LABEL_TYPE,
     runner: (state, node) => {
-      const text = node.textContent.trim();
+      const text = node.textContent.trim().replace(/\s+/g, ' ');
       if (text !== '') {
         state
           .openNode(DIRECTIVE_LABEL_TYPE)
