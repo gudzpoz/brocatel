@@ -10,6 +10,7 @@
     />
     <a
       class="show-anchor not-prose"
+      contenteditable="false"
       :href="anchorHash"
     >{{ anchorId }}</a>
   </component>

@@ -9,12 +9,12 @@
       }"
     />
     <span v-if="type === 'link'">
-      <input
-        type="text"
-        :value="href"
+      <resizable-input
         class="not-prose"
-        @change="updateHref"
-      >
+        placeholder="link"
+        :value="href"
+        @update:value="updateHref"
+      />
     </span>
     <a
       v-if="type === 'link'"
@@ -32,13 +32,15 @@ import { useInstance } from '@milkdown/vue';
 import { useNodeViewContext } from '@prosemirror-adapter/vue';
 import { computed } from 'vue';
 
+import ResizableInput from './ResizableInput.vue';
+
 const {
   contentRef, getPos, node, selected, view,
 } = useNodeViewContext();
 
 const [, useEditor] = useInstance();
 
-function updateHref(e: Event) {
+function updateHref(href: string) {
   const editor = useEditor();
   editor?.action((ctx) => {
     const pos = getPos();
@@ -46,9 +48,7 @@ function updateHref(e: Event) {
       const { state } = view;
       const { tr } = state;
       view.dispatch(state.tr.setSelection(new TextSelection(tr.doc.resolve(pos + 1))));
-      ctx.get(commandsCtx).call(updateLinkCommand.key, {
-        href: (e.target as HTMLInputElement).value,
-      });
+      ctx.get(commandsCtx).call(updateLinkCommand.key, { href });
     }
   });
 }

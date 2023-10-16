@@ -1,13 +1,11 @@
 <template>
   <div class="directive">
-    <input
+    <resizable-input
       :value="name"
-      type="text"
-      size="8"
       class="not-prose"
       placeholder="macro name"
-      @change="updateName"
-    >
+      @update:value="updateName"
+    />
     <div
       :ref="contentRef"
       :class="{ selected, container: true }"
@@ -18,13 +16,15 @@
 import { useNodeViewContext } from '@prosemirror-adapter/vue';
 import { computed } from 'vue';
 
+import ResizableInput from './ResizableInput.vue';
+
 const {
   contentRef, node, selected, setAttrs,
 } = useNodeViewContext();
 
 const name = computed(() => node.value.attrs.name ?? '');
-function updateName(e: Event) {
-  setAttrs({ name: (e.target as HTMLInputElement).value });
+function updateName(v: string) {
+  setAttrs({ name: v });
 }
 </script>
 <style>
@@ -42,7 +42,9 @@ function updateName(e: Event) {
   content: "::: ";
   font-size: xx-small;
 }
-.ProseMirror div.directive div[data-type="containerDirectiveLabel"] {
-  margin-left: 2em;
+.ProseMirror div.directive div[data-type="containerDirectiveLabel"] > code::before,
+.ProseMirror div.directive div[data-type="containerDirectiveLabel"] > code::after {
+  content: "`";
+  display: inline;
 }
 </style>
