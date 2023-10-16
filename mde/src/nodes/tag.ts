@@ -15,7 +15,6 @@ export const textDirectiveNameSchema = $nodeSchema(TEXT_DIRECTIVE_NAME_TYPE, (ct
   inline: true,
   code: true,
   atom: false,
-  isolating: true,
   allowGapCursor: true,
   attrs: {
     name: {
@@ -50,7 +49,6 @@ export const textDirectiveSchema = $nodeSchema(TEXT_DIRECTIVE_TYPE, (ctx) => ({
   group: 'inline',
   inline: true,
   atom: false,
-  defining: true,
   allowGapCursor: true,
   parseDOM: [{ tag: `span[data-type="${TEXT_DIRECTIVE_TYPE}"]` }],
   toDOM: (node) => ['span', ctx.get(textDirectiveAttr.key)(node), 0],

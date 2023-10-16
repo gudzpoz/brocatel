@@ -94,4 +94,27 @@ function updateValue(value: string) {
 .ProseMirror span[data-type="textDirective"]::after {
   content: "]";
 }
+
+/**
+ * gapcursor.css: styling the gap cursor.
+ */
+.ProseMirror-gapcursor {
+  display: none;
+  pointer-events: none;
+  position: absolute;
+}
+.ProseMirror-focused .ProseMirror-gapcursor {
+  display: inline-block;
+}
+@keyframes ProseMirror-cursor-blink {
+  to { visibility: hidden; }
+}
+.ProseMirror-gapcursor:after {
+  content: "";
+  display: inline-block;
+  top: -2px;
+  height: 20px;
+  border-left: 1px solid black;
+  animation: ProseMirror-cursor-blink 1.1s steps(2, start) infinite;
+}
 </style>
