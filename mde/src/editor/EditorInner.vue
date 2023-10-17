@@ -43,17 +43,18 @@
         <b>:::</b>Directive
       </button>
     </div>
-    <codemirror
-      v-show="useCodeMirror"
-      :extensions="[codeMirrorMarkdown(), oneDark]"
-      :indent-with-tab="true"
-      :tab-size="2"
-      :model-value="markdown"
-      @update:model-value="(v) => {
-        markdown = v;
-        emit('update:modelValue', v);
-      }"
-    />
+    <div v-show="useCodeMirror">
+      <codemirror
+        :extensions="[codeMirrorMarkdown(), oneDark]"
+        :indent-with-tab="true"
+        :tab-size="4"
+        :model-value="markdown"
+        @update:model-value="(v) => {
+          markdown = v;
+          emit('update:modelValue', v);
+        }"
+      />
+    </div>
     <Milkdown v-show="!useCodeMirror" />
   </div>
 </template>
