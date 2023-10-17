@@ -9,6 +9,7 @@
         :plugins="plugins"
         :configs="configs"
         :prompt="prompt"
+        :dark-mode="darkMode"
         :plain-text-checkbox="plainText !== undefined"
         @update:model-value="(v) => emit('update:modelValue', v)"
         @update:plain-text="(v) => emit('update:plainText', v)"
@@ -36,6 +37,7 @@ withDefaults(defineProps<{
   configs?: Config[];
   linkAutoComplete?: boolean;
   plainText?: boolean,
+  darkMode?: boolean,
 
   prompt?:(message: string) => string | null;
 }>(), {
@@ -45,6 +47,7 @@ withDefaults(defineProps<{
   linkAutoComplete: true,
   plugins: () => [clipboard, cursor, history].flat(),
   configs: () => [],
+  darkMode: false,
   // eslint-disable-next-line no-alert
   prompt: (s: string) => window.prompt(s),
 });

@@ -3,6 +3,8 @@
   <div v-if="inSight" class="md-example" :style="{ height: props.height }">
     <brocatel-editor
       :modelValue="markdown"
+      :plainText="false"
+      :dark-mode="isDark"
       @update:modelValue="(s: string) => handleChange(s)"
     />
     <div ref="output" class="md-output">
@@ -38,6 +40,7 @@
 <script setup lang="ts">
 import { debounce } from '@github/mini-throttle';
 import { VFile } from 'vfile';
+import { useData } from 'vitepress';
 import { onMounted, onUnmounted, ref } from 'vue';
 
 import { useCompiler, useFengari } from './compiler';
@@ -50,6 +53,7 @@ const props = defineProps<{
   height?: string,
   autoScroll?: boolean,
 }>();
+const { isDark } = useData();
 
 const markdown = ref('');
 // Automatically compile new script.

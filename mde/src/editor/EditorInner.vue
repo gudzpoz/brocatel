@@ -45,7 +45,11 @@
     </div>
     <div v-show="useCodeMirror">
       <codemirror
-        :extensions="[codeMirrorMarkdown(), oneDark]"
+        :extensions="[
+          codeMirrorMarkdown(),
+          EditorView.lineWrapping,
+          darkMode ? oneDark : { extension: [] },
+        ]"
         :indent-with-tab="true"
         :tab-size="4"
         :model-value="markdown"
@@ -61,6 +65,7 @@
 
 <script setup lang="ts">
 import { Codemirror } from 'vue-codemirror';
+import { EditorView } from 'codemirror';
 import { markdown as codeMirrorMarkdown } from '@codemirror/lang-markdown';
 import { oneDark } from '@codemirror/theme-one-dark';
 
@@ -97,6 +102,7 @@ const props = defineProps<{
 
   plainText?: boolean,
   plainTextCheckbox?: boolean,
+  darkMode?: boolean,
 
   prompt(message: string): string | null;
 }>();
