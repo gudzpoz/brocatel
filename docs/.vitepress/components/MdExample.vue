@@ -4,6 +4,7 @@
     <brocatel-editor
       :modelValue="markdown"
       :plainText="false"
+      :diagnostics="diagnostics"
       :dark-mode="isDark"
       @update:modelValue="(s: string) => handleChange(s)"
     />
@@ -38,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Diagnostic } from '@brocatel/mde';
 import { debounce } from '@github/mini-throttle';
 import { VFile } from 'vfile';
 import { useData } from 'vitepress';
@@ -59,10 +61,14 @@ const markdown = ref('');
 // Automatically compile new script.
 const story = ref<Story>();
 
+const diagnostics = ref<Diagnostic[]>([]);
 function annotateErrors(vfile: VFile) {
-  if (vfile.messages.length !== 0) {
-    console.log(vfile.messages);
-  }
+  diagnostics.value = vfile.messages.map((msg) => ({
+    from: msg.position.start.offset,
+    to: msg.position.end.offset,
+    severity: 'error',
+    message: msg.message,
+  }));
 }
 async function handleChangeNow(code: string) {
   if (code.trim() === '') {

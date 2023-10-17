@@ -100,7 +100,7 @@ class AstCompiler {
   checkLua(snippet: string, node: LuaElement): string {
     const error = detectLuaErrors(snippet);
     if (error) {
-      this.vfile.message(error.message, node.node);
+      this.vfile.message(`illegal lua snippet: ${error.message}`, node.node);
     }
     return snippet;
   }

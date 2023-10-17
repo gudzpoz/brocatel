@@ -11,6 +11,8 @@
         :prompt="prompt"
         :dark-mode="darkMode"
         :plain-text-checkbox="plainText !== undefined"
+        :plain-text="plainText ?? false"
+        :diagnostics="diagnostics ?? false"
         @update:model-value="(v) => emit('update:modelValue', v)"
         @update:plain-text="(v) => emit('update:plainText', v)"
       />
@@ -19,6 +21,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Diagnostic } from '@codemirror/lint';
 import type { MilkdownPlugin } from '@milkdown/ctx';
 import type { Config } from '@milkdown/core';
 import { clipboard } from '@milkdown/plugin-clipboard';
@@ -37,6 +40,7 @@ withDefaults(defineProps<{
   configs?: Config[];
   linkAutoComplete?: boolean;
   plainText?: boolean,
+  diagnostics?: Diagnostic[],
   darkMode?: boolean,
 
   prompt?:(message: string) => string | null;
@@ -47,6 +51,7 @@ withDefaults(defineProps<{
   linkAutoComplete: true,
   plugins: () => [clipboard, cursor, history].flat(),
   configs: () => [],
+  diagnostics: () => [],
   darkMode: false,
   // eslint-disable-next-line no-alert
   prompt: (s: string) => window.prompt(s),

@@ -4,7 +4,10 @@
       v-if="props.menu"
       class="milkdown-menu"
     >
-      <label v-if="plainTextCheckbox">
+      <label
+        v-if="plainTextCheckbox"
+        :class="{ error: diagnostics.length !== 0 }"
+      >
         <input
           type="checkbox"
           :checked="plainText"
@@ -16,7 +19,7 @@
             }
           }"
         >
-        🗒️
+        {{ diagnostics.length === 0 ? '🗒️' : '❗' }}
       </label>
       <button @click="call(toggleEmphasisCommand)">
         <i>Italics</i>
@@ -46,7 +49,9 @@
     <div v-show="useCodeMirror">
       <codemirror
         :extensions="[
-          codeMirrorMarkdown(),
+          codeMirrorMarkdown({ defaultCodeLanguage: StreamLanguage.define(lua) }),
+          linter(() => diagnostics),
+          lintGutter(),
           EditorView.lineWrapping,
           darkMode ? oneDark : { extension: [] },
         ]"
@@ -66,7 +71,10 @@
 <script setup lang="ts">
 import { Codemirror } from 'vue-codemirror';
 import { EditorView } from 'codemirror';
+import { StreamLanguage } from '@codemirror/language';
 import { markdown as codeMirrorMarkdown } from '@codemirror/lang-markdown';
+import { lua } from '@codemirror/legacy-modes/mode/lua';
+import { linter, lintGutter, type Diagnostic } from '@codemirror/lint';
 import { oneDark } from '@codemirror/theme-one-dark';
 
 import {
@@ -100,9 +108,10 @@ const props = defineProps<{
   plugins: MilkdownPlugin[];
   configs: Config[];
 
-  plainText?: boolean,
-  plainTextCheckbox?: boolean,
-  darkMode?: boolean,
+  plainText: boolean,
+  plainTextCheckbox: boolean,
+  darkMode: boolean,
+  diagnostics: Diagnostic[],
 
   prompt(message: string): string | null;
 }>();

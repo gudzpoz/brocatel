@@ -38,6 +38,9 @@
   "dependencies": {
     "@brocatel/md": "workspace:^",
     "@codemirror/lang-markdown": "^6.2.2",
+    "@codemirror/language": "^6.9.1",
+    "@codemirror/legacy-modes": "^6.3.3",
+    "@codemirror/lint": "^6.4.2",
     "@codemirror/theme-one-dark": "^6.1.2",
     "@milkdown/core": "^7.3.0",
     "@milkdown/ctx": "^7.3.0",
