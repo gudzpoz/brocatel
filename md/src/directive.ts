@@ -1,6 +1,6 @@
 import type {
-  BlockContent, Content,
-  InlineCode, Paragraph, Parent, PhrasingContent, Root, Text,
+  Content, InlineCode, Paragraph,
+  Parent, PhrasingContent, Root, Text,
 } from 'mdast';
 import {
   directiveFromMarkdown as allDirectivesFromMarkdown,
@@ -186,6 +186,10 @@ export const directiveForMarkdown: Plugin<any[], Root> = function () {
   addTo('micromarkExtensions', { text: allDirectivesMircomark().text });
 
   return (root: Node, vfile: VFile) => {
+    /*
+     * Finds all directive lines and constructs containerDirective nodes
+     * from the lines and the lists that come after.
+     */
     visitParents(root as Root, (node) => {
       const container = node as Parent;
       const { children } = container;
@@ -195,11 +199,21 @@ export const directiveForMarkdown: Plugin<any[], Root> = function () {
         children.forEach((child) => {
           if (inDirective) {
             const directive = merged[merged.length - 1] as ContainerDirective;
-            directive.children.push(child as BlockContent);
-            inDirective = false;
-            if (child.type === 'code' && child.lang === 'lua' && child.meta === 'func'
-              && directive.children.length === 1) {
-              inDirective = true;
+            switch (child.type) {
+              case 'list':
+                directive.children.push(child);
+                inDirective = false;
+                break;
+              case 'code':
+                if (child.lang === 'lua' && child.meta === 'func' && directive.children.length === 0) {
+                  vfile.message('function directive not implemented yet', children[children.length - 1]);
+                }
+                break;
+              default:
+                vfile.message('expecting a list after the container directive label', children[children.length - 1]);
+                merged.push(child);
+                inDirective = false;
+                break;
             }
           } else if (isDirectiveLine(child)) {
             merged.push(parseDirectiveLine(child as Paragraph, vfile));
@@ -208,10 +222,15 @@ export const directiveForMarkdown: Plugin<any[], Root> = function () {
             merged.push(child);
           }
         });
-        container.children = merged;
         if (inDirective) {
           vfile.message('container directive without content', children[children.length - 1]);
         }
+        merged.forEach((e) => {
+          if (e.type === 'containerDirective' && e.children.length === 0) {
+            e.children.push({ type: 'list', children: [{ type: 'listItem', children: [{ type: 'paragraph', children: [{ type: 'text', value: '' }] }] }] });
+          }
+        });
+        container.children = merged;
       }
     });
   };

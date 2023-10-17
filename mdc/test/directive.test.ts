@@ -44,6 +44,12 @@ function assertMatch(input: string) {
   );
 }
 
+function assertWarning(input: string, message: string) {
+  const vfile = new VFile();
+  parser.runSync(parser.parse(input), vfile);
+  assert.include(vfile.messages.map((m) => m.message), message);
+}
+
 test('Parsing and generating', () => {
   assertMatch('a');
   assertMatch(':::a\n\n*   a');
@@ -64,14 +70,14 @@ test('Parsing and generating', () => {
 
     *   d`);
 
-  assertMatch(`
-:::a
-
-\`\`\`lua func
-IP:set(arg:resolve(2))
-\`\`\`
-
-*   b`);
+  assertWarning(`
+  :::a
+  
+  \`\`\`lua func
+  IP:set(arg:resolve(2))
+  \`\`\`
+  
+  *   b`, 'function directive not implemented yet');
 
   assertMatch(`
 :::loop\`10\`
@@ -88,12 +94,6 @@ IP:set(arg:resolve(2))
 
         d`);
 });
-
-function assertWarning(input: string, message: string) {
-  const vfile = new VFile();
-  parser.runSync(parser.parse(input), vfile);
-  assert.include(vfile.messages.map((m) => m.message), message);
-}
 
 test('Parser warnings', () => {
   assertWarning(':::', 'invalid directive line');
