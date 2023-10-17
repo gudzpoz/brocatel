@@ -4,6 +4,20 @@
       v-if="props.menu"
       class="milkdown-menu"
     >
+      <label v-if="plainTextCheckbox">
+        <input
+          type="checkbox"
+          :checked="plainText"
+          @change="(e) => {
+            useCodeMirror = (e.target as HTMLInputElement).checked;
+            emit('update:plainText', useCodeMirror);
+            if (!useCodeMirror) {
+              updateMilkdown(markdown);
+            }
+          }"
+        >
+        🗒️
+      </label>
       <button @click="call(toggleEmphasisCommand)">
         <i>Italics</i>
       </button>
@@ -29,11 +43,26 @@
         <b>:::</b>Directive
       </button>
     </div>
-    <Milkdown />
+    <codemirror
+      v-show="useCodeMirror"
+      :extensions="[codeMirrorMarkdown(), oneDark]"
+      :indent-with-tab="true"
+      :tab-size="2"
+      :model-value="markdown"
+      @update:model-value="(v) => {
+        markdown = v;
+        emit('update:modelValue', v);
+      }"
+    />
+    <Milkdown v-show="!useCodeMirror" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { Codemirror } from 'vue-codemirror';
+import { markdown as codeMirrorMarkdown } from '@codemirror/lang-markdown';
+import { oneDark } from '@codemirror/theme-one-dark';
+
 import {
   Editor, defaultValueCtx, rootCtx, type Config,
 } from '@milkdown/core';
@@ -65,14 +94,19 @@ const props = defineProps<{
   plugins: MilkdownPlugin[];
   configs: Config[];
 
+  plainText?: boolean,
+  plainTextCheckbox?: boolean,
+
   prompt(message: string): string | null;
 }>();
+const useCodeMirror = ref(props.plainText ?? false);
 
 const emit = defineEmits<{
   'update:modelValue': [value: string],
+  'update:plainText': [value: boolean],
 }>();
 
-let markdown = props.modelValue;
+const markdown = ref(props.modelValue);
 
 const headings = ref<string[]>([]);
 provide('headings', headings);
@@ -82,10 +116,10 @@ useEditor((root) => {
   let editor = Editor.make()
     .config((ctx) => {
       ctx.set(rootCtx, root);
-      ctx.set(defaultValueCtx, markdown);
+      ctx.set(defaultValueCtx, markdown.value);
       ctx.get(listenerCtx).markdownUpdated((_, md) => {
-        if (markdown !== md) {
-          markdown = md;
+        if (markdown.value !== md) {
+          markdown.value = md;
           emit('update:modelValue', md);
           headings.value = Array.from(root.getElementsByClassName('heading')).filter((e) => e.id).map((e) => e.id);
         }
@@ -108,10 +142,13 @@ useEditor((root) => {
 
 const [, editor] = useInstance();
 
+function updateMilkdown(value: string) {
+  editor()?.action((ctx) => replaceAll(value)(ctx));
+}
 watch(() => props.modelValue, (value) => {
-  if (value !== markdown) {
-    markdown = value;
-    editor()?.action((ctx) => replaceAll(value)(ctx));
+  if (value !== markdown.value) {
+    markdown.value = value;
+    updateMilkdown(value);
   }
 });
 
@@ -130,7 +167,7 @@ function toggleLink() {
 }
 </script>
 <style>
-.brocatel-editor{
+.brocatel-editor {
   height: 100%;
   overflow: scroll;
 }

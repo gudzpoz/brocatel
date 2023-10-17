@@ -37,6 +37,8 @@
   },
   "dependencies": {
     "@brocatel/md": "workspace:^",
+    "@codemirror/lang-markdown": "^6.2.2",
+    "@codemirror/theme-one-dark": "^6.1.2",
     "@milkdown/core": "^7.3.0",
     "@milkdown/ctx": "^7.3.0",
     "@milkdown/exception": "^7.3.0",
@@ -51,10 +53,12 @@
     "@milkdown/utils": "^7.3.0",
     "@milkdown/vue": "^7.3.0",
     "@prosemirror-adapter/vue": "^0.2.6",
+    "codemirror": "^6.0.1",
     "mdast-util-mdx-expression": "^1.3.2",
     "remark-squeeze-paragraphs": "^5.0.1",
     "unified": "^10.1.2",
     "unist-util-visit": "^5.0.0",
-    "vue": "^3.3.4"
+    "vue": "^3.3.4",
+    "vue-codemirror": "^6.1.1"
   }
 }

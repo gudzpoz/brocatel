@@ -9,7 +9,9 @@
         :plugins="plugins"
         :configs="configs"
         :prompt="prompt"
-        @update:model-value="updateValue"
+        :plain-text-checkbox="plainText !== undefined"
+        @update:model-value="(v) => emit('update:modelValue', v)"
+        @update:plain-text="(v) => emit('update:plainText', v)"
       />
     </ProsemirrorAdapterProvider>
   </MilkdownProvider>
@@ -33,6 +35,7 @@ withDefaults(defineProps<{
   plugins?: MilkdownPlugin[];
   configs?: Config[];
   linkAutoComplete?: boolean;
+  plainText?: boolean,
 
   prompt?:(message: string) => string | null;
 }>(), {
@@ -48,11 +51,8 @@ withDefaults(defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: string],
+  'update:plainText': [value: boolean],
 }>();
-
-function updateValue(value: string) {
-  emit('update:modelValue', value);
-}
 </script>
 <style>
 /*

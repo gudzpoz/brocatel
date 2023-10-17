@@ -1,5 +1,8 @@
 <template>
-  <BrocatelEditor v-model="markdown" />
+  <BrocatelEditor
+    v-model="markdown"
+    :plain-text="false"
+  />
 </template>
 
 <script setup lang="ts">
