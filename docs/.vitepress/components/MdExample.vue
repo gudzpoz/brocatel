@@ -205,11 +205,11 @@ function next(option?: number): boolean {
 @media only screen and (max-width: 640px) {
   .md-example {
     flex-direction: column-reverse;
-    height: 80vh;
+    min-height: 50vh;
   }
-  .md-example>div {
+  .md-example > div {
     width: 100%;
-    height: 40vh;
+    height: 50%;
   }
   .md-output {
     border-left: none;

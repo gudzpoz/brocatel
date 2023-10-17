@@ -4,6 +4,16 @@
  */
 
 /**
+ * Width.
+ */
+:root {
+  --vp-layout-max-width: 100%;
+}
+#VPContent .VPDoc.has-aside .container .content .content-container {
+  max-width: 100%;
+}
+
+/**
  * Colors
  * -------------------------------------------------------------------------- */
 
