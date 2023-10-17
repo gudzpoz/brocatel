@@ -194,7 +194,7 @@ function next(option?: number): boolean {
   flex-direction: column;
 }
 .md-output .output-container {
-  overflow: scroll;
+  overflow: auto;
   background-color: var(--vp-c-bg-alt);
   padding: 0;
 }

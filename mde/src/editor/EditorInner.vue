@@ -185,7 +185,7 @@ function toggleLink() {
 <style>
 .brocatel-editor {
   height: 100%;
-  overflow: scroll;
+  overflow: auto;
 }
 .brocatel-editor > .milkdown-menu {
   position: sticky;
