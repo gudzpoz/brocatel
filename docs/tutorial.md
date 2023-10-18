@@ -24,6 +24,8 @@ which usually means the user will need to learn about the meanings behind `**bol
 or `` `code` and [links](http://url)``.
 They are not that hard to learn, but may still pose a challenge for users not really into plain text markups.
 To make things easier, here we use a [WYSIWYG](https://en.wikipedia.org/wiki/WYSIWYG) editor by default.
+
+If you prefer a plain text one, click on the "🗒️" checkbox in the editor.
 :::
 
 ## Texts

@@ -81,11 +81,13 @@ const emit = defineEmits<{
 /*
 * mdx.ts: inline mdx expression styles.
 */
-.ProseMirror.milkdown-theme-nord div.paragraph code[data-type="mdxTextExpression"]::before {
+.ProseMirror.milkdown-theme-nord div.paragraph code[data-type="mdxTextExpression"]::before,
+.ProseMirror.milkdown-theme-nord .heading code[data-type="mdxTextExpression"]::before {
   content: "{";
   font-size: xx-small;
 }
-.ProseMirror.milkdown-theme-nord div.paragraph code[data-type="mdxTextExpression"]::after {
+.ProseMirror.milkdown-theme-nord div.paragraph code[data-type="mdxTextExpression"]::after,
+.ProseMirror.milkdown-theme-nord .heading code[data-type="mdxTextExpression"]::after {
   content: "}";
   font-size: xx-small;
 }
