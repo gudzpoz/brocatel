@@ -12,19 +12,6 @@ export default defineConfig({
       name: 'brocatel-mdc',
       fileName: (format) => `brocatel-mdc.${format}.js`
     },
-    rollupOptions: {
-      /*
-      external: ['fengari'],
-      output: {
-        globals: {
-          fengari: 'fengari',
-        },
-      },
-      */
-    },
-  },
-  define: {
-    'process.env.FENGARICONF': '\"{}\"',
   },
   plugins: [dts()],
   test: {},

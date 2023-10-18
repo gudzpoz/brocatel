@@ -12,7 +12,7 @@ import { VFile } from 'vfile';
 import { directiveLabel, directiveToMarkdown } from '@brocatel/md';
 
 import { MarkdownNode } from './ast';
-import { isIdentifier, runLua, wrap } from './lua';
+import { isIdentifier, luaRunner, type LuaRunner } from './lua';
 import { overwrite, shallowCopy, subParagraph } from './utils';
 
 import builtInMacros from './macros/builtin.lua?raw';
@@ -39,13 +39,16 @@ class MacroExpander {
    */
   macros: string[];
 
+  private runLua!: LuaRunner;
+
   constructor(root: Root, vfile: VFile) {
     this.root = root;
     this.vfile = vfile;
     this.macros = [];
   }
 
-  expand() {
+  async expand() {
+    this.runLua = await luaRunner();
     visitParents(this.root, (n, parents) => {
       const node = n;
       if (node.type === 'root') {
@@ -93,11 +96,11 @@ class MacroExpander {
       return false;
     }
     try {
-      const generated = runLua(node, [
+      const generated = this.runLua(node, [
         builtInMacros as string,
         ...this.macros,
         `return ${node.name}(arg)`,
-      ], { TO_MARKDOWN: wrap(toMarkdownString) });
+      ], { TO_MARKDOWN: toMarkdownString });
       overwrite(node, generated);
     } catch (e) {
       this.vfile.message(e as Error, node);
@@ -201,7 +204,7 @@ class MacroExpander {
 
 const expandMacro: Plugin = () => (root: UnistNode, vfile: VFile) => {
   const expander = new MacroExpander(root as Root, vfile);
-  expander.expand();
+  return expander.expand();
 };
 
 export default expandMacro;

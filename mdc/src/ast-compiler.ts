@@ -3,7 +3,7 @@ import { VFile } from 'vfile';
 import {
   LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaText,
 } from './ast';
-import { detectLuaErrors, isIdentifier } from './lua';
+import { isIdentifier } from './lua';
 import LuaTableGenerator from './lua-table';
 
 function isEmpty(object: { [key: string]: any } | undefined): boolean {
@@ -97,14 +97,6 @@ class AstCompiler {
     }
   }
 
-  checkLua(snippet: string, node: LuaElement): string {
-    const error = detectLuaErrors(snippet);
-    if (error) {
-      this.vfile.message(`illegal lua snippet: ${error.message}`, node.node);
-    }
-    return snippet;
-  }
-
   serializeLink(child: LuaLink) {
     this.builder
       .startTable()
@@ -134,7 +126,7 @@ class AstCompiler {
       this.builder.pair('text').value(child.text);
       const values = serializeTableInner(
         child.values,
-        (s) => `function()${this.checkLua(`return(${s})`, child)}end`,
+        (s) => `function()return(${s})end`,
       );
       if (values !== '') {
         this.builder.pair('values').startTable().raw(values).endTable();
@@ -152,7 +144,7 @@ class AstCompiler {
       if (node.children.length !== 0) {
         this.builder.endTable();
       }
-      this.builder.pair('func').raw(`function(args)${this.checkLua(node.code.trim(), node)}\nend}`);
+      this.builder.pair('func').raw(`function(args)${node.code.trim()}\nend}`);
       return;
     }
 
@@ -194,11 +186,9 @@ class AstCompiler {
           this.builder.pair('args').startTable().startTable().endTable();
         }
         break;
-      case 'if-else': {
-        const body = this.checkLua(`return(${node.condition})`, node);
-        this.builder.startTable().raw(`function()${body}end`);
+      case 'if-else':
+        this.builder.startTable().raw(`function()return(${node.condition})end`);
         break;
-      }
       default:
         throw new Error('unreachable');
     }

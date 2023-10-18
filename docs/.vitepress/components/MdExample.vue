@@ -45,7 +45,7 @@ import { VFile } from 'vfile';
 import { useData } from 'vitepress';
 import { onMounted, onUnmounted, ref } from 'vue';
 
-import { useCompiler, useFengari } from './compiler';
+import { newLuaEngine, useCompiler } from './compiler';
 import { parse } from './markdown';
 import Story from './story';
 
@@ -77,10 +77,10 @@ async function handleChangeNow(code: string) {
   markdown.value = code;
   clear();
   try {
-    const compiled = await (await useCompiler()).compileAll('main', async () => code);
+    const compiled = await useCompiler().compileAll('main', async () => code);
     annotateErrors(compiled);
     const s = compiled.toString().trim()
-    story.value = new Story(s, await useFengari());
+    story.value = new Story(s, await newLuaEngine());
     multiNext(10);
   } catch (e) {
     console.log(code);

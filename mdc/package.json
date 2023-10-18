@@ -38,8 +38,6 @@
   },
   "dependencies": {
     "@brocatel/md": "workspace:^",
-    "fengari": "0.1.4",
-    "fengari-interop": "^0.1.3",
     "mdast-util-directive": "^2.2.4",
     "mdast-util-mdx-expression": "^1.3.2",
     "mdast-util-to-markdown": "^1.5.0",
@@ -49,6 +47,7 @@
     "unified": "^10.1.2",
     "unist-util-visit-parents": "^5.1.3",
     "uuid": "^9.0.0",
-    "vfile": "^5.3.7"
+    "vfile": "^5.3.7",
+    "wasmoon": "^1.15.0"
   }
 }

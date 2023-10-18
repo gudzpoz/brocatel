@@ -2,16 +2,13 @@ import remarkJoinCJKLines from 'remark-join-cjk-lines';
 import remarkParse from 'remark-parse';
 import { Processor, unified } from 'unified';
 import { VFile } from 'vfile';
-
-import _fengari from 'fengari';
-import _fengari_js from 'fengari-interop';
+import _wasmoon from 'wasmoon';
 
 import { directiveForMarkdown, mdxForMarkdown } from '@brocatel/md';
 
 import astCompiler, { serializeTableInner } from './ast-compiler';
 import expandMacro from './expander';
 import remapLineNumbers from './line-remap';
-import { convertSingleLuaValue } from './lua';
 import transformAst from './transformer';
 
 const VERSION = 1;
@@ -175,6 +172,5 @@ return {[""]={version=${VERSION},entry=${JSON.stringify(removeMdExt(name))}},${c
     return file.toString();
   }
 }
-_fengari.js = _fengari_js;
-_fengari.tojs = convertSingleLuaValue;
-export const fengari = _fengari;
+
+export const wasmoon = _wasmoon;

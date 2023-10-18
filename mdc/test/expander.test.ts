@@ -14,9 +14,9 @@ const parser = unified()
   .use(directiveForMarkdown)
   .use(expandMacro);
 
-function assertMatch(input: string, expectedOutput: string) {
+async function assertMatch(input: string, expectedOutput: string) {
   const vfile = new VFile();
-  const ast = parser.runSync(parser.parse(input), vfile) as Root;
+  const ast = await parser.run(parser.parse(input), vfile) as Root;
   assert.isEmpty(vfile.messages, vfile.messages.map((m) => m.message).join(', '));
   assert.equal(
     toMarkdown(ast, {
@@ -26,21 +26,21 @@ function assertMatch(input: string, expectedOutput: string) {
   );
 }
 
-test('Expand list', () => {
-  assertMatch('- a\n- b', ':::do`FUNC.S_ONCE`\n\n*   a\n*   b');
+test('Expand list', async () => {
+  await assertMatch('- a\n- b', ':::do`FUNC.S_ONCE`\n\n*   a\n*   b');
 });
 
-test('Expand code', () => {
-  assertMatch('`a`', '```lua\na\n```');
+test('Expand code', async () => {
+  await assertMatch('`a`', '```lua\na\n```');
 });
 
-test('Expand conditional', () => {
+test('Expand conditional', async () => {
   assertMatch('`a` _**b**_', ':::if`a`\n\n*   ***b***');
   assertMatch('`a` `b` c', ':::if`a`\n\n*   :::if`b`\n\n    *   c');
 });
 
-test('Expand macro', () => {
-  assertMatch(':::loop\n- a', `
+test('Expand macro', async () => {
+  await assertMatch(':::loop\n- a', `
 > # \\\\#loop-1
 >
 > > a
@@ -48,7 +48,7 @@ test('Expand macro', () => {
 > [](\\\\#loop-1)
   `);
 
-  assertMatch(':::switch`a = 0`\n- `a == 1`\n\n  ok\n- `a == 0`\n\n  ok', `
+  await assertMatch(':::switch`a = 0`\n- `a == 1`\n\n  ok\n- `a == 0`\n\n  ok', `
 :::do
 
 \`\`\`lua func

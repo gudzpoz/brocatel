@@ -1,45 +1,28 @@
 // @ts-ignore
 import bundle from '../cache/vm-bundle.lua?raw';
+import { wasmoon } from '@brocatel/mdc';
+
+type LuaEngine = InstanceType<typeof wasmoon.LuaEngine>;
 
 export default class Story {
-  fengari: any;
-  L: any;
+  L: LuaEngine;
   code: string;
 
-  constructor(story: string, fengari: any) {
-    this.fengari = fengari;
+  constructor(story: string, L: LuaEngine) {
     this.code = story;
-    const { lauxlib, lualib, lua, to_luastring } = fengari;
-    const L = lauxlib.luaL_newstate();
     this.L = L;
-    lualib.luaL_openlibs(L);
-    lauxlib.luaL_requiref(L, 'js', fengari.js.luaopen_js, false);
-    this.doString(bundle);
-    lua.lua_setglobal(L, 'vm');
-    lua.lua_pushstring(L, to_luastring(story));
-    lua.lua_setglobal(L, 's');
-    this.doString('story=vm.load_vm(s)');
-  }
-
-  doString(s: string) {
-    const { lauxlib, lua, to_luastring } = this.fengari;
-    if (lauxlib.luaL_dostring(this.L, to_luastring(s)) !== lua.LUA_OK) {
-      console.log(new Error(`${lua.lua_tojsstring(this.L, -1)}:\n${s}`));
-      console.log(this.code);
-    }
+    this.L.global.loadString(bundle, 'brocatel.lua');
+    this.L.global.assertOk(this.L.global.lua.lua_pcallk(this.L.global.address, 0, -1, 0, 0, null));
+    this.L.global.lua.lua_setglobal(this.L.global.address, 'vm');
+    this.L.global.set('s', story);
+    this.L.doStringSync('story=vm.load_vm(s)');
   }
 
   next(option?: number) {
-    const { lua, tojs } = this.fengari;
-    if (option) {
-      lua.lua_pushnumber(this.L, option);
-    } else {
-      lua.lua_pushnil(this.L);
-    }
-    lua.lua_setglobal(this.L, 'option');
-    this.doString('return story:next(option)');
-    const content = tojs(this.L, -1);
-    lua.lua_pop(this.L, 1);
-    return content;
+    this.L.global.set('option', option);
+    const top = this.L.global.getTop();
+    const result = this.L.doStringSync('return story:next(option)');
+    this.L.global.setTop(top);
+    return result;
   }
 }

@@ -1,5 +1,5 @@
 import type {
-  Code, Heading, Link, Paragraph, Root,
+  Code, Content, Heading, Link, Paragraph, Root,
 } from 'mdast';
 import type { ContainerDirective } from 'mdast-util-directive';
 import type { MdxTextExpression } from 'mdast-util-mdx-expression';
@@ -17,7 +17,7 @@ import {
 } from './ast';
 import { toMarkdownString } from './expander';
 import { HeadingStack, appendReturn, hasReturned } from './headings';
-import { isIdentifier } from './lua';
+import { isIdentifier, luaErrorDetector, type LuaErrorDetector } from './lua';
 
 /**
  * Splits a url with `#`, where `#` is escaped by `\\#`.
@@ -52,6 +52,8 @@ class AstTransformer {
    */
   globalLua: string[];
 
+  private validateLua!: LuaErrorDetector;
+
   constructor(root: Root, vfile: VFile) {
     this.root = root;
     this.vfile = vfile;
@@ -62,10 +64,20 @@ class AstTransformer {
     this.vfile.data.globalLua = this.globalLua;
   }
 
-  transform(): LuaArray {
+  async transform(): Promise<LuaArray> {
+    this.validateLua = await luaErrorDetector();
     const transformed = this.parseBlock(this.root);
     this.attachRelativeLinks(transformed);
+    this.validateLua.close();
     return transformed;
+  }
+
+  checkLua(snippet: string, node: Content): string {
+    const error = this.validateLua(snippet);
+    if (error) {
+      this.vfile.message(`illegal lua snippet: ${error.message}`, node);
+    }
+    return snippet;
   }
 
   attachRelativeLinks(root: LuaArray) {
@@ -230,6 +242,7 @@ class AstTransformer {
           this.vfile.message('expecting condition and branches', node);
         }
         const condition = label || 'false';
+        this.checkLua(`return(${label})`, node);
         const children = list.children.map((child) => this.parseBlock(child)) as any;
         if (children.length >= 1 && children.length <= 2) {
           const ifElse: LuaIfElse = {
@@ -294,7 +307,7 @@ class AstTransformer {
     }
     return {
       type: 'func',
-      code: snippet,
+      code: this.checkLua(snippet, code),
       children: [],
       node: code,
     };
@@ -307,7 +320,8 @@ class AstTransformer {
    *
    * A paragraph is expected to:
    * - contain only a link (`LinkNode`),
-   * - or starts with a inline code snippet (`IfElseNode` without `else` branch),
+   * - or starts with an inline code snippet (`IfElseNode` without `else` branch),
+   *   which is already processed in expander.ts,
    * - or contains no link or inline code at all (normal texts).
    *
    * @param para the paragraph
@@ -404,6 +418,7 @@ class AstTransformer {
         plural = `v${i}`;
         v = v.substring(0, v.length - 1).trim();
       }
+      this.checkLua(`return(${v})`, node);
       redirected[`v${i}`] = v;
       i += 1;
     });

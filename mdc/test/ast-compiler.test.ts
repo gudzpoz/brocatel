@@ -6,7 +6,7 @@ import { assert, test } from 'vitest';
 import { directiveForMarkdown, mdxForMarkdown } from '@brocatel/md';
 
 import expandMacro from '../src/expander';
-import { detectLuaErrors } from '../src/lua';
+import { luaErrorDetector } from '../src/lua';
 import transformAst from '../src/transformer';
 import astCompiler from '../src/ast-compiler';
 
@@ -18,25 +18,34 @@ const parser = unified()
   .use(transformAst)
   .use(astCompiler);
 
-function assertCompile(markdown: string, debug?: boolean): string {
+async function assertCompile(markdown: string, debug?: boolean): Promise<string> {
   const input = new VFile(markdown);
   if (debug) {
     input.data.debug = true;
   }
-  const vfile = parser.processSync(input);
+  const vfile = await parser.process(input);
   assert.isEmpty(
     vfile.messages.filter((e) => e.fatal !== null),
     vfile.messages.map((m) => m.message).join(', '),
   );
   const lua = vfile.value.toString();
-  assert.isNull(detectLuaErrors(`return ${lua}`), lua);
+  assert.isNull((await luaErrorDetector())(`return ${lua}`), lua);
   return lua;
 }
 
-test('Simple text', () => {
-  assert.equal(assertCompile('test'), '{_,"test"}');
+async function assertThrows(f: () => Promise<any>, message: string) {
+  try {
+    await f();
+    assert.fail('exception expected');
+  } catch (e) {
+    assert.include((e as Error).message, message);
+  }
+}
+
+test('Simple text', async () => {
+  assert.equal(await assertCompile('test'), '{_,"test"}');
   assert.equal(
-    assertCompile(
+    await assertCompile(
       ':c :d a {a?} b {b}',
     ),
     '{_,{plural="v1",tags={c="",d=""},text="a {v1} b {v2}",'
@@ -45,49 +54,49 @@ test('Simple text', () => {
 });
 
 test('Simplest plain text', async () => {
-  assert.equal(assertCompile('hello'), '{_,"hello"}');
-  assert.equal(assertCompile('hello\n\nhello'), '{_,"hello","hello"}');
+  assert.equal(await assertCompile('hello'), '{_,"hello"}');
+  assert.equal(await assertCompile('hello\n\nhello'), '{_,"hello","hello"}');
   assert.equal(
-    assertCompile('`true` True.\n\n`a = 1`'),
+    await assertCompile('`true` True.\n\n`a = 1`'),
     '{_,{function()return(true)end,{_,"True."}},{func=function(args)a = 1\nend}}',
   );
 });
 
 test('Tagged text', async () => {
   assert.equal(
-    assertCompile(':a :b c :d e'),
+    await assertCompile(':a :b c :d e'),
     '{_,{tags={a="",b=""},text="c :d e"}}',
   );
   assert.equal(
-    assertCompile('\\:a :b c :d e'),
+    await assertCompile('\\:a :b c :d e'),
     '{_,"\\\\:a :b c :d e"}',
   );
   assert.equal(
-    assertCompile(':a[a] :b[[B\\n]] c :d e'),
+    await assertCompile(':a[a] :b[[B\\n]] c :d e'),
     '{_,{tags={a="a",b="\\\\[B\\\\n]"},text="c :d e"}}',
   );
   assert.equal(
-    assertCompile(':a :b :c[c]'),
+    await assertCompile(':a :b :c[c]'),
     '{_,{tags={a="",b="",c="c"},text=""}}',
   );
 });
 
 test('Text with values', async () => {
-  assert.throw(() => assertCompile('The {} Names of God'), 'empty expression');
+  assertThrows(() => assertCompile('The {} Names of God'), 'empty expression');
   assert.equal(
-    assertCompile('The {count} Names of God'),
+    await assertCompile('The {count} Names of God'),
     '{_,{text="The {v1} Names of God",values={v1=function()return(count)end}}}',
   );
   assert.equal(
-    assertCompile('The {count?} Names of God'),
+    await assertCompile('The {count?} Names of God'),
     '{_,{plural="v1",text="The {v1} Names of God",values={v1=function()return(count)end}}}',
   );
 });
 
 test('Headings', async () => {
-  assert.equal(assertCompile('# Heading 1'), '{{labels={["heading-1"]={2}}},{{label="heading-1"}}}');
+  assert.equal(await assertCompile('# Heading 1'), '{{labels={["heading-1"]={2}}},{{label="heading-1"}}}');
   assert.equal(
-    assertCompile('# A\n## B\n### C\n### D\n## E\n# F'),
+    await assertCompile('# A\n## B\n### C\n### D\n## E\n# F'),
     `
     {
       {labels={
@@ -122,10 +131,10 @@ test('Headings', async () => {
 });
 
 test('Links', async () => {
-  assert.equal(assertCompile('[](a)\n# A'), '{{labels={a={3}}},{link={"a"}},{{label="a"}}}');
-  assert.equal(assertCompile('[](<#type> )\n# type'), '{{labels={type={3}}},{link={"type"}},{{label="type"}}}');
+  assert.equal(await assertCompile('[](a)\n# A'), '{{labels={a={3}}},{link={"a"}},{{label="a"}}}');
+  assert.equal(await assertCompile('[](<#type> )\n# type'), '{{labels={type={3}}},{link={"type"}},{{label="type"}}}');
   assert.equal(
-    assertCompile('[](<#Привет non-latin 你好>)\n# Привет non-latin 你好'),
+    await assertCompile('[](<#Привет non-latin 你好>)\n# Привет non-latin 你好'),
     '{{labels={["привет-non-latin-你好"]={3}}},{link={"привет-non-latin-你好"}},{{label="привет-non-latin-你好"}}}',
   );
   const serialized = `
@@ -156,22 +165,22 @@ test('Links', async () => {
     }
     `.replace(/--.+/g, '').replace(/ |\n/g, '').replace(/\\n/g, '\n');
   assert.equal(
-    assertCompile('# A\n## B\n### C\n#### D\n[](e#f)\n##### E\n###### F'),
+    await assertCompile('# A\n## B\n### C\n#### D\n[](e#f)\n##### E\n###### F'),
     serialized,
   );
   assert.equal(
-    assertCompile('# A\n## B\n### C\n#### D\n[](f)\n##### E\n###### F'),
+    await assertCompile('# A\n## B\n### C\n#### D\n[](f)\n##### E\n###### F'),
     serialized.replace('"e","f"', '"f"'),
   );
 });
 
 test('Lists', async () => {
   assert.equal(
-    assertCompile('- a\n- b'),
+    await assertCompile('- a\n- b'),
     '{_,{args={_,{_,"a"},{_,"b"}},func=function(args)FUNC.S_ONCE(args)\nend}}',
   );
   assert.equal(
-    assertCompile('- # A\n- [](a)').replace(/\n/g, ''),
+    (await assertCompile('- # A\n- [](a)')).replace(/\n/g, ''),
     `{
       {labels={a={2,"args",2,2}}},
       {args={_,
@@ -182,24 +191,24 @@ test('Lists', async () => {
     }`.replace(/--.+/g, '').replace(/ |\n/g, ''),
   );
   assert.equal(
-    assertCompile('1. `some` some\n2. else').replace(/\n/g, ''),
+    (await assertCompile('1. `some` some\n2. else')).replace(/\n/g, ''),
     '{_,{args={_,{_,{function()return(some)end,{_,"some"}}},'
     + '{_,"else"}},func=function(args)FUNC.S_RECUR(args)end}}',
   );
 });
 
 test('Code blocks', async () => {
-  assert.throws(() => assertCompile('```js\nconsole\n```\n'), 'unsupported code block type');
-  assert.throws(() => assertCompile('```lua\n(\n```\n'), 'unexpected symbol near <eof>');
+  assertThrows(() => assertCompile('```js\nconsole\n```\n'), 'unsupported code block type');
+  assertThrows(() => assertCompile('```lua\n(\n```\n'), 'unexpected symbol near <eof>');
   assert.equal(
-    assertCompile('```lua\nprint()\n```\n'),
+    await assertCompile('```lua\nprint()\n```\n'),
     '{_,{func=function(args)print()\nend}}',
   );
 });
 
 test('Directives', async () => {
   assert.equal(
-    assertCompile(':::loop`id`\n- - Hello').replace(/\n/g, ''),
+    (await assertCompile(':::loop`id`\n- - Hello')).replace(/\n/g, ''),
     `{
       {labels={id={2,2}}},
       {
@@ -216,7 +225,7 @@ test('Directives', async () => {
     }`.replace(/--.+/g, '').replace(/ |\n/g, ''),
   );
   assert.equal(
-    assertCompile(
+    await assertCompile(
       `
 :::if\`true\`
 - True.
@@ -226,11 +235,11 @@ test('Directives', async () => {
     '{_,{function()return(true)end,{_,"True."},{_,"False."}}}',
   );
   assert.equal(
-    assertCompile(':::if`true`\n- True.'),
+    await assertCompile(':::if`true`\n- True.'),
     '{_,{function()return(true)end,{_,"True."}}}',
   );
   assert.equal(
-    (assertCompile(
+    (await assertCompile(
       `
 :::switch
 - \`count == 1\`
@@ -253,8 +262,8 @@ test('Directives', async () => {
   );
 });
 
-test('Mixed', () => {
-  const compiled = assertCompile(`
+test('Mixed', async () => {
+  const compiled = await assertCompile(`
 # Hello World
 
 ## inner
@@ -271,8 +280,8 @@ Hello World!
   );
 });
 
-test('Function', () => {
-  const compiled = assertCompile('# func {}\n[{}](#func)\n\n---');
+test('Function', async () => {
+  const compiled = await assertCompile('# func {}\n[{}](#func)\n\n---');
   assert.equal(
     compiled,
     '{{labels={func={3}}},{func=function(args)END()\nend},'
@@ -281,8 +290,8 @@ test('Function', () => {
   );
 });
 
-test('Debug info', () => {
-  const compiled = assertCompile(
+test('Debug info', async () => {
+  const compiled = await assertCompile(
     `# heading-1
 
 Line-2
