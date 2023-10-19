@@ -2,7 +2,7 @@ import { assert, test } from 'vitest';
 import { LuaFactory } from 'wasmoon';
 import { BrocatelCompiler } from '../src/index';
 
-import vmBundle from '../../docs/.vitepress/cache/vm-bundle.lua?raw';
+import vmBundle from '../../vm/vm-bundle.lua?raw';
 
 const compiler = new BrocatelCompiler({
   autoNewLine: true,

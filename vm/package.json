@@ -1,0 +1,16 @@
+{
+  "name": "@brocatel/vm",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "bundle": "vite-node ./scripts/bundle.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "luabundle": "^1.6.0"
+  }
+}

@@ -11,9 +11,6 @@ patchedDependencies:
   decode-named-character-reference@1.0.2:
     hash: g6utl3qkvvwp673qnfwxh2xdrq
     path: patches/decode-named-character-reference@1.0.2.patch
-  fengari@0.1.4:
-    hash: pdt37ua5x2o454b2tlukep72im
-    path: patches/fengari@0.1.4.patch
 
 importers:
 
@@ -73,9 +70,6 @@ importers:
       eslint-plugin-vue:
         specifier: ^9.17.0
         version: registry.npmmirror.com/eslint-plugin-vue@9.17.0(eslint@8.48.0)
-      luabundle:
-        specifier: ^1.6.0
-        version: registry.npmmirror.com/luabundle@1.6.0
       typescript:
         specifier: ^5.2.2
         version: registry.npmmirror.com/typescript@5.2.2
@@ -388,6 +382,12 @@ importers:
       vue-tsc:
         specifier: ^1.8.13
         version: registry.npmmirror.com/vue-tsc@1.8.13(typescript@5.2.2)
+
+  vm:
+    devDependencies:
+      luabundle:
+        specifier: ^1.6.0
+        version: registry.npmmirror.com/luabundle@1.6.0
 
 packages:
 
@@ -2679,7 +2679,7 @@ packages:
       vite: ^4.0.0
       vue: ^3.2.25
     dependencies:
-      vite: registry.npmmirror.com/vite@4.4.9(@types/node@18.17.18)
+      vite: registry.npmmirror.com/vite@4.4.9(@types/node@18.17.12)
       vue: registry.npmmirror.com/vue@3.3.4
     dev: true
 

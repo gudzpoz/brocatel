@@ -7,6 +7,9 @@ all: build test
 
 build: $(SRC)
 
+bundle: $(SRC)
+  pnpm bundle
+
 test: busted luacheck
 
 busted: $(BUSTED_LUA)

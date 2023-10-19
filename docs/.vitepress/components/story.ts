@@ -1,5 +1,5 @@
 // @ts-ignore
-import bundle from '../cache/vm-bundle.lua?raw';
+import bundle from '../../../vm/vm-bundle.lua?raw';
 import { wasmoon } from '@brocatel/mdc';
 
 type LuaEngine = InstanceType<typeof wasmoon.LuaEngine>;

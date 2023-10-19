@@ -5,11 +5,10 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "bundle": "vite-node ./.vitepress/bundle.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "docs:dev": "pnpm bundle && vitepress dev",
-    "docs:build": "pnpm bundle && vitepress build",
-    "docs:preview": "pnpm bundle && vitepress preview"
+    "docs:dev": "vitepress dev",
+    "docs:build": "vitepress build",
+    "docs:preview": "vitepress preview"
   },
   "keywords": [],
   "author": "",
@@ -26,7 +25,6 @@
     "eslint-config-airbnb-typescript": "^17.1.0",
     "eslint-plugin-import": "^2.28.1",
     "eslint-plugin-vue": "^9.17.0",
-    "luabundle": "^1.6.0",
     "typescript": "^5.2.2",
     "vite-node": "^0.32.4",
     "vitepress": "1.0.0-beta.2",

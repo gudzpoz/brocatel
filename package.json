@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "description": "The root workspace pseudo-project.",
   "scripts": {
-    "build": "cd md && pnpm build && cd ../mdc && pnpm build && cd ../mde && pnpm build && cd .. && pnpm bundle",
-    "bundle": "cd docs && pnpm docs:build && cp .vitepress/cache/vm-bundle.lua ../mdc/dist/",
+    "build": "pnpm bundle && cd md && pnpm build && cd ../mdc && pnpm build && cd ../mde && pnpm build && cd ../docs && pnpm build",
+    "bundle": "cd vm && make bundle && mkdir -p ../mdc/dist && cp vm-bundle.lua ../mdc/dist/",
     "publish": "pnpm publish --access public --filter \"@brocatel/*\" --registry https://registry.npmjs.org"
   },
   "keywords": [],
@@ -16,7 +16,6 @@
   },
   "pnpm": {
     "patchedDependencies": {
-      "fengari@0.1.4": "patches/fengari@0.1.4.patch",
       "@milkdown/preset-commonmark@7.3.0": "patches/@milkdown__preset-commonmark@7.3.0.patch",
       "decode-named-character-reference@1.0.2": "patches/decode-named-character-reference@1.0.2.patch"
     }

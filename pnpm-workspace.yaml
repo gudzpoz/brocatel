@@ -3,3 +3,4 @@ packages:
   - "./md"
   - "./mdc"
   - "./mde"
+  - "./vm"

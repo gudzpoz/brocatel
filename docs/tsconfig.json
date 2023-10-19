@@ -19,5 +19,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": [".vitepress/bundle.ts"]
+  "include": [".vitepress/**/*.ts", ".vitepress/**/*.vue"]
 }
