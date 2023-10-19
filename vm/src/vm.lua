@@ -302,7 +302,7 @@ end
 ---
 --- @param ip TablePath|nil the pointer
 --- @return string|table|nil result
---- @return string[]|boolean|nil tags `nil` if reaches the end
+--- @return table<string, string>|boolean|nil tags `nil` if reaches the end
 function VM:fetch_and_next(ip)
     ip = ip or assert(self:get_coroutine()).ip
     local root = assert(self:ensure_root(ip))

@@ -101,10 +101,10 @@ return function (self)
                     end
                 })
             end
-            local line, success = self:eval_with_env(local_env, args:copy():resolve(i), self.get_keys(inner))
-            if line and should_recur and success then
+            local line, tags = self:eval_with_env(local_env, args:copy():resolve(i), self.get_keys(inner))
+            if line and should_recur and tags then
                 selectables[#selectables + 1] = {
-                    option = line,
+                    option = { text = line, tags = tags },
                     key = i,
                 }
             end

@@ -27,3 +27,6 @@ cache/
 # Others
 .idea/
 *.bak
+
+# Lua
+vm-bundle.lua

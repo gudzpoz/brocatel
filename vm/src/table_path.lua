@@ -13,7 +13,7 @@ TablePath.__index = TablePath
 --- @class Node
 ---
 --- @field text string|nil
---- @field tags string[]|nil
+--- @field tags table<string, string>|nil
 --- @field plural string|nil
 --- @field values table<string, function>|nil
 ---

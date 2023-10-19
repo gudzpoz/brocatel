@@ -5,7 +5,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "bundle": "vite-node ./scripts/bundle.ts"
+    "bundle": "node ./scripts/bundle.mjs"
   },
   "keywords": [],
   "author": "",

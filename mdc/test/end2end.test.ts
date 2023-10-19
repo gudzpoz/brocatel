@@ -9,14 +9,21 @@ const compiler = new BrocatelCompiler({
 });
 const factory = new LuaFactory();
 
+type TextLine = { text: string, tags: Record<string, string> };
+
 interface StoryLine {
   text?: string;
-  select?: { key: number, option: string }[];
+  tags?: Record<string, string>;
+  select?: { key: number, option: TextLine }[];
 }
 
-async function assertOutput(markdown: string, input: string[], output: (string | string[])[]) {
+async function assertOutput(
+  markdown: string,
+  input: string[],
+  output: (string | (string | TextLine)[] | TextLine)[],
+) {
   const compiled = await compiler.compileAll('main', async () => markdown);
-  assert.isEmpty(compiled.messages.map((m) => m.message));
+  assert.isEmpty(compiled.messages, compiled.messages.map((m) => m.message).join(', '));
   const L = await factory.createEngine({
     openStandardLibs: true,
     enableProxy: true,
@@ -36,12 +43,24 @@ async function assertOutput(markdown: string, input: string[], output: (string |
     const result: StoryLine = L.doStringSync('return story:next(option)');
     if (typeof line === 'string') {
       assert.equal(result.text, line);
-    } else {
+    } else if (Array.isArray(line)) {
       assert.isArray(result.select);
-      assert.deepEqual(result.select!.map((s) => s.option), line);
-      option = result.select!.find((v) => v.option === input[inputI])?.key;
+      assert.deepEqual(
+        result.select!.map((s) => s.option.text),
+        line.map((s, i) => {
+          if (typeof s === 'string') {
+            return s;
+          }
+          assert.deepEqual(result.select![i].option.tags, s.tags);
+          return s.text;
+        }),
+      );
+      option = result.select!.find((v) => v.option.text === input[inputI])?.key;
       assert.isNumber(option);
       inputI += 1;
+    } else {
+      assert.equal(result.text, line.text);
+      assert.deepEqual(result.tags, line.tags);
     }
     L.global.setTop(top);
   });
@@ -55,6 +74,7 @@ test('Texts', async () => {
   await assertOutput('*Hello* ***World***', [], ['*Hello* ***World***']);
   await assertOutput('String: {type("")}', [], ['String: string']);
   await assertOutput('`a = 1024`\nValue: {a} + {a} = {a + a}', [], ['Value: 1024 + 1024 = 2048']);
+  await assertOutput(':a[b] :c d :e[f] g', [], [{ text: 'd :e[f] g', tags: { a: 'b', c: '' } }]);
 });
 
 test('Conditionals', async () => {
@@ -117,4 +137,8 @@ test('Options', async () => {
     F
     ---
 `, ['A', 'C', 'E'], [['A', 'C'], 'B', ['C'], 'D', ['E'], 'F']);
+  await assertOutput(`
+- :tag[value] text
+  A
+`, ['text'], [[{ text: 'text', tags: { tag: 'value' } }], 'A']);
 });
