@@ -30,7 +30,7 @@ TablePath.__index = TablePath
 --- @field labels table<string, TablePath>|nil
 ---
 --- @field I number|nil
---- @field R table<number>|nil
+--- @field R table<number, number>|nil
 
 --- @alias Element Node|Array
 

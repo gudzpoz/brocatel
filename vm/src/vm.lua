@@ -16,7 +16,7 @@ brocatel.TablePath = TablePath
 --- @class VM
 --- @field code table<string, table> the compiled brocatel scripts
 --- @field env StackedEnv the environment handle
---- @field savedata table save data
+--- @field savedata SaveData save data
 --- @field flags table inner api for data storage, cleaned on each `next` call
 --- @field gettext Gettext GNU Gettext config
 local VM = {}
@@ -56,9 +56,14 @@ function VM:init()
     for _, thread in pairs(self.savedata.threads) do
         for _, co in ipairs(thread.coroutines) do
             co.ip = TablePath.from(co.ip)
+            if co.prev_ip then
+                co.prev_ip = TablePath.from(co.prev_ip)
+            end
             co.ip:set_listener(function(old, new)
                 assert(self:ensure_root(new), "invalid ip assigned")
-                history.record_simple(self.savedata.stats, self.code, old, new)
+                local current_co = assert(self:get_coroutine())
+                history.record_simple(self.savedata.stats, self.code, current_co.prev_ip, old)
+                current_co.prev_ip = old:copy()
             end)
         end
     end
@@ -173,7 +178,7 @@ end
 
 --- @class Thread
 --- @field current_coroutine number
---- @field coroutines table
+--- @field coroutines table<number, Coroutine>
 --- @field thread_locals table
 
 --- Fetches a thread by name.
@@ -189,8 +194,21 @@ end
 
 --- @class Coroutine
 --- @field ip TablePath
+--- @field prev_ip TablePath|nil
 --- @field locals table
 --- @field stack table
+
+--- @class SaveData
+--- @field version number
+--- @field current_thread string
+--- @field threads table<string, Thread>
+--- @field stats table
+--- @field globals table<string, any>
+--- @field current IOCache
+
+--- @class IOCache
+--- @field input number|nil
+--- @field output any
 
 --- Fetches a coroutine by thread name and id.
 ---

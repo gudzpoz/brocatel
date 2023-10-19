@@ -20,7 +20,7 @@ end
 local bits_per_number = 24
 
 --- Sets a bit in a bit set.
---- @param bitset table<number>
+--- @param bitset table<number, number>
 --- @param index number
 function history.set_bit(bitset, index)
     local offset = (index - 1) % bits_per_number
@@ -42,7 +42,7 @@ function history.set_bit(bitset, index)
 end
 
 --- Fetches a bit in a bit set.
---- @param bitset table<number>
+--- @param bitset table<number, number>
 --- @param index number
 function history.get_bit(bitset, index)
     local offset = (index - 1) % bits_per_number

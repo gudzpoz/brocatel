@@ -6,7 +6,7 @@
 --- @field lua table the Lua environment
 --- @field global table the global scope
 --- @field label fun(table):table label lookup function
---- @field stack table<table> some normal scopes that pose no requirements
+--- @field stack table<number, table> some normal scopes that pose no requirements
 --- @field env table the environment to be used
 --- @field api table<string, boolean> keys that forbid overriding
 --- @field init boolean whether in initialing state
