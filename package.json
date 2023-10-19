@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "description": "The root workspace pseudo-project.",
   "scripts": {
-    "build": "pnpm bundle && cd md && pnpm build && cd ../mdc && pnpm build && cd ../mde && pnpm build && cd ../docs && pnpm build",
+    "build": "pnpm bundle && cd md && pnpm build && cd ../mdc && pnpm build && cd ../mde && pnpm build",
     "bundle": "cd vm && make bundle && mkdir -p ../mdc/dist && cp vm-bundle.lua ../mdc/dist/",
     "publish": "pnpm publish --access public --filter \"@brocatel/*\" --registry https://registry.npmjs.org"
   },
