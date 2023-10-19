@@ -1,7 +1,5 @@
 # Story Subroutines (draft)
 
-**Outdated**
-
 In programming lanuages, we call them "functions".
 In Ink, they are called "tunnels".
 But anyway, this kind of structure allows you to reuse stories quite efficiently.
@@ -11,6 +9,13 @@ However, most stories just don't follow the typical "function" structure:
 they don't *return* properly.
 This currently usually leads to unexpected results.
 :::
+
+## Basic Syntax
+
+As you have learnt from [the tutorial](./tutorial.md), Brocatel lets you organize your stories with `# headings`,
+and you can jump to those headings by using `[some links to](#headings)`.
+A subroutine is a part of stories that start with some special headings: `# subroutine { args }`.
+And to use the subroutine, one uses a special kind of link: `[{ arg = value }](#subroutine)`.
 
 <md-example>
 
@@ -34,9 +39,19 @@ Budget: ${money}!
 
 </md-example>
 
+In the example above, a `## stats` subroutine is defined (which accepts a `money` parameter),
+and we jump to the subroutine with a link `[{ money = 10 }](#stats)`,
+which also sets the requested parameter `money` to `10`.
+The story outputs three lines:
+- `Statistics:`
+- `Budget: $10!`: The story flows to the subroutine after the link.
+- `Done!`: The story flows back to the main story! It resumes the story after the link.
+
 ## No Fallthrough
 
-In normal stories, headings does not stop the story flow:
+In normal stories, headings stop the story flow - we want the users to be explicit about story flow changes so as to avoid errors.
+And functions require explicit jumps / calls too.
+
 
 <md-example>
 
@@ -45,12 +60,14 @@ Line 1.
 
 # any heading
 
-Then Line 2.
+Special case: the first heading is OK - the meaning is explicit enough - it is a starting point.
+
+## heading 2
+
+Then no Line 3.
 ```
 
 </md-example>
-
-But functions require explicit jumps / calls:
 
 <md-example>
 
