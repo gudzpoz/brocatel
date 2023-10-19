@@ -142,3 +142,15 @@ test('Options', async () => {
   A
 `, ['text'], [[{ text: 'text', tags: { tag: 'value' } }], 'A']);
 });
+
+test('Recursive fibonacci', async () => {
+  await assertOutput(`
+[{ n = 8 }](#fibonacci)
+END
+# fibonacci { i, j, n }
+\`i = i or 0\`
+\`j = j or 1\`
+{ i + j }
+\`n ~= 1\` [{ n = n - 1, i = j, j = i + j }](#fibonacci)
+`, [], ['1', '2', '3', '5', '8', '13', '21', '34', 'END']);
+});

@@ -27,6 +27,6 @@ features:
   - title: Localization
     details: |
       Designed with internalization needs in mind.
-      Easily integrable with <a href="https://www.gnu.org/software/gettext/">GNU gettext</a>.
+      TBD: Easily integrable with <a href="https://www.gnu.org/software/gettext/">GNU gettext</a>.
 ---
 

@@ -91,7 +91,7 @@ i = 0
 
 [link](#foyer_options)
 
-# cloakroom
+# cloakroom {}
 
 The walls of this small room were clearly once lined with hooks, though now only one remains. The exit is a door to the east.
 
@@ -155,7 +155,7 @@ The walls of this small room were clearly once lined with hooks, though now only
 
        ---
 
-# bar_dark
+# bar_dark {}
 
 You walk to the bar, but it's so dark here you can't really make anything out. The foyer is back to the north.
 
