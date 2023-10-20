@@ -11,6 +11,10 @@ import expandMacro from './expander';
 import remapLineNumbers from './line-remap';
 import transformAst from './transformer';
 
+export {
+  StoryRunner, type SelectLine, type TextLine, type StoryLine,
+} from './lua';
+
 const VERSION = 1;
 
 /**

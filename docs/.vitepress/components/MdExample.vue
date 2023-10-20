@@ -13,13 +13,15 @@
       <div class="output-container">
         <div class="lines">
           <TransitionGroup>
-            <p v-for="line, i in lines" :key="i" v-html="parse(line.text)" :style="line.tags"></p>
+            <p v-for="line, i in lines" :key="i" v-html="parse(line.text)" :style="line.tags === true ? {} : line.tags"></p>
           </TransitionGroup>
         </div>
         <Transition>
           <div v-show="options.length > 0">
-            <button v-for="option in options" :key="option.option"
-              @click="multiNext(10, option.key)" v-html="parse(option.option, true)">
+            <button v-for="option in options" :key="option.option.text"
+              @click="multiNext(10, option.key)" v-html="parse(option.option.text, true)"
+              :style="option.option.tags === true ? {} : option.option.tags"
+            >
             </button>
           </div>
         </Transition>
@@ -39,15 +41,15 @@
 </template>
 
 <script setup lang="ts">
+import { StoryRunner, type SelectLine, type TextLine } from '@brocatel/mdc';
 import type { Diagnostic } from '@brocatel/mde';
 import { debounce } from '@github/mini-throttle';
 import { VFile } from 'vfile';
 import { useData } from 'vitepress';
 import { onMounted, onUnmounted, ref } from 'vue';
 
-import { newLuaEngine, useCompiler } from './compiler';
+import { useCompiler } from './compiler';
 import { parse } from './markdown';
-import Story from './story';
 
 import '@brocatel/mde/dist/style.css';
 
@@ -59,13 +61,13 @@ const { isDark } = useData();
 
 const markdown = ref('');
 // Automatically compile new script.
-const story = ref<Story>();
+const story = new StoryRunner();
 
 const diagnostics = ref<Diagnostic[]>([]);
 function annotateErrors(vfile: VFile) {
   diagnostics.value = vfile.messages.map((msg) => ({
-    from: msg.position.start.offset,
-    to: msg.position.end.offset,
+    from: msg.position?.start.offset ?? 0,
+    to: msg.position?.end.offset ?? 0,
     severity: 'error',
     message: msg.message,
   }));
@@ -79,8 +81,7 @@ async function handleChangeNow(code: string) {
   try {
     const compiled = await useCompiler().compileAll('main', async () => code);
     annotateErrors(compiled);
-    const s = compiled.toString().trim()
-    story.value = new Story(s, await newLuaEngine());
+    await story.loadStory(compiled.toString().trim());
     multiNext(10);
   } catch (e) {
     console.log(code);
@@ -128,8 +129,8 @@ onUnmounted(() => {
 // User interaction.
 const completed = ref(true);
 const ended = ref(false);
-const lines = ref<{ text: string, tags: { [key: string]: string } }[]>([]);
-const options = ref<{ option: string, key: number }[]>([]);
+const lines = ref<TextLine[]>([]);
+const options = ref<SelectLine['select']>([]);
 function clear() {
   completed.value = true;
   ended.value = false;
@@ -152,23 +153,24 @@ function multiNext(count: number, option?: number) {
   runNext(0, option);
 }
 function next(option?: number): boolean {
-  if (!story.value) {
+  if (!story.isLoaded()) {
     return false;
   }
   if (option) {
     options.value = [];
   }
-  const line = story.value.next(option);
+  const line = story.next(option);
   if (!line) {
     ended.value = true;
     return false;
   }
-  if (line.text) {
-    line.tags = typeof line.tags === 'boolean' ? {} : line.tags;
-    lines.value.push(line);
+  if ((line as TextLine).text) {
+    const l = line as TextLine;
+    l.tags = typeof l.tags === 'boolean' ? {} : l.tags;
+    lines.value.push(l);
     return true;
-  } else if (line.select) {
-    options.value = line.select;
+  } else if ((line as SelectLine).select) {
+    options.value = (line as SelectLine).select;
     return false;
   }
   return false;

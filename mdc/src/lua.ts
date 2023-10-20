@@ -1,5 +1,7 @@
 import { LuaFactory, type LuaEngine } from 'wasmoon';
 
+import vmBundle from '../../vm/vm-bundle.lua?raw';
+
 const factory = new LuaFactory();
 function newLuaState(): Promise<LuaEngine> {
   return factory.createEngine({
@@ -96,4 +98,64 @@ export async function luaRunner(): Promise<LuaRunner> {
   };
   f.close = () => L.global.close();
   return f;
+}
+
+export type TextLine = { text: string, tags: true | Record<string, string> };
+
+export type SelectLine = { select: { key: number, option: TextLine }[] };
+
+export type StoryLine = TextLine | SelectLine;
+
+export class StoryRunner {
+  L?: LuaEngine;
+
+  async loadStory(story: string, savedata?: string, extern?: any) {
+    this.close();
+    const L = await newLuaState();
+    this.L = L;
+    L.global.loadString(vmBundle, 'vm.lua');
+    L.global.lua.lua_pcallk(L.global.address, 0, -1, 0, 0, null);
+    L.global.lua.lua_setglobal(L.global.address, 'vm');
+    L.global.set('s', story.toString());
+    L.global.set('extern', extern);
+    L.global.set('save', savedata);
+    L.doString('story = vm.load_vm(s, save, { extern = extern })');
+  }
+
+  isLoaded() {
+    return this.L !== undefined;
+  }
+
+  private checkL() {
+    if (this.L) {
+      return this.L;
+    }
+    throw new Error('story not loaded yet');
+  }
+
+  load(savedata: string) {
+    const L = this.checkL();
+    L.global.set('save', savedata);
+    L.doStringSync('story:load(save)');
+  }
+
+  save(): string {
+    return this.checkL().doStringSync('return story:save()');
+  }
+
+  next(optionKey?: number): StoryLine | null {
+    const L = this.checkL();
+    L.global.set('option', optionKey);
+    const top = L.global.getTop();
+    const result = L.doStringSync('return story:next(option)');
+    L.global.setTop(top);
+    return result;
+  }
+
+  close() {
+    if (this.L) {
+      this.L.global.close();
+    }
+    this.L = undefined;
+  }
 }

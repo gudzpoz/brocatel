@@ -1,20 +1,17 @@
 import { assert, test } from 'vitest';
-import { LuaFactory } from 'wasmoon';
-import { BrocatelCompiler } from '../src/index';
-
-import vmBundle from '../../vm/vm-bundle.lua?raw';
+import {
+  BrocatelCompiler, StoryRunner, type SelectLine, type TextLine,
+} from '../src/index';
 
 const compiler = new BrocatelCompiler({
   autoNewLine: true,
 });
-const factory = new LuaFactory();
+const runner = new StoryRunner();
 
-type TextLine = { text: string, tags: Record<string, string> };
-
-interface StoryLine {
-  text?: string;
-  tags?: Record<string, string>;
-  select?: { key: number, option: TextLine }[];
+async function loadStory(markdown: string) {
+  const compiled = await compiler.compileAll('main', async () => markdown);
+  assert.isEmpty(compiled.messages, compiled.messages.map((m) => m.message).join(', '));
+  await runner.loadStory(compiled.toString());
 }
 
 async function assertOutput(
@@ -22,50 +19,38 @@ async function assertOutput(
   input: string[],
   output: (string | (string | TextLine)[] | TextLine)[],
 ) {
-  const compiled = await compiler.compileAll('main', async () => markdown);
-  assert.isEmpty(compiled.messages, compiled.messages.map((m) => m.message).join(', '));
-  const L = await factory.createEngine({
-    openStandardLibs: true,
-    enableProxy: true,
-  });
-  L.global.loadString(vmBundle, 'vm.lua');
-  L.global.lua.lua_pcallk(L.global.address, 0, -1, 0, 0, null);
-  L.global.lua.lua_setglobal(L.global.address, 'vm');
-  L.global.set('s', compiled.toString());
-  L.doString('story=vm.load_vm(s)');
+  await loadStory(markdown);
 
   let option: number | undefined;
   let inputI = 0;
   output.forEach((line) => {
-    L.global.set('option', option);
+    const result = runner.next(option);
     option = undefined;
-    const top = L.global.getTop();
-    const result: StoryLine = L.doStringSync('return story:next(option)');
     if (typeof line === 'string') {
-      assert.equal(result.text, line);
+      assert.equal((result as TextLine).text, line);
     } else if (Array.isArray(line)) {
-      assert.isArray(result.select);
+      const { select } = result as SelectLine;
+      assert.isArray(select);
       assert.deepEqual(
-        result.select!.map((s) => s.option.text),
+        select.map((s) => s.option.text),
         line.map((s, i) => {
           if (typeof s === 'string') {
             return s;
           }
-          assert.deepEqual(result.select![i].option.tags, s.tags);
+          assert.deepEqual(select[i].option.tags, s.tags);
           return s.text;
         }),
       );
-      option = result.select!.find((v) => v.option.text === input[inputI])?.key;
+      option = select.find((v) => v.option.text === input[inputI])?.key;
       assert.isNumber(option);
       inputI += 1;
     } else {
-      assert.equal(result.text, line.text);
-      assert.deepEqual(result.tags, line.tags);
+      assert.deepEqual(result as TextLine, line);
     }
-    L.global.setTop(top);
   });
-  assert.isNull(L.doStringSync('return story:next(option)'));
   assert.lengthOf(input, inputI);
+  assert.isNull(runner.next());
+  runner.close();
 }
 
 test('Texts', async () => {
@@ -153,4 +138,17 @@ END
 { i + j }
 \`n ~= 1\` [{ n = n - 1, i = j, j = i + j }](#fibonacci)
 `, [], ['1', '2', '3', '5', '8', '13', '21', '34', 'END']);
+});
+
+test('Save and load', async () => {
+  await loadStory('- 0\n  A\n  B\n  C');
+  assert.equal((runner.next(
+    (runner.next() as SelectLine).select.find((s) => s.option.text === '0')!.key,
+  ) as TextLine).text, 'A');
+  const save = runner.save();
+  assert.equal((runner.next() as TextLine).text, 'B');
+  assert.equal((runner.next() as TextLine).text, 'C');
+  runner.load(save);
+  assert.equal((runner.next() as TextLine).text, 'B');
+  assert.equal((runner.next() as TextLine).text, 'C');
 });

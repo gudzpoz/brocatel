@@ -495,7 +495,7 @@ function brocatel.load_vm(content, save, extra_env)
     local chunk = savedata.load_with_env(env.env, content)()
     local vm = VM.new(chunk, env)
     if save then
-        VM:load(save)
+        vm:load(save)
     end
     return vm
 end
