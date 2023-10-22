@@ -2,6 +2,7 @@
 
 :::danger
 Many many things in this tutorial can be outdated since we are still rapidly updating things and changing the syntax.
+But if the interactive widgets somehow work, then it should still be up-to-date.
 :::
 
 Brocatel lets you write interactive stories (choice-based interactive fictions) in [Markdown](https://en.wikipedia.org/wiki/Markdown).
@@ -24,6 +25,8 @@ which usually means the user will need to learn about the meanings behind `**bol
 or `` `code` and [links](http://url)``.
 They are not that hard to learn, but may still pose a challenge for users not really into plain text markups.
 To make things easier, here we use a [WYSIWYG](https://en.wikipedia.org/wiki/WYSIWYG) editor by default.
+(Also, lots of people out there just don't have regular `` ` `` keys on their keyboards,
+and it is why originally I prefer [Org mode](https://orgmode.org/) to Markdown to be honest.)
 
 If you prefer a plain text one, click on the "🗒️" checkbox in the editor.
 :::

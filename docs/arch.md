@@ -14,7 +14,7 @@ Brocatel is designed to be simple. Mainly, it consists of two parts:
    - runs user-provided Lua code to allow custom logic,
    - and supports threads and fibers (and coroutines) with some special Lua function calls.
 
-Well, actually there is a third part - `lgettext`, which extracts texts from the Lua table
+Well, actually there will be a third part - `lgettext` (TBD), which extracts texts from the Lua table
 to generate a Gettext PO file for translation.
 
 ## Markdown Compiler
@@ -224,7 +224,7 @@ The Lua story file is run under a crafted Lua environment, which:
     - `VISITS` is set to the visited count.
     - `ONCE` is set to true if and only if the option is never visited before.
   - `FUNC.S_ONCE`: Similar to `FUNC.SELECT`, but each option shows only once, unless `RECUR` is used. It too, manipulates the environment.
-    - `RECUR` is... complicated. It just yields true and makes the option recurs.
+    - `RECUR` is... complicated. It just yields true and makes the option recur.
 - Provides some utility functions:
   - `TURNS`
   - `TURNS_SINCE`

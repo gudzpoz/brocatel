@@ -1,4 +1,4 @@
-# Story Subroutines (draft)
+# Story Subroutines
 
 In programming lanuages, we call them "functions".
 In Ink, they are called "tunnels".
@@ -8,6 +8,8 @@ But anyway, this kind of structure allows you to reuse stories quite efficiently
 However, most stories just don't follow the typical "function" structure:
 they don't *return* properly.
 This currently usually leads to unexpected results.
+
+Also, the current WYSIWYG widget does not support calling subroutines.
 :::
 
 ## Basic Syntax

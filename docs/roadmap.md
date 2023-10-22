@@ -98,7 +98,7 @@ Bug fixes and Markdown grammar optimization.
 Documentation, tutorials, etc.
 
 - [ ] Porting [The Intercept](https://github.com/inkle/the-intercept/blob/master/Assets/Ink/TheIntercept.ink).
-- [X] Porting [Cloak of Darkness](Cloak of Darkness).
+- [X] Porting [Cloak of Darkness](./cloak.md).
 - [ ] Follow suit: [Tutorial for Ink](https://www.inklestudios.com/ink/web-tutorial/) (better still if interactive).
 - [ ] IDE implementation (or probably just a VS Code plugin with language server protocol implementation).
 - [ ] Frontend implementation, so that one can easily publish their IF online.
