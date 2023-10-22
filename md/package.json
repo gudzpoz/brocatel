@@ -1,6 +1,6 @@
 {
   "name": "@brocatel/md",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Custom Markdown syntax for brocatel scripts.",
   "type": "module",
   "main": "dist/brocatel-md.es.js",

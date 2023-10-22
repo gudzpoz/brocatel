@@ -1,6 +1,6 @@
 {
   "name": "@brocatel/mde",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "A WYSIWYG-style editor for Brocatel Markdown.",
   "type": "module",
   "main": "dist/brocatel-mde.es.js",

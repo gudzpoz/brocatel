@@ -1,6 +1,7 @@
 # mde - Brocatel Markdown Editor
 
-This is a WYSIWYG-style Markdown editor implemented with Milkdown (and its underlying prosemirror).
+This is a WYSIWYG-style Markdown editor component in Vue 3
+implemented with Milkdown (and its underlying prosemirror).
 
 ## Implemented
 
@@ -35,7 +36,8 @@ Generic directives/plugins syntax proposal](https://talk.commonmark.org/t/generi
 
 ## Maybe Later
 
-- [ ] A menu.
+- [X] A menu.
+- [X] Support subroutine calls (like `[{}](#subroutine)`).
 - [ ] Link target autocomplete.
 - [ ] Lua highlighting.
 - [ ] Lua code autocomplete.
