@@ -27,13 +27,17 @@ return function (self)
 
     env:set_api("END", function(path)
         local IP = assert(env:get("IP"))
-        if not path then
-            if self:pop_stack_frame() then
+        -- For calls like `END()` or `END(true)`
+        if not path or type(path) == "boolean" then
+            -- Tries to return to the calling subroutine.
+            if not path and self:pop_stack_frame() then
                 return
             end
+            -- Otherwise (or when `END(true)` is called), terminates the story execution.
             IP:set(TablePath.from({ IP[1] }))
             return
         end
+        -- For calls like `END({ "label", "path_name" })`, it breaks that array (which is probably a loop or something).
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         assert(path:is_parent_to(IP))
         local root = assert(self:ensure_root(path))
