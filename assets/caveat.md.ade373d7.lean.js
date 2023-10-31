@@ -1,0 +1,1 @@
+import{_ as s,o as a,c as n,M as e}from"./chunks/framework.eac77be5.js";const F=JSON.parse('{"title":"Caveats","description":"","frontmatter":{},"headers":[],"relativePath":"caveat.md","filePath":"caveat.md"}'),o={name:"caveat.md"},t=e("",17),l=[t];function r(p,c,i,d,h,y){return a(),n("div",null,l)}const D=s(o,[["render",r]]);export{F as __pageData,D as default};

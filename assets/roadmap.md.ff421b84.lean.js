@@ -1,0 +1,1 @@
+import{_ as e,o as a,c as l,M as i}from"./chunks/framework.eac77be5.js";const g=JSON.parse('{"title":"Brocatel Roadmap","description":"","frontmatter":{},"headers":[],"relativePath":"roadmap.md","filePath":"roadmap.md"}'),o={name:"roadmap.md"},t=i("",25),n=[t];function r(s,p,c,d,u,h){return a(),l("div",null,n)}const k=e(o,[["render",r]]);export{g as __pageData,k as default};

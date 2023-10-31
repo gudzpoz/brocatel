@@ -1,0 +1,1 @@
+import{_ as s,o as a,c as e,M as n}from"./chunks/framework.eac77be5.js";const A=JSON.parse('{"title":"Brocatel Architecture","description":"","frontmatter":{},"headers":[],"relativePath":"arch.md","filePath":"arch.md"}'),l={name:"arch.md"},o=n("",64),t=[o];function p(c,i,r,y,d,C){return a(),e("div",null,t)}const h=s(l,[["render",p]]);export{A as __pageData,h as default};
