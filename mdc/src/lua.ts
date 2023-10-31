@@ -1,8 +1,9 @@
 import { LuaFactory, type LuaEngine } from 'wasmoon';
+import wasmoonWasm from 'wasmoon/dist/glue.wasm?url';
 
 import vmBundle from '../../vm/vm-bundle.lua?raw';
 
-const factory = new LuaFactory();
+const factory = new LuaFactory(typeof window === 'undefined' ? undefined : wasmoonWasm);
 function newLuaState(): Promise<LuaEngine> {
   return factory.createEngine({
     openStandardLibs: true,
