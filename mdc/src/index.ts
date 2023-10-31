@@ -1,3 +1,4 @@
+import remarkFrontmatter from 'remark-frontmatter';
 import remarkJoinCJKLines from 'remark-join-cjk-lines';
 import remarkParse from 'remark-parse';
 import { Processor, unified } from 'unified';
@@ -61,6 +62,7 @@ export class BrocatelCompiler {
     this.remark = unified()
       .use(remarkParse)
       .use(remarkJoinCJKLines)
+      .use(remarkFrontmatter, ['yaml'])
       .use(remapLineNumbers)
       .use(directiveForMarkdown)
       .use(mdxForMarkdown)
@@ -78,8 +80,8 @@ export class BrocatelCompiler {
    */
   async compileAll(name: string, fetcher: (name: string) => Promise<string>) {
     const target = new VFile({ path: `${removeMdExt(name)}.lua` });
-    const files: { [name: string]: VFile | null } = {};
-    const input: { [name: string]: VFile } = {};
+    const files: Record<string, VFile | null> = {};
+    const input: Record<string, VFile> = {};
     const globalLua: string[] = [];
 
     const asyncCompile = async (filename: string) => {
@@ -89,6 +91,9 @@ export class BrocatelCompiler {
         target.message(`cannot load file ${task}(.md)`);
       } else {
         const file = await this.compile(content);
+        if (file.data.IFID && !target.data.IFID) {
+          target.data.IFID = file.data.IFID;
+        }
         files[task] = file;
         const processed = new VFile({ path: task });
         input[task] = processed;
@@ -115,10 +120,18 @@ export class BrocatelCompiler {
       target.messages.push(...v.messages);
       return v.toString();
     });
+    const uuids = target.data.IFID ? `IFID={${
+      (target.data.IFID as string[])
+        .map((u) => JSON.stringify(`UUID://${u}//`))
+        .join(',')
+    }},` : '';
     target.value = `${globalLua.join('\n')}
 _={}
-return {[""]={version=${VERSION},entry=${JSON.stringify(removeMdExt(name))}},${contents}}
-`;
+return {[""]={\
+${uuids}\
+version=${VERSION},\
+entry=${JSON.stringify(removeMdExt(name))}\
+},${contents}}`;
     target.data.input = input;
     return target;
   }

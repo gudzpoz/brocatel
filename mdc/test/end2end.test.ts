@@ -11,7 +11,9 @@ const runner = new StoryRunner();
 async function loadStory(markdown: string) {
   const compiled = await compiler.compileAll('main', async () => markdown);
   assert.isEmpty(compiled.messages, compiled.messages.map((m) => m.message).join(', '));
-  await runner.loadStory(compiled.toString());
+  const lua = compiled.toString();
+  await runner.loadStory(lua);
+  return lua;
 }
 
 async function assertOutput(
@@ -19,7 +21,7 @@ async function assertOutput(
   input: string[],
   output: (string | (string | TextLine)[] | TextLine)[],
 ) {
-  await loadStory(markdown);
+  const compiled = await loadStory(markdown);
 
   let option: number | undefined;
   let inputI = 0;
@@ -51,6 +53,7 @@ async function assertOutput(
   assert.lengthOf(input, inputI);
   assert.isNull(runner.next());
   runner.close();
+  return compiled;
 }
 
 test('Texts', async () => {
@@ -151,4 +154,24 @@ test('Save and load', async () => {
   runner.load(save);
   assert.equal((runner.next() as TextLine).text, 'B');
   assert.equal((runner.next() as TextLine).text, 'C');
+});
+
+test('IFID', async () => {
+  const compiled = await assertOutput(`---
+IFID: d0adf5d6-ae96-497c-9616-ee7e8f0a83f3
+---
+
+Hello`, [], ['Hello']);
+  assert.include(compiled, '[""]={IFID={"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F3//"},version=1,entry="main"}');
+
+  const multiple = await assertOutput(`---
+IFID:
+  - d0adf5d6-ae96-497c-9616-ee7e8f0a83f3
+  - uuid://d0adf5d6-ae96-497c-9616-ee7e8f0a83f4//
+  - uuid://d0adf5d6-ae96-497c-9616-ee7e8f0a83f5
+---
+
+Hello`, [], ['Hello']);
+  assert.include(multiple, '[""]={IFID={"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F3//","UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F4//",'
+    + '"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F5//"},version=1,entry="main"}');
 });

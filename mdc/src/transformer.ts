@@ -5,9 +5,9 @@ import type { ContainerDirective } from 'mdast-util-directive';
 import type { MdxTextExpression } from 'mdast-util-mdx-expression';
 import type { Plugin } from 'unified';
 import type { VFile } from 'vfile';
-
 import { visitParents } from 'unist-util-visit-parents';
 import { v4 as uuidv4 } from 'uuid';
+import { parse as parseYaml } from 'yaml';
 
 import { getAnchorString, isNormalLink } from '@brocatel/md';
 
@@ -66,6 +66,7 @@ class AstTransformer {
 
   async transform(): Promise<LuaArray> {
     this.validateLua = await luaErrorDetector();
+    this.parseFrontmatter(this.root);
     const transformed = this.parseBlock(this.root);
     this.attachRelativeLinks(transformed);
     this.validateLua.close();
@@ -121,6 +122,30 @@ class AstTransformer {
     });
   }
 
+  parseFrontmatter(root: Root) {
+    const fronmatter = root.children.find((n) => n.type === 'yaml');
+    if (fronmatter?.type === 'yaml') {
+      try {
+        const metadata: Record<string, unknown> = parseYaml(fronmatter.value);
+        const ids = metadata.IFID ?? metadata.ifid ?? metadata.UUID ?? metadata.uuid;
+        const uuids: string[] = (Array.isArray(ids) ? ids : [ids]).map((s) => {
+          if (typeof s === 'string') {
+            const uuid = s.toUpperCase();
+            const match = /^(?:(?:UUID|IFID):\/\/)?([0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12})\/{0,2}$/.exec(uuid);
+            if (match) {
+              return match[1].toUpperCase();
+            }
+          }
+          this.vfile.message(`invalid IFID ${s}`, fronmatter);
+          return '';
+        }).filter((s) => s !== '');
+        this.vfile.data.IFID = uuids;
+      } catch (e) {
+        this.vfile.message(e as Error, fronmatter);
+      }
+    }
+  }
+
   parseBlock(block: MarkdownParent): LuaArray {
     const stack = new HeadingStack(block, this.vfile);
     // Levels of previous headings.
@@ -155,6 +180,8 @@ class AstTransformer {
           if (!node.value.trim().startsWith('<!--')) {
             current.children.push(asIs(node));
           }
+          break;
+        case 'yaml':
           break;
         default:
           this.vfile.message(`unsupported markdown type: ${node.type}`, node);
