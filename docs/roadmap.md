@@ -62,6 +62,7 @@ Markdown compiler implementation:
 - [X] Add caching layer.
   - [X] Cache output to provide idempotency.
   - [X] Cache user input.
+- [X] IFID: use frontmatter to include [IFIDs](https://www.ifwiki.org/IFID) for stories.
 
 #### Integration examples
 

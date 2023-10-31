@@ -1,6 +1,6 @@
 {
   "name": "@brocatel/mdc",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Markdown compiler for brocatel scripts.",
   "type": "module",
   "main": "dist/brocatel-mdc.es.js",
