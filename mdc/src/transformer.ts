@@ -399,6 +399,7 @@ class AstTransformer {
    * Converts children of a paragraph to a text node.
    */
   toTextNode(para: Paragraph, tags: LuaTags): LuaText {
+    const original = toMarkdownString(para);
     const references: { [id: string]: [string, MdxTextExpression] } = {};
     visitParents(para, (n) => {
       if (n.type as string === 'mdxTextExpression') {
@@ -415,6 +416,7 @@ class AstTransformer {
       tags,
       plural,
       values,
+      original,
       node: para,
     };
     return textNode;

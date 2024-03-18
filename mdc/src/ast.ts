@@ -94,6 +94,10 @@ export interface LuaText extends LuaNode {
    * The plural value. See `ngettext`.
    */
   plural?: string;
+  /**
+   * Original text in Markdown format, used for translation.
+   */
+  original?: string;
 }
 
 /**

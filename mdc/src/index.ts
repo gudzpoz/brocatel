@@ -11,6 +11,7 @@ import astCompiler, { serializeTableInner } from './ast-compiler';
 import expandMacro from './expander';
 import remapLineNumbers from './line-remap';
 import transformAst from './transformer';
+import { LuaGettextData, compileGettextData } from './lgettext';
 
 export {
   StoryRunner, type SelectLine, type TextLine, type StoryLine,
@@ -27,13 +28,13 @@ export interface CompilerConfig {
    *
    * AutoNewLine adds line breaks, allowing the Markdown file to be more compact.
    *
-   * Default: `true.
+   * Default: `true`.
    */
   autoNewLine?: boolean;
   /**
    * Whether to attach debug info.
    *
-   * Default: `true.
+   * Default: `true`.
    */
   debug?: boolean;
 }
@@ -79,7 +80,9 @@ export class BrocatelCompiler {
    * @param fetcher a function that fetches the content of the given filename
    */
   async compileAll(name: string, fetcher: (name: string) => Promise<string>) {
-    const target = new VFile({ path: `${removeMdExt(name)}.lua` });
+    const stem = removeMdExt(name);
+    const target = new VFile({ path: `${stem}.lua` });
+    const gettextTarget = new VFile({ path: `${stem}.pot` });
     const files: Record<string, VFile | null> = {};
     const input: Record<string, VFile> = {};
     const globalLua: string[] = [];
@@ -90,7 +93,7 @@ export class BrocatelCompiler {
       if (!content) {
         target.message(`cannot load file ${task}(.md)`);
       } else {
-        const file = await this.compile(content);
+        const file = await this.compile(content, filename);
         if (file.data.IFID && !target.data.IFID) {
           target.data.IFID = file.data.IFID;
         }
@@ -113,9 +116,13 @@ export class BrocatelCompiler {
     };
     await asyncCompile(name);
 
+    const gettextData: LuaGettextData[] = [];
     const contents = serializeTableInner(files, (v) => {
       if (!v) {
         return 'nil';
+      }
+      if (v.data.gettext) {
+        gettextData.push(v.data.gettext as LuaGettextData);
       }
       target.messages.push(...v.messages);
       return v.toString();
@@ -133,6 +140,8 @@ version=${VERSION},\
 entry=${JSON.stringify(removeMdExt(name))}\
 },${contents}}`;
     target.data.input = input;
+    gettextTarget.value = compileGettextData(gettextData);
+    target.data.gettext = gettextTarget;
     return target;
   }
 
@@ -141,7 +150,7 @@ entry=${JSON.stringify(removeMdExt(name))}\
    *
    * @param content Markdown
    */
-  async compile(content: string): Promise<VFile> {
+  async compile(content: string, filename?: string): Promise<VFile> {
     const preprocessed = content.replace(/\r\n/g, '\n');
     let vfile: VFile | null = null;
     if (this.config.autoNewLine) {
@@ -162,6 +171,7 @@ entry=${JSON.stringify(removeMdExt(name))}\
         }
       }
       vfile = new VFile(newLines.join('\n'));
+      vfile.path = filename ?? '<unknown>';
       vfile.data.lineMapping = {
         original: originalLineNumbers,
         newLines: newLineNumbers,

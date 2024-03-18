@@ -1,8 +1,10 @@
 import { Plugin } from 'unified';
 import { VFile } from 'vfile';
+
 import {
   LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaText,
 } from './ast';
+import { collectGettextData } from './lgettext';
 import { isIdentifier } from './lua';
 import LuaTableGenerator from './lua-table';
 
@@ -63,6 +65,7 @@ class AstCompiler {
 
   compile() {
     this.visitAll();
+    this.vfile.data.gettext = collectGettextData(this.root, this.vfile);
     return this.builder.toString();
   }
 
