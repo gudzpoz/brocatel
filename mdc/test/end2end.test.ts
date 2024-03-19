@@ -175,3 +175,14 @@ Hello`, [], ['Hello']);
   assert.include(multiple, '[""]={IFID={"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F3//","UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F4//",'
     + '"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F5//"},version=1,entry="main"}');
 });
+
+test('Link validation', async () => {
+  const compiled = await compiler.compileAll('main', async () => `
+# a
+[](#a)
+[](#b)
+`);
+  assert.lengthOf(compiled.messages, 1);
+  assert.include(compiled.messages[0].message, 'link target not found: #b');
+  assert.equal(compiled.messages[0].position?.start.line, 3);
+});

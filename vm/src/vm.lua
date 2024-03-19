@@ -343,7 +343,7 @@ function VM:fetch_and_next(ip)
         local found = lookup.find_by_labels(root, new_root_name or ip, node.link)
         assert(#found == 1, "not found / found too many: " .. tostring(#found))
         if node.params then
-            local params = node.params()
+            local params = type(node.params) == "function" and node.params() or {}
             self:push_stack_frame(params, ip)
         end
         ip:set(found[1])
@@ -428,6 +428,62 @@ function VM:lookup_label(keys)
         return nil
     end
     return results[1], results[1]:get(self.code)
+end
+
+--- @return table incorrect incorrect link nodes
+function VM:validate_links()
+    local incorrect = {}
+    for root_name, _ in pairs(self.code) do
+        if root_name ~= "" then
+            self:ensure_root(root_name)
+            local path = TablePath.from({ root_name })
+            while true do
+                local node = path:get(self.code)
+                if type(node) == "nil" then
+                    path:resolve(nil)
+                    while #path > 1 and type(path[#path]) == "string" do
+                        path:resolve(nil)
+                    end
+                elseif type(node) == "table" then
+                    if #node > 0 then
+                        path:resolve(0)
+                    elseif node.args then
+                        path:resolve("args", 0)
+                    elseif node.select then
+                        path:resolve("select", 0)
+                    elseif node.link then
+                        local parent = assert(path:get(self.code, 1))
+                        local debug_info = parent[1] and parent[1].debug or {}
+                        local new_root_name = node.root
+                        if new_root_name then
+                            assert(self:ensure_root(new_root_name))
+                        end
+                        local found = lookup.find_by_labels(self.code, new_root_name or path, node.link)
+                        if #found ~= 1 then
+                            local position = debug_info[path[#path]]
+                            if type(position) ~= "nil" then
+                                local i = path[#path]
+                                while position == "" do
+                                    i = i - 1
+                                    position = debug_info[i]
+                                end
+                            end
+                            incorrect[#incorrect + 1] = {
+                                node = node,
+                                root = root_name,
+                                source = position,
+                            }
+                        end
+                    end
+                end
+                if path:is_done() then
+                    break
+                end
+                path[#path] = path[#path] + 1
+            end
+        end
+    end
+    return incorrect
 end
 
 --- Sets the environment up.

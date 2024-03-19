@@ -23,11 +23,12 @@ TablePath.__index = TablePath
 --- @field select Array[]|nil
 ---
 --- @field link TablePath|nil
---- @field params function|nil
+--- @field params function|boolean|nil
 --- @field root string|nil
 ---
 --- @field label string|nil
 --- @field labels table<string, TablePath>|nil
+--- @field debug string[]
 ---
 --- @field I number|nil
 --- @field R table<number, number>|nil

@@ -2,6 +2,7 @@ import remarkFrontmatter from 'remark-frontmatter';
 import remarkJoinCJKLines from 'remark-join-cjk-lines';
 import remarkParse from 'remark-parse';
 import { Processor, unified } from 'unified';
+import { Position } from 'unist';
 import { VFile } from 'vfile';
 import _wasmoon from 'wasmoon';
 
@@ -12,6 +13,7 @@ import expandMacro from './expander';
 import remapLineNumbers from './line-remap';
 import transformAst from './transformer';
 import { LuaGettextData, compileGettextData } from './lgettext';
+import { StoryRunner } from './lua';
 
 export {
   StoryRunner, type SelectLine, type TextLine, type StoryLine,
@@ -44,6 +46,35 @@ function removeMdExt(name: string): string {
     return name.substring(0, name.length - 3);
   }
   return name;
+}
+
+interface InvalidLink {
+  node: { root?: string, link: string[] };
+  root: string;
+  source?: string;
+}
+
+export async function validateLinks(vfile: VFile) {
+  const story = new StoryRunner();
+  await story.loadStory(vfile.value.toString());
+  if (!story.L) {
+    throw new Error('story not loaded');
+  }
+  const invalidLinks: InvalidLink[] | Record<string, InvalidLink> = story
+    .L.doStringSync('return story:validate_links()');
+  const inputs = vfile.data.input as { [f: string]: VFile };
+  (Array.isArray(invalidLinks) ? invalidLinks : Object.values(invalidLinks)).forEach((l) => {
+    let position: Position | null = null;
+    if (l.source) {
+      const [line, column] = l.source.split(':');
+      const point = { line: Number(line) - 1, column: Number(column) };
+      position = { start: point, end: point };
+    }
+    inputs[l.root].message(
+      `link target not found: ${l.node.root ?? ''}#${l.node.link.join('#')}`,
+      position,
+    );
+  });
 }
 
 /**
@@ -124,7 +155,6 @@ export class BrocatelCompiler {
       if (v.data.gettext) {
         gettextData.push(v.data.gettext as LuaGettextData);
       }
-      target.messages.push(...v.messages);
       return v.toString();
     });
     const uuids = target.data.IFID ? `IFID={${
@@ -142,6 +172,10 @@ entry=${JSON.stringify(removeMdExt(name))}\
     target.data.input = input;
     gettextTarget.value = compileGettextData(gettextData);
     target.data.gettext = gettextTarget;
+    await validateLinks(target);
+    Object.values(input).forEach((v) => {
+      target.messages.push(...v.messages);
+    });
     return target;
   }
 

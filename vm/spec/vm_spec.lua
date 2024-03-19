@@ -98,6 +98,7 @@ describe("VM", function()
                 },
                 "end",
             })
+            assert.same({}, vm:validate_links())
             assert.same({ "end" }, utils.gather_til_end(vm))
         end)
         it("like custom data storage", function()
@@ -175,6 +176,7 @@ describe("VM", function()
             },
         })
         local as_is = function(msgid) return msgid end
+        assert.same({}, vm:validate_links())
         vm:set_gettext(as_is, as_is)
         assert.same(
             { "Hello", "Hi", "Hello", "Hi", "Hello", "Hi", "Hello", "Hi", "Hello", "Hi" },
@@ -246,9 +248,9 @@ describe("VM", function()
         assert.same({
             tags = true,
             select = {
-                { key = 2, option = "Selection #1" },
-                { key = 5, option = "Selection #3" },
-                { key = 6, option = "Selection #4" },
+                { key = 2, option = { tags = true, text = "Selection #1" } },
+                { key = 5, option = { tags = true, text = "Selection #3" } },
+                { key = 6, option = { tags = true, text = "Selection #4" } },
             },
         }, output)
         assert.equal("Result #3", vm:next(5).text)
@@ -257,8 +259,8 @@ describe("VM", function()
         assert.same({
             tags = true,
             select = {
-                { key = 2, option = "Selection #1" },
-                { key = 6, option = "Selection #4" },
+                { key = 2, option = { tags = true, text = "Selection #1" } },
+                { key = 6, option = { tags = true, text = "Selection #4" } },
             },
         }, vm:next())
         assert.equal("Result #4", vm:next(6).text)
@@ -266,8 +268,8 @@ describe("VM", function()
         assert.same({
             tags = true,
             select = {
-                { key = 2, option = "Selection #1" },
-                { key = 6, option = "Selection #4" },
+                { key = 2, option = { tags = true, text = "Selection #1" } },
+                { key = 6, option = { tags = true, text = "Selection #4" } },
             },
         }, vm:next())
         assert.equal("Result #4", vm:next(6).text)
@@ -276,7 +278,7 @@ describe("VM", function()
         assert.same({
             tags = true,
             select = {
-                { key = 2, option = "Selection #1" },
+                { key = 2, option = { tags = true, text = "Selection #1" } },
             },
         }, vm:next())
         assert.equal("Result #1", vm:next(2).text)
