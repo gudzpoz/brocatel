@@ -99,6 +99,12 @@ ArrayMetadata = {
   label = "chapter 1",
   -- [optional] The links to all labeled child arrays (indirect ones included).
   labels = { ["section 1"] = { 2, 2, 2 } },
+  -- [optional] Names of routine-local variables.
+  routine = { "var1", "var2" },
+  -- [optional] The source code location of each member in this array.
+  -- Each element is a table with two keys: `line` and `column`.
+  -- An empty string means the source code location is the same as the previous one.
+  debug = { "1:1", "", "2:1" },
 }
 ```
 
@@ -124,7 +130,7 @@ Valid elements are _texts_, _links_, _if-else nodes_ and _function nodes_.
     -- [optional] Mark one of the interpolation value as affecting plural forms.
     plural = "total_count",
     -- [optional] Tags or attributes.
-    tags = { colorful, size = 32 },
+    tags = { colorful = "", size = "32" },
   }
   ```
 
@@ -140,6 +146,8 @@ Valid elements are _texts_, _links_, _if-else nodes_ and _function nodes_.
     link = { "chapter 1", "section 1" },
     -- [optional] The root node name, used only in absolute links.
     root = "main",
+    -- [optional] Parameters for a routine call.
+    params = function() return { param1 = 1 } end,
   }
   ```
 
@@ -215,8 +223,8 @@ The Lua story file is run under a crafted Lua environment, which:
   - `EVAL`: Evaluates a node.
   - `SET`: Attaches data to a certain node.
   - `GET`: Retrieves attached data.
-  - `T`: Translates the supplied string with `gettext`.
-  - `GOTO`: Well, `goto`.
+  - `T`: Translates the supplied string with `gettext`. TODO.
+  - `GOTO`: Well, `goto`. TODO.
 - Provides some useful modules, like `math` in Lua or the built-in function node module `FUNC`,
   - `FUNC.SELECT`: The default function used at a selection node, where a list of options is returned, requesting user input.
     It applies patches to the Lua environment before evaluating things:
@@ -226,10 +234,10 @@ The Lua story file is run under a crafted Lua environment, which:
   - `FUNC.S_ONCE`: Similar to `FUNC.SELECT`, but each option shows only once, unless `RECUR` is used. It too, manipulates the environment.
     - `RECUR` is... complicated. It just yields true and makes the option recur.
 - Provides some utility functions:
-  - `TURNS`
-  - `TURNS_SINCE`
-  - `LINES`
-  - `VISITED`
+  - `TURNS`: TODO.
+  - `TURNS_SINCE`: TODO.
+  - `LINES`: TODO.
+  - `VISITED`: TODO.
 
 Overriding these global variables are forbidden.
 

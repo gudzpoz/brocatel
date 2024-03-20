@@ -25,6 +25,7 @@ export default defineConfig({
           { text: 'Advanced Choices', link: '/choices' },
           { text: 'Story Subroutines', link: '/subroutine' },
           { text: 'Caveats', link: '/caveat' },
+          { text: 'Complete Grammar', link: '/grammar' },
         ],
       },
       {

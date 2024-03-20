@@ -25,14 +25,14 @@ Markdown compiler implementation:
 - [X] Plain text nodes.
 - [X] Tagged text nodes.
 - [X] Links.
-  - [ ] Compile-time link validity checking.
+  - [X] Compile-time link validity checking.
 - [X] Options.
   - [X] Rework to allow show-once options.
 - [X] Function calls.
 - [X] Labels.
-  - [ ] Compile-time label validity check.
+  - Compile-time label validity check: No need since we check links?
 - [X] Macros.
-- [ ] Debug info generation.
+- [X] Debug info generation.
 
 ### `v0.3.0`
 
@@ -48,6 +48,7 @@ Markdown compiler implementation:
         `END(loop_name)`
       ```
       - [X] Syntax sugar: `---` for `END()` (we are going to use it for function calls)
+    - [ ] Search for TODO in [arch.md](./arch.md).
 - [X] IP (instruction pointer) access.
 - [X] Label access counter.
   - [X] Label fuzzy lookup.
