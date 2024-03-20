@@ -131,11 +131,11 @@ test('Headings', async () => {
 });
 
 test('Links', async () => {
-  assert.equal(await assertCompile('[](a)\n# A'), '{{labels={a={3}}},{link={"a"}},{{label="a"}}}');
-  assert.equal(await assertCompile('[](<#type> )\n# type'), '{{labels={type={3}}},{link={"type"}},{{label="type"}}}');
+  assert.equal(await assertCompile('[](a)\n# A'), '{{labels={a={3}}},{link={"a"},params=true},{{label="a"}}}');
+  assert.equal(await assertCompile('[](<#type> )\n# type'), '{{labels={type={3}}},{link={"type"},params=true},{{label="type"}}}');
   assert.equal(
     await assertCompile('[](<#Привет non-latin 你好>)\n# Привет non-latin 你好'),
-    '{{labels={["привет-non-latin-你好"]={3}}},{link={"привет-non-latin-你好"}},{{label="привет-non-latin-你好"}}}',
+    '{{labels={["привет-non-latin-你好"]={3}}},{link={"привет-non-latin-你好"},params=true},{{label="привет-non-latin-你好"}}}',
   );
   const serialized = `
     {
@@ -151,7 +151,7 @@ test('Links', async () => {
             {func=function(args)END()\\nend},
             {
               {label="d",labels={e={4}}},
-              {link={"e","f"}},
+              {link={"e","f"},params=true},
               {func=function(args)END()\\nend},
               {
                 {label="e",labels={f={3}}},
@@ -185,7 +185,7 @@ test('Lists', async () => {
       {labels={a={2,"args",2,2}}},
       {args={_,
         {_,{{label="a"}}},
-        {_,{link={"a"}}}},
+        {_,{link={"a"},params=true}}},
        func=function(args)FUNC.S_ONCE(args)end
       }
     }`.replace(/--.+/g, '').replace(/ |\n/g, ''),
@@ -219,7 +219,7 @@ test('Directives', async () => {
             {_,"Hello"}},
             func=function(args)FUNC.S_ONCE(args)
           end}},
-          {link={"id"}}
+          {link={"id"},params=true}
         }
       }
     }`.replace(/--.+/g, '').replace(/ |\n/g, ''),
@@ -276,7 +276,7 @@ Hello World!
     '{{labels={["hello-world"]={2}}},{{label="hello-world",labels={inner={3}}},'
     + '{func=function(args)END()\nend},'
     + '{{label="inner"},'
-    + '"Hello World!",{link={"hello-world","inner"}}}}}',
+    + '"Hello World!",{link={"hello-world","inner"},params=true}}}}',
   );
 });
 
@@ -285,7 +285,7 @@ test('Function', async () => {
   assert.equal(
     compiled,
     '{{labels={func={3}}},{func=function(args)END()\nend},'
-    + '{{func=true,label="func"},{link={"func"},params=function()return{}end},'
+    + '{{routine=true,label="func"},{link={"func"},params=function()return{}end},'
     + '{func=function(args)END()\nend}}}',
   );
 });
@@ -322,7 +322,7 @@ Line-2
               "Line-5",
               "Line-6",
               "Line-7"},
-            {link={"loop-4"}}
+            {link={"loop-4"},params=true}
           }
         }
       }

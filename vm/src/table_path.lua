@@ -17,7 +17,7 @@ TablePath.__index = TablePath
 --- @field plural string|nil
 --- @field values table<string, function>|nil
 ---
---- @field func function|boolean|nil
+--- @field func function|nil
 --- @field args Array[]|nil
 ---
 --- @field select Array[]|nil
@@ -28,7 +28,8 @@ TablePath.__index = TablePath
 ---
 --- @field label string|nil
 --- @field labels table<string, TablePath>|nil
---- @field debug string[]
+--- @field routine string[]|nil
+--- @field debug string[]|nil
 ---
 --- @field I number|nil
 --- @field R table<number, number>|nil

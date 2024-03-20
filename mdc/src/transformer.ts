@@ -458,7 +458,7 @@ class AstTransformer {
    * Parses a link.
    *
    * The link title will get treated as the root node name,
-   * while the url will be split by `|`.
+   * while the url will be split by `#`.
    *
    * @param link the link
    * @param parent the parent
@@ -477,12 +477,16 @@ class AstTransformer {
       delete linkNode.root;
     }
     const expr = link.children[0];
-    if (expr?.type as string === 'mdxTextExpression') {
-      if (link.children.length > 1) {
-        this.vfile.message('unexpected complex link content', link);
+    if (!link.data?.jump) {
+      if (expr?.type as string === 'mdxTextExpression') {
+        if (link.children.length > 1) {
+          this.vfile.message('unexpected complex link content', link);
+        }
+        const params = (expr as unknown as MdxTextExpression).value.trim();
+        linkNode.params = `{${params}}`;
+      } else {
+        linkNode.params = '';
       }
-      const params = (expr as unknown as MdxTextExpression).value.trim();
-      linkNode.params = `{${params}}`;
     }
     return linkNode;
   }

@@ -343,8 +343,11 @@ function VM:fetch_and_next(ip)
         local found = lookup.find_by_labels(root, new_root_name or ip, node.link)
         assert(#found == 1, "not found / found too many: " .. tostring(#found))
         if node.params then
-            local params = type(node.params) == "function" and node.params() or {}
-            self:push_stack_frame(params, ip)
+            local is_array, target = found[1]:is_array(root)
+            if is_array and target and target[1].routine then
+                local params = type(node.params) == "function" and node.params() or {}
+                self:push_stack_frame(params, ip)
+            end
         end
         ip:set(found[1])
         ip:step(root, true)

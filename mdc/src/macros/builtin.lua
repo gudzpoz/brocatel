@@ -19,6 +19,7 @@ md = {}
 --- @param node Node
 --- @return string markdown stringified Markdown
 function md.to_markdown(node)
+  -- The TO_MARKDOWN function is set by the compiler.
   --- @diagnostic disable-next-line: undefined-global
   return TO_MARKDOWN(node)
 end
@@ -64,7 +65,7 @@ function md.block(children, type)
 end
 
 --- @param children Node[] array of children
---- @return Node blockquote a blockquote node
+--- @return Node paragraph a paragraph node
 function md.paragraph(children)
   return md.block(children, "paragraph")
 end
@@ -91,19 +92,29 @@ function md.loop(label, children, label_pos, list_pos)
   })
 end
 
+--- @param name string the name of the macro
+--- @param param string|nil the parameter
+--- @param children Node[]|nil extra parameters
+function md.macro(name, param, children)
+  local params = param and { md.block({ md.text(param, "inlineCode") }) } or {}
+  local prepended = #params
+  for i, v in ipairs(children or {}) do
+    params[i + prepended] = v
+  end
+  local block = md.block(params, "containerDirective")
+  block.name = name
+  return block
+end
+
 --- @param expr string the Lua expression
 --- @param if_children Node[] array of children executed when `expr` returns true
 --- @param else_children Node[]|nil the else branch
---- @return Node blockquote a blockquote node that condition blocks
+--- @return Node macro an if macro node that condition blocks
 function md.if_else(expr, if_children, else_children)
-  local condition = md.block({ md.text(expr, "inlineCode") })
-  local block = md.block({
-    condition,
+  return md.macro("if", expr, {
     md.block(if_children),
-    else_children and md.block(else_children)
-  }, "containerDirective")
-  block.name = "if"
-  return block
+    else_children and md.block(else_children),
+  })
 end
 
 --- @param arg Node a containerDirective node
@@ -183,7 +194,5 @@ function switch(arg)
   local func = md.text(code, "code")
   func.lang = "lua"
   func.meta = "func"
-  local block = md.block({ func, list }, "containerDirective")
-  block.name = "do"
-  return block
+  return md.macro("do", nil, { func, list })
 end

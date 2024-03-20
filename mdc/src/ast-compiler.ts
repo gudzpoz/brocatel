@@ -105,8 +105,8 @@ class AstCompiler {
       .startTable()
       .pair('link').startTable().raw(child.labels.map((label) => JSON.stringify(label)).join(','))
       .endTable();
-    if (child.params) {
-      this.builder.pair('params').raw(`function()return${child.params}end`);
+    if (child.params !== undefined) {
+      this.builder.pair('params').raw(child.params === '' ? 'true' : `function()return${child.params}end`);
     }
     if (child.root) {
       this.builder.pair('root').value(child.root);
@@ -168,7 +168,7 @@ class AstCompiler {
           this.builder.pair('debug').startTable().raw(positions.join(',')).endTable();
         }
         if (node.data?.routine) {
-          this.builder.pair('func').value(true);
+          this.builder.pair('routine').value(true);
         }
         if (node.data?.label) {
           this.builder.pair('label').value(node.data.label);

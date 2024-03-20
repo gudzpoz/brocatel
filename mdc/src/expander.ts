@@ -112,19 +112,46 @@ class MacroExpander {
   expandSyntacticSugar(node: Node, parent: Node) {
     return this.expandList(node, parent)
       || this.expandConditional(node)
-      || MacroExpander.expandThematicBreak(node);
+      || MacroExpander.expandThematicBreak(node)
+      || MacroExpander.expandDirectJump(node);
   }
 
   static expandThematicBreak(node: Node) {
-    if (node.type !== 'thematicBreak') {
+    let storyEnd: boolean | undefined;
+    if (node.type === 'thematicBreak') {
+      storyEnd = false;
+    } else if (node.type === 'blockquote' && node.children.length === 1
+      && node.children[0].type === 'thematicBreak') {
+      storyEnd = true;
+    } else {
       return false;
     }
     const end: Code = {
       type: 'code',
       lang: 'lua',
-      value: 'END()',
+      value: storyEnd ? 'END(true)' : 'END()',
     };
     overwrite(node, end);
+    return true;
+  }
+
+  static expandDirectJump(node: Node) {
+    if (node.type !== 'blockquote' || node.children.length !== 1) {
+      return false;
+    }
+    const paragraph = node.children[0];
+    if (paragraph.type !== 'paragraph' || paragraph.children.length !== 1) {
+      return false;
+    }
+    const link = paragraph.children[0];
+    if (link.type !== 'link') {
+      return false;
+    }
+    if (!link.data) {
+      link.data = {};
+    }
+    link.data.jump = true;
+    overwrite(node, link);
     return true;
   }
 

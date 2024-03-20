@@ -122,6 +122,8 @@ export interface LuaLink extends LuaNode {
   root?: string;
   /**
    * Parameters.
+   *
+   * If set, then it is a procedure call node instead of a link (jump).
    */
   params?: string;
 }
