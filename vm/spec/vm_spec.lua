@@ -132,10 +132,12 @@ describe("VM", function()
                 "end",
             })
             assert.same({ "Hello", "end" }, utils.gather_til_end(vm))
-            assert.same({ main = {
-                { I = 1, R = { 0xe } },
-                { args = { { I = 1, k = "v", R = { 2 } }, { { I = 1, R = { 2 } } } } },
-            } }, vm.savedata.stats)
+            assert.same({
+                main = {
+                    { I = 1,                                                             R = { 0xe } },
+                    { args = { { I = 1, k = "v", R = { 2 } }, { { I = 1, R = { 2 } } } } },
+                }
+            }, vm.savedata.stats)
         end)
     end)
 

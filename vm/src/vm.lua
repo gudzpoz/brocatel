@@ -228,9 +228,13 @@ end
 
 --- @param params table the parameters
 --- @param ip TablePath the return address
-function VM:push_stack_frame(params, ip)
+--- @param extra_keys string[] names of function local variables
+function VM:push_stack_frame(params, ip, extra_keys)
     local co = assert(self:get_coroutine())
     local keys = self.get_keys(params)
+    for _, key in ipairs(extra_keys) do
+        keys[key] = true
+    end
     co.stack[#co.stack + 1] = {
         keys = keys,
         values = params,
@@ -346,7 +350,7 @@ function VM:fetch_and_next(ip)
             local is_array, target = found[1]:is_array(root)
             if is_array and target and target[1].routine then
                 local params = type(node.params) == "function" and node.params() or {}
-                self:push_stack_frame(params, ip)
+                self:push_stack_frame(params, ip, target[1].routine or {})
             end
         end
         ip:set(found[1])

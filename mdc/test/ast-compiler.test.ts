@@ -285,7 +285,7 @@ test('Function', async () => {
   assert.equal(
     compiled,
     '{{labels={func={3}}},{func=function(args)END()\nend},'
-    + '{{routine=true,label="func"},{link={"func"},params=function()return{}end},'
+    + '{{routine={},label="func"},{link={"func"},params=function()return{}end},'
     + '{func=function(args)END()\nend}}}',
   );
 });

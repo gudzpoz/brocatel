@@ -168,7 +168,9 @@ class AstCompiler {
           this.builder.pair('debug').startTable().raw(positions.join(',')).endTable();
         }
         if (node.data?.routine) {
-          this.builder.pair('routine').value(true);
+          this.builder.pair('routine').startTable()
+            .raw(node.data.routine.parameters.map((p) => JSON.stringify(p)).join(','))
+            .endTable();
         }
         if (node.data?.label) {
           this.builder.pair('label').value(node.data.label);

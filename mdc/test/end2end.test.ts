@@ -186,3 +186,22 @@ test('Link validation', async () => {
   assert.include(compiled.messages[0].message, 'link target not found: #b');
   assert.equal(compiled.messages[0].position?.start.line, 3);
 });
+
+test('Routine local variables', async () => {
+  await assertOutput(`
+\`v = 1\`
+{v}
+[](#fun)
+{v}
+# fun {v}
+{type(v)}
+`, [], ['1', 'nil', '1']);
+  await assertOutput(`
+\`v = 1\`
+{v}
+[{ v = 2 }](#fun)
+{v}
+# fun {v}
+{type(v)} {v}
+`, [], ['1', 'number 2', '1']);
+});
