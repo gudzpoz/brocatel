@@ -296,7 +296,8 @@ test('Debug info', async () => {
 
 Line-2
 
-> Line-3
+:::local
+* Line-3
 
 :::loop \`loop-4\`
 
@@ -312,13 +313,13 @@ Line-2
     compiled,
     `
     {{debug={"1:1",""},labels={["heading-1"]={2}}},
-      {{debug={"1:1","3:1","5:1","7:1"},label="heading-1",labels={["loop-4"]={4,2}}},
+      {{debug={"1:1","3:1","5:1","8:1"},label="heading-1",labels={["loop-4"]={4,2}}},
         "Line-2",
-        {{debug={"5:1","5:3"}},
+        {{debug={"5:1","6:3"}},
           "Line-3"},
-        {{debug={"7:1","7:9"}},
-          {{debug={"7:9","9:1",""},label="loop-4"},
-            {{debug={"9:1","9:3","11:3","13:3"}},
+        {{debug={"8:1","8:9"}},
+          {{debug={"8:9","10:1",""},label="loop-4"},
+            {{debug={"10:1","10:3","12:3","14:3"}},
               "Line-5",
               "Line-6",
               "Line-7"},

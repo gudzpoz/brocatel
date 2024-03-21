@@ -158,9 +158,6 @@ class AstTransformer {
         case 'code':
           current.children.push(this.parseCodeBlock(node));
           break;
-        case 'blockquote':
-          current.children.push(this.parseBlock(node));
-          break;
         case 'containerDirective':
           current.children.push(this.parseDirective(node));
           break;
@@ -264,6 +261,13 @@ class AstTransformer {
       return this.parseBlock(node);
     }
     switch (node.name) {
+      case 'local': {
+        return this.parseBlock({
+          type: 'listItem',
+          children: list.children.map((i) => i.children).flat(),
+          position: node.position,
+        });
+      }
       case 'if': {
         if (!label) {
           this.vfile.message('expecting condition and branches', node);

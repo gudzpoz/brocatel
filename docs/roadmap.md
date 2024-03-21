@@ -77,10 +77,12 @@ Markdown compiler implementation:
 Multi-thread (not *those* threads) support:
 
 - [ ] Multi-thread API design.
+  - [X] Replace the quote grammar (`> text`) with a macro (maybe named `then`?).
+  - [ ] Use `>` to signify thread-related operations.
 - [ ] Multi-thread API implementation and thread-local variable support.
 - [ ] Story call and local variable support.
   - [X] Function stack: call and return.
-  - [ ] Tail call support: jump to elsewhere, popping up a stack frame.
+  - [X] Tail call support: jump to elsewhere, popping up a stack frame.
   - [ ] Compiler error: forbid jumping from inside of a function.
 - [ ] Coroutine support.
 

@@ -20,7 +20,7 @@ import builtInMacros from './macros/builtin.lua?raw';
 type Node = Root | Content | Directive;
 
 export function isBuiltInMacro(name: string): boolean {
-  return name === 'do' || name === 'if' || name === 'nil';
+  return name === 'do' || name === 'if' || name === 'local' || name === 'nil';
 }
 
 export function toMarkdownString(node: MarkdownNode): string {
@@ -97,6 +97,7 @@ class MacroExpander {
     }
     try {
       const generated = this.runLua(node, [
+        // TODO: Avoid always rerunning macro definitions.
         builtInMacros as string,
         ...this.macros,
         `return ${node.name}(arg)`,

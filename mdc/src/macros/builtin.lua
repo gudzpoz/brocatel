@@ -34,6 +34,22 @@ function md.text(text, type)
   }
 end
 
+--- @param children Node[] array of children
+--- @param type string the node type
+--- @return Node local a mdast parent
+function md.parent(children, type)
+  return {
+    type = type,
+    children = children
+  }
+end
+
+--- @param children Node[] array of children
+--- @return Node paragraph a paragraph node
+function md.paragraph(children)
+  return md.parent(children, "paragraph")
+end
+
 --- @param url string path separated by `|`
 --- @return Node link a Markdown link node
 function md.link(url)
@@ -54,28 +70,54 @@ function md.heading(label)
   }
 end
 
---- @param children Node[] array of children
---- @param type string|nil the node type
---- @return Node blockquote a blockquote node
-function md.block(children, type)
+--- @param children Node[] content
+--- @return Node list a Markdown list node
+function md.list_item(children)
   return {
-    type = type or "blockquote",
-    children = children
+    type = "listItem",
+    children = children,
   }
 end
 
---- @param children Node[] array of children
---- @return Node paragraph a paragraph node
-function md.paragraph(children)
-  return md.block(children, "paragraph")
+--- @param name string the name of the macro
+--- @param param string|nil the parameter
+--- @param children Node[][]|nil extra parameters
+--- @param func boolean|nil whether to put the param in a func node
+function md.macro(name, param, children, func)
+  local content = {}
+  if func then
+    local code = md.text(param or "", "code")
+    code.lang = "lua"
+    code.meta = "func"
+    content[1] = code
+  elseif param then
+    content[1] = md.paragraph({ md.text(param, "inlineCode") })
+  end
+  local params = {}
+  for _, v in ipairs(children or {}) do
+    params[#params + 1] = md.list_item(v)
+  end
+  content[#content + 1] = {
+    type = "list",
+    children = params,
+  }
+  local block = md.parent(content, "containerDirective")
+  block.name = name
+  return block
+end
+
+--- @param children Node[][] array of children
+--- @return Node local a scoped node
+function md.scope(children)
+  return md.macro("local", nil, children)
 end
 
 local loop_count = 0
 --- @param label string|nil the label
---- @param children Node[] array of children
+--- @param children Node[][] array of children
 --- @param label_pos Position|nil position of the label
 --- @param list_pos Position|nil position of the list
---- @return Node blockquote a blockquote node that loops infinitely
+--- @return Node scope a scoped node that loops infinitely
 function md.loop(label, children, label_pos, list_pos)
   if not label then
     loop_count = loop_count + 1
@@ -83,27 +125,13 @@ function md.loop(label, children, label_pos, list_pos)
   end
   local heading = md.heading(label)
   heading.position = label_pos
-  local list = md.block(children)
+  local list = md.scope(children)
   list.position = list_pos
-  return md.block({
-    heading,
-    list,
-    md.paragraph({ md.link(label) }),
+  return md.scope({
+    { heading },
+    { list },
+    { md.paragraph({ md.link(label) }) },
   })
-end
-
---- @param name string the name of the macro
---- @param param string|nil the parameter
---- @param children Node[]|nil extra parameters
-function md.macro(name, param, children)
-  local params = param and { md.block({ md.text(param, "inlineCode") }) } or {}
-  local prepended = #params
-  for i, v in ipairs(children or {}) do
-    params[i + prepended] = v
-  end
-  local block = md.block(params, "containerDirective")
-  block.name = name
-  return block
 end
 
 --- @param expr string the Lua expression
@@ -112,8 +140,8 @@ end
 --- @return Node macro an if macro node that condition blocks
 function md.if_else(expr, if_children, else_children)
   return md.macro("if", expr, {
-    md.block(if_children),
-    else_children and md.block(else_children),
+    if_children,
+    else_children,
   })
 end
 
@@ -144,7 +172,7 @@ function md.destruct(arg)
 end
 
 --- @param arg Node a containerDirective node
---- @return Node blockquote a loop node
+--- @return Node scope a loop node
 --- @diagnostic disable-next-line: lowercase-global
 function loop(arg)
   --[[
@@ -161,20 +189,19 @@ function loop(arg)
   local label, list, pos = md.destruct(arg)
   local children = {}
   for _, item in ipairs(list.children) do
-    for _, child in ipairs(item.children) do
-      children[#children + 1] = child
-    end
+    children[#children + 1] = item.children
   end
   return md.loop(label, children, pos, list.position)
 end
 
 --- @param arg Node a containerDirective node
---- @return Node blockquote a switch-case node
+--- @return Node scope a switch-case node
 --- @diagnostic disable-next-line: lowercase-global
 function switch(arg)
   local code, list = md.destruct(arg)
   code = code or ""
 
+  local children = {}
   for i, list_item in ipairs(list.children) do
     assert(#list_item.children >= 1, "conditional branch must not be empty")
     local cond = list_item.children[1]
@@ -187,12 +214,9 @@ function switch(arg)
     for j = 2, #list_item.children do
       items[#items + 1] = list_item.children[j]
     end
-    list_item.children = items
+    children[#children + 1] = items
     code = code .. "\nif(\n" .. case .. "\n)then return IP:set(args:resolve(" .. (i + 1) .. "))end"
   end
 
-  local func = md.text(code, "code")
-  func.lang = "lua"
-  func.meta = "func"
-  return md.macro("do", nil, { func, list })
+  return md.macro("do", code, children, true)
 end

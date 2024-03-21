@@ -137,7 +137,7 @@ See [arch.md](./arch.md).
 
 #### Built-In Macros
 
-The `if` and `do` macros are implemented by the JS/TS compiler,
+The `if`, `do`, `local` and `nil` macros are implemented by the JS/TS compiler,
 whose names are intentionally selected be Lua keywords
 to avoid conflicts with the user-defined macros.
 
@@ -155,6 +155,24 @@ to avoid conflicts with the user-defined macros.
   :::do `function_name`
   - Argument 1
   - Argument 2
+  ~~~
+
+- `local`: A quoted block of text, useful to avoid conflicting heading levels, mostly used by macros.
+
+  ~~~markdown
+  # heading-1
+  :::local
+  - # heading-1
+    No heading name conflict.
+  - :::local
+    - Nesting allowed.
+  ~~~
+
+- `nil`: Ask the compiler to treat the arguments as plain Markdown.
+
+  ~~~markdown
+  :::nil
+  - `this is no more Lua expression but a Markdown code snippet`
   ~~~
 
 The following macros are also built-in macros, but instead implemented in Lua

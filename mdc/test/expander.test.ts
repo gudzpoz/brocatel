@@ -41,11 +41,15 @@ test('Expand conditional', async () => {
 
 test('Expand macro', async () => {
   await assertMatch(':::loop\n- a', `
-> # \\\\#loop-1
->
-> > a
->
-> [](\\\\#loop-1)
+:::local
+
+*   # \\\\#loop-1
+
+*   :::local
+
+    *   a
+
+*   [](\\\\#loop-1)
   `);
 
   await assertMatch(':::switch`a = 0`\n- `a == 1`\n\n  ok\n- `a == 0`\n\n  ok', `
@@ -62,6 +66,7 @@ a == 0
 \`\`\`
 
 *   ok
+
 *   ok
   `);
 });
