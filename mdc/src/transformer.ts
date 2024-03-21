@@ -481,16 +481,17 @@ class AstTransformer {
       delete linkNode.root;
     }
     const expr = link.children[0];
-    if (!link.data?.jump) {
-      if (expr?.type as string === 'mdxTextExpression') {
-        if (link.children.length > 1) {
-          this.vfile.message('unexpected complex link content', link);
-        }
-        const params = (expr as unknown as MdxTextExpression).value.trim();
-        linkNode.params = `{${params}}`;
-      } else {
-        linkNode.params = '';
+    if (expr?.type as string === 'mdxTextExpression') {
+      if (link.children.length > 1) {
+        this.vfile.message('unexpected complex link content', link);
       }
+      const params = (expr as unknown as MdxTextExpression).value.trim();
+      linkNode.params = `{${params}}`;
+    } else {
+      linkNode.params = '';
+    }
+    if (link.data?.coroutine) {
+      linkNode.coroutine = true;
     }
     return linkNode;
   }

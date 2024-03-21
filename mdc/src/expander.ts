@@ -114,7 +114,7 @@ class MacroExpander {
     return this.expandList(node, parent)
       || this.expandConditional(node)
       || MacroExpander.expandThematicBreak(node)
-      || MacroExpander.expandDirectJump(node);
+      || MacroExpander.expandCoroutineCall(node);
   }
 
   static expandThematicBreak(node: Node) {
@@ -136,7 +136,7 @@ class MacroExpander {
     return true;
   }
 
-  static expandDirectJump(node: Node) {
+  static expandCoroutineCall(node: Node) {
     if (node.type !== 'blockquote' || node.children.length !== 1) {
       return false;
     }
@@ -151,8 +151,8 @@ class MacroExpander {
     if (!link.data) {
       link.data = {};
     }
-    link.data.jump = true;
-    overwrite(node, link);
+    link.data.coroutine = true;
+    overwrite(node, paragraph);
     return true;
   }
 

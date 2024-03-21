@@ -74,7 +74,6 @@
 
   - `[](#heading-1)` jumps to the heading `heading-1` if the heading is not a routine.
     Otherwise, it calls the routine `heading-1`.
-  - `> [](#heading-1)` always jumps to the heading `heading-1`. It may serve as a tail-call.
   - `[{ var1 = 1 }](#heading-1)` calls the routine `heading-1` with the routine-local
     variable `var1` set to `1`.
   - `[](another.md#heading-1)` similarly calls/jumps to story in `another.md` with the heading `heading-1`.
@@ -219,3 +218,12 @@ as examples of custom macros. See `mdc/src/macros/builtin.lua` for details.
   - `3`
     Result: 3
   ~~~
+
+## Threads & Coroutine Grammar
+
+### Coroutine
+
+- Usage: Use `> [](#routine)` to create a coroutine.
+
+  If a coroutine runs to the end, one of the remaining threads will be selected as the next thread to run.
+  If there is none, the story ends.

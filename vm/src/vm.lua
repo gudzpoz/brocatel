@@ -47,6 +47,16 @@ function VM.new(compiled_chunk, env)
     return vm
 end
 
+--- @param co Coroutine
+function VM:set_up_listener(co)
+    co.ip:set_listener(function(old, new)
+        assert(self:ensure_root(new), "invalid ip assigned")
+        local current_co = assert(self:get_coroutine())
+        history.record_simple(self.savedata.stats, self.code, current_co.prev_ip, old)
+        current_co.prev_ip = old:copy()
+    end)
+end
+
 --- Initializes the VM state.
 function VM:init()
     if self.savedata.version > VM.version then
@@ -54,17 +64,12 @@ function VM:init()
     end
     -- Re-attaches type info (TablePaths stored as plain table in savedata).
     for _, thread in pairs(self.savedata.threads) do
-        for _, co in ipairs(thread.coroutines) do
+        for _, co in pairs(thread.coroutines) do
             co.ip = TablePath.from(co.ip)
             if co.prev_ip then
                 co.prev_ip = TablePath.from(co.prev_ip)
             end
-            co.ip:set_listener(function(old, new)
-                assert(self:ensure_root(new), "invalid ip assigned")
-                local current_co = assert(self:get_coroutine())
-                history.record_simple(self.savedata.stats, self.code, current_co.prev_ip, old)
-                current_co.prev_ip = old:copy()
-            end)
+            self:set_up_listener(co)
         end
     end
     self:set_up_env_api()
@@ -179,7 +184,7 @@ end
 --- Fetches a thread by name.
 ---
 --- @param thread_name string|nil the thread name
---- @return Thread thread
+--- @return Thread|nil thread
 function VM:get_thread(thread_name)
     if not thread_name then
         thread_name = self.savedata.current_thread
@@ -201,6 +206,29 @@ function VM:get_coroutine(thread_name, coroutine_id)
         coroutine_id = thread.current_coroutine
     end
     return thread.coroutines[coroutine_id]
+end
+
+--- @param params table coroutine-local variables
+--- @param target TablePath the target routine
+function VM:set_up_coroutine(params, target)
+    local thread = assert(self:get_thread())
+    local id = 1
+    while thread.coroutines[id] do
+        id = id + 1
+    end
+    local co = savedata.new_coroutine(target)
+    thread.coroutines[id] = co
+    for key, value in pairs(params) do
+        co.locals.keys[key] = true
+        co.locals.values[key] = value
+    end
+    local current = thread.current_coroutine
+    self:switch_coroutine(id)
+    local ip = assert(self:get_coroutine()).ip
+    local root = assert(self:ensure_root())
+    self:set_up_listener(co)
+    ip:step(root, true)
+    self:switch_coroutine(current)
 end
 
 --- @param params table the parameters
@@ -232,6 +260,30 @@ function VM:pop_stack_frame()
     local root = assert(self:ensure_root(ip))
     ip:step(root)
     co.ip:set(ip)
+    return true
+end
+
+--- @param id number
+function VM:switch_coroutine(id)
+    local thread = assert(self:get_thread())
+    thread.current_coroutine = id
+    self:set_env()
+end
+
+--- @return boolean success false if no other coroutine left
+function VM:kill_coroutine()
+    local thread = assert(self:get_thread())
+    local another = nil --- @type number|nil
+    for id, _ in pairs(thread.coroutines) do
+        if id ~= thread.current_coroutine then
+            another = id
+        end
+    end
+    if type(another) == "nil" then
+        return false
+    end
+    thread.coroutines[thread.current_coroutine] = nil
+    self:switch_coroutine(another)
     return true
 end
 
@@ -288,6 +340,9 @@ function VM:fetch_and_next(ip)
     ip = ip or assert(self:get_coroutine()).ip
     local root = assert(self:ensure_root(ip))
     if ip:is_done() then
+        if self:kill_coroutine() then
+            return nil, true
+        end
         return nil, nil
     end
 
@@ -327,7 +382,15 @@ function VM:fetch_and_next(ip)
             local is_array, target = found[1]:is_array(root)
             if is_array and target and target[1].routine then
                 local params = type(node.params) == "function" and node.params() or {}
-                self:push_stack_frame(params, ip, target[1].routine or {})
+                if node.coroutine then
+                    -- Coroutine call.
+                    self:set_up_coroutine(params, found[1])
+                    ip:step(root)
+                    found[1] = ip
+                else
+                    -- Function call.
+                    self:push_stack_frame(params, ip, target[1].routine or {})
+                end
             end
         end
         ip:set(found[1])

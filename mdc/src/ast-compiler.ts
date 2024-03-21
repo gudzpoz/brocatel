@@ -105,6 +105,9 @@ class AstCompiler {
       .startTable()
       .pair('link').startTable().raw(child.labels.map((label) => JSON.stringify(label)).join(','))
       .endTable();
+    if (child.coroutine) {
+      this.builder.pair('coroutine').value(true);
+    }
     if (child.params !== undefined) {
       this.builder.pair('params').raw(child.params === '' ? 'true' : `function()return${child.params}end`);
     }

@@ -205,3 +205,13 @@ test('Routine local variables', async () => {
 {type(v)} {v}
 `, [], ['1', 'number 2', '1']);
 });
+
+test('Coroutine calls', async () => {
+  await assertOutput(`
+Line 1
+> [](#co)
+Line 2
+# co {}
+Line 3
+`, [], ['Line 1', 'Line 2', 'Line 3']);
+});

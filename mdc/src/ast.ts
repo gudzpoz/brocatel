@@ -126,6 +126,10 @@ export interface LuaLink extends LuaNode {
    * If set, then it is a procedure call node instead of a link (jump).
    */
   params?: string;
+  /**
+   * Whether this link creates a new coroutine.
+   */
+  coroutine?: boolean;
 }
 
 /**
