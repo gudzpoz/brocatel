@@ -6,6 +6,25 @@
   then it is a text.
 - Semantics: Texts.
 
+## Comments
+
+- Usage: Similar to HTML/XML comments since Markdown does not provide a comment grammar.
+- Semantics: Comments.
+
+  - `<!-- comment -->`.
+
+  - One may also use Lua comments in Lua code blocks if they find it convenient:
+
+    `` `-- comment` ``
+
+    ~~~markdown
+    ```lua
+    --[[
+      comment
+    ]]--
+    ```
+    ~~~
+
 ### Tags
 
 - Usage: Prefixes the text with an inline directive to tag the text.
@@ -58,6 +77,9 @@
   - `> [](#heading-1)` always jumps to the heading `heading-1`. It may serve as a tail-call.
   - `[{ var1 = 1 }](#heading-1)` calls the routine `heading-1` with the routine-local
     variable `var1` set to `1`.
+  - `[](another.md#heading-1)` similarly calls/jumps to story in `another.md` with the heading `heading-1`.
+    This allows splitting a story into multiple files.
+    No manual file linking is needed.
 
 ## Lua Evaluation
 

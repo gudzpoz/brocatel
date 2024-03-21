@@ -176,11 +176,6 @@ function VM:set_gettext(gettext, ngettext)
     self.gettext.ngettext = ngettext
 end
 
---- @class Thread
---- @field current_coroutine number
---- @field coroutines table<number, Coroutine>
---- @field thread_locals table
-
 --- Fetches a thread by name.
 ---
 --- @param thread_name string|nil the thread name
@@ -191,24 +186,6 @@ function VM:get_thread(thread_name)
     end
     return self.savedata.threads[thread_name]
 end
-
---- @class Coroutine
---- @field ip TablePath
---- @field prev_ip TablePath|nil
---- @field locals table
---- @field stack table
-
---- @class SaveData
---- @field version number
---- @field current_thread string
---- @field threads table<string, Thread>
---- @field stats table
---- @field globals table<string, any>
---- @field current IOCache
-
---- @class IOCache
---- @field input number|nil
---- @field output any
 
 --- Fetches a coroutine by thread name and id.
 ---
@@ -260,7 +237,7 @@ end
 
 --- Yields the next line.
 ---
----@param input number|nil
+--- @param input number|nil
 function VM:next(input)
     local current = self.savedata.current
     if input then
@@ -305,7 +282,7 @@ end
 --- - `nil, true` when the caller should call again to fetch the next line.
 ---
 --- @param ip TablePath|nil the pointer
---- @return string|table|nil result
+--- @return string|nil result
 --- @return table<string, string>|boolean|nil tags `nil` if reaches the end
 function VM:fetch_and_next(ip)
     ip = ip or assert(self:get_coroutine()).ip
@@ -374,7 +351,7 @@ function VM:fetch_and_next(ip)
     error("not implemented")
 end
 
---- Returns "text", "tagged_text", "func", "if-else", "select" or "link" depending on the node type.
+--- Returns "text", "tagged_text", "func", "if-else", or "link" depending on the node type.
 ---
 --- @param node Node
 function VM.node_type(node)
@@ -386,8 +363,6 @@ function VM.node_type(node)
             return "tagged_text"
         elseif node.func then
             return "func"
-        elseif node.select then
-            return "select"
         elseif node.link then
             return "link"
         elseif type(node[1]) == "function" then
@@ -456,8 +431,6 @@ function VM:validate_links()
                         path:resolve(0)
                     elseif node.args then
                         path:resolve("args", 0)
-                    elseif node.select then
-                        path:resolve("select", 0)
                     elseif node.link then
                         local parent = assert(path:get(self.code, 1))
                         local debug_info = parent[1] and parent[1].debug or {}

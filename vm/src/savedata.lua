@@ -1,14 +1,55 @@
 local savedata = {}
 
-local TablePath = require("table_path");
+local TablePath = require("table_path")
+
+--- @class LocalEnv
+--- @field keys table<string, boolean>
+--- @field values table<string, any>
+
+--- @class Coroutine
+--- @field ip TablePath
+--- @field prev_ip TablePath|nil
+--- @field locals LocalEnv
+--- @field stack table
+
+--- @class Thread
+--- @field current_coroutine number
+--- @field coroutines table<number, Coroutine>
+--- @field thread_locals LocalEnv
+
+--- @class Text
+--- @field tags table<string, string>|boolean|nil
+--- @field text string|nil
+
+--- @class Selectable
+--- @field key number
+--- @field option Text
+
+--- @class Output
+--- @field tags table<string, string>|boolean|nil
+--- @field text string|nil
+--- @field select Selectable[]|nil
+
+--- @class IOCache
+--- @field input number|nil
+--- @field output Output|nil
+
+--- @class SaveData
+--- @field version number
+--- @field current_thread string
+--- @field threads table<string, Thread>
+--- @field stats table
+--- @field globals table<string, any>
+--- @field current IOCache
 
 --- Initializes a savedata table from metadata.
 ---
 --- @param meta table
---- @return table
+--- @return SaveData
 function savedata.init(meta)
     local ip = TablePath.from({ meta.entry })
-    local save = {
+    --- @type SaveData
+    return {
         version = meta.version,
         current_thread = "",
         current = {
@@ -16,22 +57,35 @@ function savedata.init(meta)
             output = nil,
         },
         threads = {
-            [""] = {
-                current_coroutine = 1,
-                coroutines = {
-                    {
-                        ip = ip,
-                        locals = { keys = {}, values = {} },
-                        stack = {},
-                    },
-                },
-                thread_locals = { keys = {}, values = {} },
-            },
+            [""] = savedata.new_thread(ip),
         },
         stats = {},
         globals = {},
     }
-    return save
+end
+
+--- @param ip TablePath
+--- @return Coroutine
+function savedata.new_coroutine(ip)
+    --- @type Coroutine
+    return {
+        ip = ip,
+        locals = { keys = {}, values = {} },
+        stack = {},
+    }
+end
+
+--- @param ip TablePath
+--- @return Thread
+function savedata.new_thread(ip)
+    --- @type Thread
+    return {
+        current_coroutine = 1,
+        coroutines = {
+            savedata.new_coroutine(TablePath.from(ip)),
+        },
+        thread_locals = { keys = {}, values = {} },
+    }
 end
 
 --- Checks if the key has a savable type.

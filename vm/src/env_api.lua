@@ -79,7 +79,7 @@ return function (self)
         env:get("IP"):set(args:copy():resolve(nil))
         recur = recur or 0
         assert(recur == true or recur >= 0)
-        local selectables = {}
+        local selectables = {} --- @type Selectable[]
         local options = args:get(root)
         for i = 2, #options do
             local count = counts[i] or 0
@@ -117,7 +117,7 @@ return function (self)
             ip:step(root)
             return nil, true
         end
-        self.savedata.current.output = { select = selectables, tags = true }
+        current.output = { select = selectables, tags = true }
     end
     env:set_api("FUNC", {
         SELECT = user_select,

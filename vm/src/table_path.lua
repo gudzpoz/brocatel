@@ -20,11 +20,10 @@ TablePath.__index = TablePath
 --- @field func function|nil
 --- @field args Array[]|nil
 ---
---- @field select Array[]|nil
----
 --- @field link TablePath|nil
---- @field params function|boolean|nil
 --- @field root string|nil
+--- @field params function|boolean|nil
+--- @field coroutine boolean|nil
 ---
 --- @field label string|nil
 --- @field labels table<string, TablePath>|nil
