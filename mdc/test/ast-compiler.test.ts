@@ -30,7 +30,7 @@ async function assertCompile(markdown: string, debug?: boolean): Promise<string>
   );
   const lua = vfile.value.toString();
   assert.isNull((await luaErrorDetector())(`return ${lua}`), lua);
-  return lua;
+  return lua.replace(/\n/g, '');
 }
 
 async function assertThrows(f: () => Promise<any>, message: string) {
@@ -58,7 +58,7 @@ test('Simplest plain text', async () => {
   assert.equal(await assertCompile('hello\n\nhello'), '{_,"hello","hello"}');
   assert.equal(
     await assertCompile('`true` True.\n\n`a = 1`'),
-    '{_,{function()return(true)end,{_,"True."}},{func=function(args)a = 1\nend}}',
+    '{_,{function()return(true)end,{_,"True."}},{func=function(args)a = 1end}}',
   );
 });
 
@@ -108,25 +108,25 @@ test('Headings', async () => {
           b={3},
           e={5}
         }},
-        {func=function(args)END()\\nend},
+        {func=function(args)END()end},
         {
           {label="b",labels={
             c={3},
             d={5}
           }},
-          {func=function(args)END()\\nend},
-          {{label="c"},{func=function(args)END()\\nend}},
-          {func=function(args)END()\\nend},
-          {{label="d"},{func=function(args)END()\\nend}},
-          {func=function(args)END()\\nend}
+          {func=function(args)END()end},
+          {{label="c"},{func=function(args)END()end}},
+          {func=function(args)END()end},
+          {{label="d"},{func=function(args)END()end}},
+          {func=function(args)END()end}
         },
-        {func=function(args)END()\\nend},
-        {{label="e"},{func=function(args)END()\\nend}},
-        {func=function(args)END()\\nend}
+        {func=function(args)END()end},
+        {{label="e"},{func=function(args)END()end}},
+        {func=function(args)END()end}
       },
       {{label="f"}}
     }
-    `.replace(/--.+/g, '').replace(/ |\n/g, '').replace(/\\n/g, '\n'),
+    `.replace(/--.+/g, '').replace(/ |\n/g, ''),
   );
 });
 
@@ -142,20 +142,20 @@ test('Links', async () => {
       {labels={a={2}}},
       {
         {label="a",labels={b={3}}},
-        {func=function(args)END()\\nend},
+        {func=function(args)END()end},
         {
           {label="b",labels={c={3}}},
-          {func=function(args)END()\\nend},
+          {func=function(args)END()end},
           {
             {label="c",labels={d={3}}},
-            {func=function(args)END()\\nend},
+            {func=function(args)END()end},
             {
               {label="d",labels={e={4}}},
               {link={"e","f"},params=true},
-              {func=function(args)END()\\nend},
+              {func=function(args)END()end},
               {
                 {label="e",labels={f={3}}},
-                {func=function(args)END()\\nend},
+                {func=function(args)END()end},
                 {{label="f"}}
               }
             }
@@ -177,7 +177,7 @@ test('Links', async () => {
 test('Lists', async () => {
   assert.equal(
     await assertCompile('- a\n- b'),
-    '{_,{args={_,{_,"a"},{_,"b"}},func=function(args)FUNC.S_ONCE(args)\nend}}',
+    '{_,{args={_,{_,"a"},{_,"b"}},func=function(args)FUNC.S_ONCE(args)end}}',
   );
   assert.equal(
     (await assertCompile('- # A\n- [](a)')).replace(/\n/g, ''),
@@ -202,7 +202,7 @@ test('Code blocks', async () => {
   assertThrows(() => assertCompile('```lua\n(\n```\n'), 'unexpected symbol near <eof>');
   assert.equal(
     await assertCompile('```lua\nprint()\n```\n'),
-    '{_,{func=function(args)print()\nend}}',
+    '{_,{func=function(args)print()end}}',
   );
 });
 
@@ -274,7 +274,7 @@ Hello World!
   assert.equal(
     compiled,
     '{{labels={["hello-world"]={2}}},{{label="hello-world",labels={inner={3}}},'
-    + '{func=function(args)END()\nend},'
+    + '{func=function(args)END()end},'
     + '{{label="inner"},'
     + '"Hello World!",{link={"hello-world","inner"},params=true}}}}',
   );
@@ -284,9 +284,9 @@ test('Function', async () => {
   const compiled = await assertCompile('# func {}\n[{}](#func)\n\n---');
   assert.equal(
     compiled,
-    '{{labels={func={3}}},{func=function(args)END()\nend},'
-    + '{{routine={},label="func"},{link={"func"},params=function()return{}end},'
-    + '{func=function(args)END()\nend}}}',
+    '{{labels={func={3}}},{func=function(args)END()end},'
+    + '{{routine={},label="func"},{link={"func"},params=function()return {}end},'
+    + '{func=function(args)END()end}}}',
   );
 });
 

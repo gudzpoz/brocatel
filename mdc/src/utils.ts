@@ -1,4 +1,5 @@
 import { Paragraph } from 'mdast';
+import { SourceNode } from 'source-map-js/lib/source-node';
 import { Node } from 'unist';
 
 /**
@@ -57,4 +58,28 @@ export function subParagraph(para: Paragraph, start: number): Paragraph {
   const sub = shallowCopy(para);
   sub.children = children;
   return sub;
+}
+
+/**
+ * Creates a new source node.
+ *
+ * @param line zero-based line number
+ * @param column one-based column number
+ * @param file the file name or path
+ * @param children contents
+ * @returns a new node
+ */
+export function sourceNode(
+  line?: number,
+  column?: number,
+  file?: string,
+  children?: (string | SourceNode)[],
+) {
+  // source-map-js has bad type annotations.
+  return new SourceNode(
+    line ?? null as any, // 1-based
+    column ? column - 1 : null as any, // 0-based
+    file ?? null as any,
+    children ?? [] as any,
+  );
 }

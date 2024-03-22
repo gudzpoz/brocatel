@@ -1,6 +1,7 @@
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkJoinCJKLines from 'remark-join-cjk-lines';
 import remarkParse from 'remark-parse';
+import { SourceMapConsumer, SourceNode } from 'source-map-js';
 import { Processor, unified } from 'unified';
 import { Position } from 'unist';
 import { VFile } from 'vfile';
@@ -8,15 +9,20 @@ import _wasmoon from 'wasmoon';
 
 import { directiveForMarkdown, mdxForMarkdown } from '@brocatel/md';
 
-import astCompiler, { serializeTableInner } from './ast-compiler';
+import astCompiler from './ast-compiler';
 import expandMacro from './expander';
 import remapLineNumbers from './line-remap';
 import transformAst from './transformer';
 import { LuaGettextData, compileGettextData } from './lgettext';
 import { StoryRunner } from './lua';
+import LuaTableGenerator from './lua-table';
+import { sourceNode } from './utils';
 
 export {
-  StoryRunner, type SelectLine, type TextLine, type StoryLine,
+  StoryRunner,
+  type SelectLine,
+  type TextLine,
+  type StoryLine,
 } from './lua';
 
 const VERSION = 1;
@@ -48,29 +54,102 @@ function removeMdExt(name: string): string {
   return name;
 }
 
+function packBundle(
+  name: string,
+  target: VFile,
+  inputs: Record<string, VFile>,
+  outputs: Record<string, VFile | null>,
+  globalLua: SourceNode[],
+): [SourceNode, LuaGettextData[]] {
+  const gettextData: LuaGettextData[] = [];
+  const contents = new LuaTableGenerator();
+  contents.startTable().pair('').startTable();
+  if (target.data.IFID) {
+    contents.pair('IFID').startTable();
+    (target.data.IFID as string[]).forEach((u) => {
+      contents.value(`UUID://${u}//`);
+    });
+    contents.endTable();
+  }
+  contents
+    .pair('version')
+    .value(VERSION)
+    .pair('entry')
+    .value(removeMdExt(name))
+    .endTable();
+  Object.entries(outputs).forEach(([file, v]) => {
+    contents
+      .pair(file);
+    if (v?.data.sourceMap) {
+      const source = v.data.sourceMap as SourceNode;
+      source.setSourceContent(file, inputs[file].toString());
+      contents.raw(source);
+    } else {
+      contents.raw(v?.toString() ?? 'nil');
+    }
+    if (v?.data.gettext) {
+      gettextData.push(v.data.gettext as LuaGettextData);
+    }
+  });
+  contents.endTable();
+  const bundle = sourceNode(
+    undefined,
+    undefined,
+    undefined,
+    [
+      globalLua.map((item) => [item, '\n']).flat(),
+      ['_={}\n', 'return ', contents.toSourceNode()],
+    ].flat(),
+  );
+  return [bundle, gettextData];
+}
+
 interface InvalidLink {
-  node: { root?: string, link: string[] };
+  node: { root?: string; link: string[] };
   root: string;
   source?: string;
 }
 
-export async function validateLinks(vfile: VFile) {
+export async function validate(vfile: VFile) {
+  const inputs = vfile.data.inputs as Record<string, VFile>;
   const story = new StoryRunner();
-  await story.loadStory(vfile.value.toString());
+  try {
+    await story.loadStory(vfile.value.toString());
+  } catch (e) {
+    const info = (e as Error).message.split('\n')[0];
+    const match = /\[string "<input>"\]:(\d+): .*$/.exec(info);
+    const sourceMap = vfile.data.sourceMap as SourceNode | undefined;
+    if (match && sourceMap) {
+      const line = Number(match[1]);
+      const column = 1;
+      const mapper = new SourceMapConsumer(
+        JSON.parse(sourceMap.toStringWithSourceMap().map.toString()),
+      );
+      const position = mapper.originalPositionFor({ line, column });
+      const file = inputs[removeMdExt(position.source)];
+      (file ?? vfile).message('invalid lua code', { line: position.line, column: position.column + 1 });
+    } else {
+      vfile.message(`invalid lua code found: ${info}`);
+    }
+    return;
+  }
   if (!story.L) {
     throw new Error('story not loaded');
   }
-  const invalidLinks: InvalidLink[] | Record<string, InvalidLink> = story
-    .L.doStringSync('return story:validate_links()');
-  const inputs = vfile.data.input as { [f: string]: VFile };
-  (Array.isArray(invalidLinks) ? invalidLinks : Object.values(invalidLinks)).forEach((l) => {
+  const invalidLinks: InvalidLink[] | Record<string, InvalidLink> = story.L.doStringSync(
+    'return story:validate_links()',
+  );
+  (Array.isArray(invalidLinks)
+    ? invalidLinks
+    : Object.values(invalidLinks)
+  ).forEach((l) => {
     let position: Position | null = null;
     if (l.source) {
       const [line, column] = l.source.split(':');
       const point = { line: Number(line) - 1, column: Number(column) };
       position = { start: point, end: point };
     }
-    inputs[l.root].message(
+    inputs[l.root]?.message(
       `link target not found: ${l.node.root ?? ''}#${l.node.link.join('#')}`,
       position,
     );
@@ -114,9 +193,9 @@ export class BrocatelCompiler {
     const stem = removeMdExt(name);
     const target = new VFile({ path: `${stem}.lua` });
     const gettextTarget = new VFile({ path: `${stem}.pot` });
-    const files: Record<string, VFile | null> = {};
-    const input: Record<string, VFile> = {};
-    const globalLua: string[] = [];
+    const outputs: Record<string, VFile | null> = {};
+    const inputs: Record<string, VFile> = {}; // processed files
+    const globalLua: SourceNode[] = [];
 
     const asyncCompile = async (filename: string) => {
       const task = removeMdExt(filename);
@@ -128,17 +207,17 @@ export class BrocatelCompiler {
         if (file.data.IFID && !target.data.IFID) {
           target.data.IFID = file.data.IFID;
         }
-        files[task] = file;
-        const processed = new VFile({ path: task });
-        input[task] = processed;
+        outputs[task] = file;
+        const processed = new VFile({ path: filename });
+        inputs[task] = processed;
         processed.messages.push(...file.messages);
         processed.value = content;
 
-        globalLua.push(...file.data.globalLua as string[]);
+        globalLua.push(...(file.data.globalLua as SourceNode[]));
         const tasks: Promise<any>[] = [];
         (file.data.dependencies as Set<string>).forEach((f) => {
-          if (typeof files[removeMdExt(f)] === 'undefined') {
-            files[task] = null;
+          if (typeof outputs[removeMdExt(f)] === 'undefined') {
+            outputs[f] = null;
             tasks.push(asyncCompile(f));
           }
         });
@@ -147,33 +226,18 @@ export class BrocatelCompiler {
     };
     await asyncCompile(name);
 
-    const gettextData: LuaGettextData[] = [];
-    const contents = serializeTableInner(files, (v) => {
-      if (!v) {
-        return 'nil';
-      }
-      if (v.data.gettext) {
-        gettextData.push(v.data.gettext as LuaGettextData);
-      }
-      return v.toString();
-    });
-    const uuids = target.data.IFID ? `IFID={${
-      (target.data.IFID as string[])
-        .map((u) => JSON.stringify(`UUID://${u}//`))
-        .join(',')
-    }},` : '';
-    target.value = `${globalLua.join('\n')}
-_={}
-return {[""]={\
-${uuids}\
-version=${VERSION},\
-entry=${JSON.stringify(removeMdExt(name))}\
-},${contents}}`;
-    target.data.input = input;
+    const [bundle, gettextData] = packBundle(name, target, inputs, outputs, globalLua);
+    target.value = bundle.toString();
+    target.data.sourceMap = bundle;
+    target.data.inputs = inputs;
     gettextTarget.value = compileGettextData(gettextData);
     target.data.gettext = gettextTarget;
-    await validateLinks(target);
-    Object.values(input).forEach((v) => {
+    try {
+      await validate(target);
+    } catch (e) {
+      target.message(e as Error);
+    }
+    Object.values(inputs).forEach((v) => {
       target.messages.push(...v.messages);
     });
     return target;
@@ -228,7 +292,11 @@ entry=${JSON.stringify(removeMdExt(name))}\
   async compileToString(content: string): Promise<string> {
     const file = await this.compile(content);
     if (file.messages.length > 0) {
-      throw new Error(`${file.message.length} compilation warning(s): \n${file.messages.join('\n')}`);
+      throw new Error(
+        `${file.message.length} compilation warning(s): \n${file.messages.join(
+          '\n',
+        )}`,
+      );
     }
     return file.toString();
   }

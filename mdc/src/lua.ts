@@ -120,7 +120,7 @@ export class StoryRunner {
     L.global.set('s', story.toString());
     L.global.set('extern', extern);
     L.global.set('save', savedata);
-    L.doString('story = vm.load_vm(s, save, { extern = extern })');
+    await L.doString('story = vm.load_vm(s, save, { extern = extern })');
   }
 
   isLoaded() {

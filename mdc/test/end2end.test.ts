@@ -162,7 +162,12 @@ IFID: d0adf5d6-ae96-497c-9616-ee7e8f0a83f3
 ---
 
 Hello`, [], ['Hello']);
-  assert.include(compiled, '[""]={IFID={"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F3//"},version=1,entry="main"}');
+  assert.equal(compiled, `_={}
+return {[""]={IFID={"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F3//"},
+version=1,
+entry="main"},
+main={{debug={"1:1","5:1"}},
+"Hello"}}`);
 
   const multiple = await assertOutput(`---
 IFID:
@@ -172,8 +177,14 @@ IFID:
 ---
 
 Hello`, [], ['Hello']);
-  assert.include(multiple, '[""]={IFID={"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F3//","UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F4//",'
-    + '"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F5//"},version=1,entry="main"}');
+  assert.equal(multiple, `_={}
+return {[""]={IFID={"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F3//",
+"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F4//",
+"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F5//"},
+version=1,
+entry="main"},
+main={{debug={"1:1","8:1"}},
+"Hello"}}`);
 });
 
 test('Link validation', async () => {
@@ -214,4 +225,57 @@ Line 2
 # co {}
 Line 3
 `, [], ['Line 1', 'Line 2', 'Line 3']);
+});
+
+test('Lua validation', async () => {
+  const compiled = await compiler.compileAll('main', async (name) => {
+    if (name.startsWith('main')) {
+      return '# main\n[](other.md#other)';
+    }
+    return '# other\n[](main.md#main)\n\n`nil()`';
+  });
+  assert.lengthOf(compiled.messages, 2);
+  assert.equal(
+    compiled.messages[0].message,
+    'illegal lua snippet: [string "nil()"]:1: unexpected symbol near \'nil\'',
+  );
+  assert.equal(compiled.messages[1].message, 'invalid lua code');
+  compiled.messages.forEach((msg) => {
+    assert.equal(msg.file, 'other.md');
+    assert.equal(msg.position?.start.line, 4);
+  });
+});
+
+test('Link destination checks', async () => {
+  const markdown = `
+[](#b)
+# a
+
+- In choices
+  [](#c)
+
+:::do\`type\`
+- In args
+  [](#d)
+
+:::local
+- Nested
+  [](#e)
+- * Nested choices
+    [](#f)
+  * Choice #2
+    [](#g)
+- Nested args
+  :::do\`type\`
+  - [](#h)
+
+[](#a)
+`;
+  const compiled = await compiler.compileAll('main', async () => markdown);
+  const destinations = ['b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  const lines = [1, 5, 9, 13, 15, 17, 20];
+  compiled.messages.forEach((m, i) => {
+    assert.include(m.message, `link target not found: #${destinations[i]}`);
+    assert.equal(m.line, lines[i]);
+  });
 });

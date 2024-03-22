@@ -206,11 +206,11 @@ function savedata.load_with_env(env, s)
     local setfenv = setfenv
     if setfenv then
         ---@diagnostic disable-next-line: deprecated
-        local chunk = assert(loadstring(s))
+        local chunk = assert(loadstring(s, '<input>'))
         setfenv(chunk, env)
         return chunk
     else
-        return assert(load(s, nil, nil, env))
+        return assert(load(s, '<input>', nil, env))
     end
 end
 

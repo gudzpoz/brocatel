@@ -60,12 +60,14 @@ class AstCompiler {
   constructor(root: LuaArray, vfile: VFile) {
     this.root = root;
     this.vfile = vfile;
-    this.builder = new LuaTableGenerator('_');
+    this.builder = new LuaTableGenerator('_', vfile.path);
   }
 
   compile() {
     this.visitAll();
     this.vfile.data.gettext = collectGettextData(this.root, this.vfile);
+    const sourceMap = this.builder.toSourceNode();
+    this.vfile.data.sourceMap = sourceMap;
     return this.builder.toString();
   }
 
@@ -102,14 +104,16 @@ class AstCompiler {
 
   serializeLink(child: LuaLink) {
     this.builder
+      .startTable(child.node.position)
+      .pair('link')
       .startTable()
-      .pair('link').startTable().raw(child.labels.map((label) => JSON.stringify(label)).join(','))
+      .raw(child.labels.map((label) => JSON.stringify(label)).join(','))
       .endTable();
     if (child.coroutine) {
       this.builder.pair('coroutine').value(true);
     }
     if (child.params !== undefined) {
-      this.builder.pair('params').raw(child.params === '' ? 'true' : `function()return${child.params}end`);
+      this.builder.pair('params').raw(child.params === '' ? 'true' : `function()\nreturn ${child.params}\nend`);
     }
     if (child.root) {
       this.builder.pair('root').value(child.root);
@@ -119,9 +123,9 @@ class AstCompiler {
 
   serializeText(child: LuaText) {
     if (!child.plural && isEmpty(child.tags) && isEmpty(child.values)) {
-      this.builder.value(child.text);
+      this.builder.value(child.text, child.node.position);
     } else {
-      this.builder.startTable();
+      this.builder.startTable(child.node.position);
       if (child.plural) {
         this.builder.pair('plural').value(child.plural);
       }
@@ -150,13 +154,13 @@ class AstCompiler {
       if (node.children.length !== 0) {
         this.builder.endTable();
       }
-      this.builder.pair('func').raw(`function(args)${node.code.trim()}\nend}`);
+      this.builder.pair('func').raw(`function(args)\n${node.code.trim()}\nend`).endTable();
       return;
     }
 
     switch (node.type) {
       case 'array': {
-        this.builder.startTable().startTable();
+        this.builder.startTable(node.node.position).startTable();
         if (this.vfile.data.debug) {
           const positions = [serializePosition(node)];
           node.children.forEach((child) => positions.push(serializePosition(child)));
@@ -189,13 +193,13 @@ class AstCompiler {
         break;
       }
       case 'func':
-        this.builder.startTable();
+        this.builder.startTable(node.node.position);
         if (node.children.length !== 0) {
           this.builder.pair('args').startTable().startTable().endTable();
         }
         break;
       case 'if-else':
-        this.builder.startTable().raw(`function()return(${node.condition})end`);
+        this.builder.startTable(node.node.position).raw(`function()return(${node.condition})end`);
         break;
       default:
         throw new Error('unreachable');

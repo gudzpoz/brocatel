@@ -37,6 +37,6 @@ compiler.compileAll(filename, async (f) => {
   const gettextOutput: VFile = output.data.gettext as VFile;
   fs.writeFile(path.join(dir, gettextOutput.path), gettextOutput.value);
   Object
-    .entries(output.data.input as { [f: string]: VFile })
+    .entries(output.data.inputs as { [f: string]: VFile })
     .forEach(([f, vfile]) => displayWarnings(path.join(dir, `${f}.md`), vfile));
 });

@@ -3,6 +3,7 @@ import type {
 } from 'mdast';
 import type { ContainerDirective } from 'mdast-util-directive';
 import type { MdxTextExpression } from 'mdast-util-mdx-expression';
+import { SourceNode } from 'source-map-js';
 import type { Plugin } from 'unified';
 import type { VFile } from 'vfile';
 import { visitParents } from 'unist-util-visit-parents';
@@ -18,6 +19,7 @@ import {
 import { toMarkdownString } from './expander';
 import { HeadingStack, appendReturn, hasReturned } from './headings';
 import { isIdentifier, luaErrorDetector, type LuaErrorDetector } from './lua';
+import { sourceNode } from './utils';
 
 /**
  * Splits a url with `#`, where `#` is escaped by `\\#`.
@@ -50,7 +52,7 @@ class AstTransformer {
   /**
    * Global Lua snippets.
    */
-  globalLua: string[];
+  globalLua: SourceNode[];
 
   private validateLua!: LuaErrorDetector;
 
@@ -329,7 +331,12 @@ class AstTransformer {
     }
     let snippet;
     if (code.meta === 'global') {
-      this.globalLua.push(code.value);
+      this.globalLua.push(sourceNode(
+        code.position?.start.line,
+        code.position?.start.column,
+        this.vfile.path,
+        [code.value],
+      ));
       snippet = '';
     } else if (code.meta === 'macro') {
       snippet = '';
@@ -470,7 +477,7 @@ class AstTransformer {
    */
   parseLink(link: Link): LuaLink {
     const labels = parseLinkUrl(link);
-    const match = link.url.match(/^([^#]+)\.md#./);
+    const match = link.url.match(/^([^#]+)(\.md)#./);
     const linkNode: LuaLink = {
       type: 'link',
       labels: match ? labels.slice(1) : labels,
@@ -479,6 +486,8 @@ class AstTransformer {
     };
     if (!linkNode.root) {
       delete linkNode.root;
+    } else {
+      this.dependencies.add(`${linkNode.root}${match![2]}`);
     }
     const expr = link.children[0];
     if (expr?.type as string === 'mdxTextExpression') {
