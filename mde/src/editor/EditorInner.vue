@@ -21,30 +21,35 @@
         >
         {{ diagnostics.length === 0 ? '🗒️' : '❗' }}
       </label>
-      <button @click="call(toggleEmphasisCommand)">
-        <i>Italics</i>
-      </button>
-      <button @click="call(toggleStrongCommand)">
-        <b>Bold</b>
-      </button>
-      <button @click="call(wrapInHeadingCommand)">
-        <b>#</b>Heading
-      </button>
-      <button @click="toggleLink">
-        <u>Link</u>
-      </button>
-      <button @click="call(wrapInBulletListCommand)">
-        <b>-</b>Choices
-      </button>
-      <button @click="call(toggleInlineCodeCommand)">
-        <code>`Code`</code>
-      </button>
-      <button @click="call(toggleMdxInlineCommand)">
-        <code>{Expr}</code>
-      </button>
-      <button @click="call(insertDirectiveCommand)">
-        <b>:::</b>Directive
-      </button>
+      <div
+        v-show="!useCodeMirror"
+        class="milkdown-buttons"
+      >
+        <button @click="call(toggleEmphasisCommand)">
+          <i>Italics</i>
+        </button>
+        <button @click="call(toggleStrongCommand)">
+          <b>Bold</b>
+        </button>
+        <button @click="call(wrapInHeadingCommand)">
+          <b>#</b>Heading
+        </button>
+        <button @click="toggleLink">
+          <u>Link</u>
+        </button>
+        <button @click="call(wrapInBulletListCommand)">
+          <b>-</b>Choices
+        </button>
+        <button @click="call(toggleInlineCodeCommand)">
+          <code>`Code`</code>
+        </button>
+        <button @click="call(toggleMdxInlineCommand)">
+          <code>{Expr}</code>
+        </button>
+        <button @click="call(insertDirectiveCommand)">
+          <b>:::</b>Directive
+        </button>
+      </div>
     </div>
     <div v-show="useCodeMirror">
       <codemirror
@@ -192,5 +197,8 @@ function toggleLink() {
   top: 0;
   margin: 0.2em;
   z-index: 1;
+}
+.milkdown-menu > .milkdown-buttons {
+  display: inline;
 }
 </style>

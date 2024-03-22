@@ -1,17 +1,16 @@
 // https://vitepress.dev/guide/custom-theme
-import { defineAsyncComponent, h } from 'vue';
+import { defineAsyncComponent } from 'vue';
 import Theme from 'vitepress/theme';
 
 import './style.css';
 
-export default {
+const enhanced: typeof Theme = {
   ...Theme,
-  Layout: () => h(Theme.Layout, null, {
-    // https://vitepress.dev/guide/extending-default-theme#layout-slots
-  }),
-  enhanceApp({ app }) {
-    app.component('BrocatelEditor', defineAsyncComponent(async () => (await import('@brocatel/mde')).BrocatelEditor));
-    // @ts-ignore
-    app.component('MdExample', defineAsyncComponent(() =>  import('../components/MdExample.vue')));
+  async enhanceApp({ app }) {
+    if (!(import.meta as any as { env: Record<string, any> }).env.SSR) {
+      app.component('BrocatelEditor', defineAsyncComponent(async () => (await import('@brocatel/mde')).BrocatelEditor));
+      app.component('MdExample', defineAsyncComponent(() => import('../components/MdExample.vue')));
+    }
   },
 };
+export default enhanced;
