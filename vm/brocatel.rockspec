@@ -1,5 +1,5 @@
 package = "brocatel"
-version = "0.3.0"
+version = "0.3.4"
 source = {
    url = "git://github.com/gudzpoz/brocatel",
 }
