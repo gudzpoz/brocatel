@@ -187,17 +187,6 @@ main={{debug={"1:1","8:1"}},
 "Hello"}}`);
 });
 
-test('Link validation', async () => {
-  const compiled = await compiler.compileAll('main', async () => `
-# a
-[](#a)
-[](#b)
-`);
-  assert.lengthOf(compiled.messages, 1);
-  assert.include(compiled.messages[0].message, 'link target not found: #b');
-  assert.equal(compiled.messages[0].position?.start.line, 3);
-});
-
 test('Routine local variables', async () => {
   await assertOutput(`
 \`v = 1\`
@@ -246,6 +235,17 @@ test('Lua validation', async () => {
   });
 });
 
+test('Link validation', async () => {
+  const compiled = await compiler.compileAll('main', async () => `
+# a
+[](#a)
+[](#b)
+`);
+  assert.lengthOf(compiled.messages, 1);
+  assert.include(compiled.messages[0].message, 'link target not found: #b');
+  assert.equal(compiled.messages[0].position?.start.line, 4);
+});
+
 test('Link destination checks', async () => {
   const markdown = `
 [](#b)
@@ -273,7 +273,7 @@ test('Link destination checks', async () => {
 `;
   const compiled = await compiler.compileAll('main', async () => markdown);
   const destinations = ['b', 'c', 'd', 'e', 'f', 'g', 'h'];
-  const lines = [1, 5, 9, 13, 15, 17, 20];
+  const lines = [2, 6, 10, 14, 16, 18, 21];
   compiled.messages.forEach((m, i) => {
     assert.include(m.message, `link target not found: #${destinations[i]}`);
     assert.equal(m.line, lines[i]);

@@ -119,8 +119,8 @@ export async function validate(vfile: VFile) {
     const match = /\[string "<input>"\]:(\d+): .*$/.exec(info);
     const sourceMap = vfile.data.sourceMap as SourceNode | undefined;
     if (match && sourceMap) {
-      const line = Number(match[1]);
-      const column = 1;
+      const line = Number(match[1]); // 1-based
+      const column = 0; // 0-based
       const mapper = new SourceMapConsumer(
         JSON.parse(sourceMap.toStringWithSourceMap().map.toString()),
       );
@@ -128,7 +128,7 @@ export async function validate(vfile: VFile) {
       const file = inputs[removeMdExt(position.source)];
       (file ?? vfile).message('invalid lua code', {
         line: position.line,
-        column: position.column + 1,
+        column: position.column + 1, // 0-base to 1-based
       });
     } else {
       vfile.message(`invalid lua code found: ${info}`);
@@ -147,7 +147,7 @@ export async function validate(vfile: VFile) {
     let position: Position | null = null;
     if (l.source) {
       const [line, column] = l.source.split(':');
-      const point = { line: Number(line) - 1, column: Number(column) };
+      const point = { line: Number(line), column: Number(column) };
       position = { start: point, end: point };
     }
     inputs[l.root]?.message(

@@ -44,7 +44,7 @@ export default class LuaTableGenerator {
     if (position) {
       this.stack.push({
         type: 'annotated',
-        value: sourceNode(position.start.line, position.start.column - 1, this.file, [value]),
+        value: sourceNode(position.start.line, position.start.column, this.file, [value]),
       });
     } else {
       this.stack.push({ type: 'raw', value });
