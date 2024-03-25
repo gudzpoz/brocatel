@@ -201,12 +201,15 @@ importers:
         specifier: ^5.3.7
         version: 5.3.7
       wasmoon:
-        specifier: ^1.16.0
-        version: 1.16.0
+        specifier: 1.15.1
+        version: 1.15.1
       yaml:
         specifier: ^2.4.1
         version: 2.4.1
     devDependencies:
+      '@rollup/plugin-replace':
+        specifier: ^5.0.5
+        version: 5.0.5
       '@types/mdast':
         specifier: ^3.0.15
         version: 3.0.15
@@ -1337,6 +1340,19 @@ packages:
       tslib: 2.6.2
       vue: 3.4.21(typescript@5.4.3)
     dev: false
+
+  /@rollup/plugin-replace@5.0.5:
+    resolution: {integrity: sha512-rYO4fOi8lMaTg/z5Jb+hKnrHHVn8j2lwkqwyS4kTRhKyWOLf2wST2sWXr4WzWiTcoHTp2sTjqUbqIj2E39slKQ==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: ^1.20.0||^2.0.0||^3.0.0||^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+    dependencies:
+      '@rollup/pluginutils': 5.1.0
+      magic-string: 0.30.8
+    dev: true
 
   /@rollup/pluginutils@5.1.0:
     resolution: {integrity: sha512-XTIWOPPcpvyKI6L1NHo0lFlCyznUEyPmPY1mc3KpPVDYulHSTvyeLNVW00QTLIAFNhR3kYnJTQHeGqU4M3n09g==}
@@ -5599,11 +5615,11 @@ packages:
     resolution: {integrity: sha512-dpojBhNsCNN7T82Tm7k26A6G9ML3NkhDsnw9n/eoxSRlVBB4CEtIQ/KTCLI2Fwf3ataSXRhYFkQi3SlnFwPvPQ==}
     dev: false
 
-  /wasmoon@1.16.0:
-    resolution: {integrity: sha512-FlRLb15WwAOz1A9OQDbf6oOKKSiefi5VK0ZRF2wgH9xk3o5SnU11tNPaOnQuAh1Ucr66cwwvVXaeVRaFdRBt5g==}
+  /wasmoon@1.15.1:
+    resolution: {integrity: sha512-8q/fCMR8OMZa1xlUk8oLR9t0rnkQttgEfVyNe5HsVzY0Uksc6xH1yfvOYT/ym+Y3aSspAFLxXtmRI68CSZR56g==}
     hasBin: true
     dependencies:
-      '@types/emscripten': 1.39.10
+      '@types/emscripten': 1.39.9
     dev: false
 
   /web-namespaces@2.0.1:

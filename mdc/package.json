@@ -3,7 +3,12 @@
   "version": "0.3.4",
   "description": "Markdown compiler for brocatel scripts.",
   "type": "module",
-  "main": "dist/brocatel-mdc.es.js",
+  "main": "dist/index.es.js",
+  "exports": {
+    "import": "./dist/index.es.js",
+    "require": "./dist/index.cjs",
+    "types": "./dist/src/index.d.ts"
+  },
   "types": "dist/src/index.d.ts",
   "repository": {
     "type": "git",
@@ -20,6 +25,7 @@
   "author": "gudzpoz",
   "license": "MIT",
   "devDependencies": {
+    "@rollup/plugin-replace": "^5.0.5",
     "@types/mdast": "^3.0.15",
     "@types/node": "^20.11.30",
     "@types/unist": "^2.0.10",
@@ -50,7 +56,7 @@
     "unist-util-visit-parents": "^5.1.3",
     "uuid": "^9.0.1",
     "vfile": "^5.3.7",
-    "wasmoon": "^1.16.0",
+    "wasmoon": "1.15.1",
     "yaml": "^2.4.1"
   }
 }

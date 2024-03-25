@@ -78,8 +78,7 @@ function packBundle(
     .value(removeMdExt(name))
     .endTable();
   Object.entries(outputs).forEach(([file, v]) => {
-    contents
-      .pair(file);
+    contents.pair(file);
     if (v?.data.sourceMap) {
       const source = v.data.sourceMap as SourceNode;
       source.setSourceContent(file, inputs[file].toString());
@@ -127,18 +126,20 @@ export async function validate(vfile: VFile) {
       );
       const position = mapper.originalPositionFor({ line, column });
       const file = inputs[removeMdExt(position.source)];
-      (file ?? vfile).message('invalid lua code', { line: position.line, column: position.column + 1 });
+      (file ?? vfile).message('invalid lua code', {
+        line: position.line,
+        column: position.column + 1,
+      });
     } else {
       vfile.message(`invalid lua code found: ${info}`);
     }
     return;
   }
-  if (!story.L) {
+  if (!story.isLoaded()) {
     throw new Error('story not loaded');
   }
-  const invalidLinks: InvalidLink[] | Record<string, InvalidLink> = story.L.doStringSync(
-    'return story:validate_links()',
-  );
+  const invalidLinks: InvalidLink[] | Record<string, InvalidLink> = story.L!
+    .doStringSync('return story:validate_links()');
   (Array.isArray(invalidLinks)
     ? invalidLinks
     : Object.values(invalidLinks)
@@ -199,34 +200,46 @@ export class BrocatelCompiler {
 
     const asyncCompile = async (filename: string) => {
       const task = removeMdExt(filename);
-      const content = await fetcher(task);
+      let content;
+      try {
+        content = await fetcher(task);
+      } catch (e) {
+        target.message(`cannot load file ${task}(.md)`);
+        return;
+      }
       if (!content) {
         target.message(`cannot load file ${task}(.md)`);
-      } else {
-        const file = await this.compile(content, filename);
-        if (file.data.IFID && !target.data.IFID) {
-          target.data.IFID = file.data.IFID;
-        }
-        outputs[task] = file;
-        const processed = new VFile({ path: filename });
-        inputs[task] = processed;
-        processed.messages.push(...file.messages);
-        processed.value = content;
-
-        globalLua.push(...(file.data.globalLua as SourceNode[]));
-        const tasks: Promise<any>[] = [];
-        (file.data.dependencies as Set<string>).forEach((f) => {
-          if (typeof outputs[removeMdExt(f)] === 'undefined') {
-            outputs[f] = null;
-            tasks.push(asyncCompile(f));
-          }
-        });
-        await Promise.all(tasks);
+        return;
       }
+      const file = await this.compile(content, filename);
+      if (file.data.IFID && !target.data.IFID) {
+        target.data.IFID = file.data.IFID;
+      }
+      outputs[task] = file;
+      const processed = new VFile({ path: filename });
+      inputs[task] = processed;
+      processed.messages.push(...file.messages);
+      processed.value = content;
+
+      globalLua.push(...(file.data.globalLua as SourceNode[]));
+      const tasks: Promise<any>[] = [];
+      (file.data.dependencies as Set<string>).forEach((f) => {
+        if (typeof outputs[removeMdExt(f)] === 'undefined') {
+          outputs[f] = null;
+          tasks.push(asyncCompile(f));
+        }
+      });
+      await Promise.all(tasks);
     };
     await asyncCompile(name);
 
-    const [bundle, gettextData] = packBundle(name, target, inputs, outputs, globalLua);
+    const [bundle, gettextData] = packBundle(
+      name,
+      target,
+      inputs,
+      outputs,
+      globalLua,
+    );
     target.value = bundle.toString();
     target.data.sourceMap = bundle;
     target.data.inputs = inputs;

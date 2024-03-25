@@ -1,9 +1,9 @@
 import { LuaFactory, type LuaEngine } from 'wasmoon';
-import wasmoonWasm from 'wasmoon/dist/glue.wasm?url';
+import wasmoonWasm from 'wasmoon/dist/glue.wasm';
 
 import vmBundle from '../../vm/vm-bundle.lua?raw';
 
-const factory = new LuaFactory(typeof window === 'undefined' ? undefined : wasmoonWasm);
+const factory = new LuaFactory(wasmoonWasm);
 function newLuaState(): Promise<LuaEngine> {
   return factory.createEngine({
     openStandardLibs: true,
@@ -120,7 +120,7 @@ export class StoryRunner {
     L.global.set('s', story.toString());
     L.global.set('extern', extern);
     L.global.set('save', savedata);
-    await L.doString('story = vm.load_vm(s, save, { extern = extern })');
+    L.doStringSync('story = vm.load_vm(s, save, { extern = extern })');
   }
 
   isLoaded() {
