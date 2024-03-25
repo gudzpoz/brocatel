@@ -7,7 +7,7 @@
   "exports": {
     "import": "./dist/index.es.js",
     "require": "./dist/index.cjs",
-    "types": "./dist/src/index.d.ts"
+    "types": "./dist/index.d.ts"
   },
   "types": "dist/src/index.d.ts",
   "repository": {

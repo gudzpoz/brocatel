@@ -18,6 +18,9 @@
 		{
 			"path": "../vm"
 		},
+		{
+			"path": "../vscode-brocatel"
+		},
 	],
 	"settings": {
 		"licenser.author": "gudzpoz",

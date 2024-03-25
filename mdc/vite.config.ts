@@ -24,7 +24,7 @@ export default defineConfig({
     }
   },
   plugins: [
-    dts(),
+    dts({ rollupTypes: true }),
     {
       ...replace({
         delimiters: ['(?<!\\.)\\b', '\\b(?!\\.)'],

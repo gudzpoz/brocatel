@@ -120,7 +120,7 @@ export class StoryRunner {
     L.global.set('s', story.toString());
     L.global.set('extern', extern);
     L.global.set('save', savedata);
-    L.doStringSync('story = vm.load_vm(s, save, { extern = extern })');
+    this.reload();
   }
 
   isLoaded() {
@@ -138,6 +138,10 @@ export class StoryRunner {
     const L = this.checkL();
     L.global.set('save', savedata);
     L.doStringSync('story:load(save)');
+  }
+
+  reload() {
+    this.checkL().doStringSync('story = vm.load_vm(s, save, { extern = extern })');
   }
 
   save(): string {
