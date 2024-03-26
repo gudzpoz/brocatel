@@ -3,7 +3,6 @@ import type {
 } from 'mdast';
 import type { ContainerDirective } from 'mdast-util-directive';
 import type { MdxTextExpression } from 'mdast-util-mdx-expression';
-import { SourceNode } from 'source-map-js';
 import type { Plugin } from 'unified';
 import type { VFile } from 'vfile';
 import { visitParents } from 'unist-util-visit-parents';
@@ -16,6 +15,9 @@ import {
   LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaTags, LuaText,
   MarkdownNode, MarkdownParent, RelativePath, luaArray,
 } from './ast';
+import {
+  CompilationData, StoryLink, getData, toLink,
+} from './debug';
 import { toMarkdownString } from './expander';
 import { HeadingStack, appendReturn, hasReturned } from './headings';
 import { isIdentifier, luaErrorDetector, type LuaErrorDetector } from './lua';
@@ -44,26 +46,28 @@ class AstTransformer {
 
   vfile: VFile;
 
+  data: CompilationData;
+
   /**
    * Other Markdown files that this file links to.
    */
-  dependencies: Set<string>;
-
-  /**
-   * Global Lua snippets.
-   */
-  globalLua: SourceNode[];
+  dependencies: Map<string, StoryLink>;
 
   private validateLua!: LuaErrorDetector;
 
   constructor(root: Root, vfile: VFile) {
     this.root = root;
     this.vfile = vfile;
-    this.dependencies = new Set<string>();
-    this.globalLua = [];
+    this.dependencies = new Map();
+    this.data = getData(vfile);
 
-    this.vfile.data.dependencies = this.dependencies;
-    this.vfile.data.globalLua = this.globalLua;
+    this.data.dependencies = this.dependencies;
+    this.data.globalLua = [];
+    if (this.data.debug) {
+      this.data.links = [];
+      this.data.codeSnippets = [];
+      this.data.markdown = root;
+    }
   }
 
   async transform(): Promise<LuaArray> {
@@ -75,11 +79,16 @@ class AstTransformer {
     return transformed;
   }
 
-  checkLua(snippet: string, node: Content): string {
-    const error = this.validateLua(snippet);
+  checkLua(snippet: string, expression: boolean, node: Content): string {
+    const error = this.validateLua(expression ? `return(${snippet})` : snippet);
     if (error) {
       this.vfile.message(`illegal lua snippet: ${error.message}`, node);
     }
+    this.data.codeSnippets?.push({
+      expression,
+      position: node.position,
+      value: snippet,
+    });
     return snippet;
   }
 
@@ -120,7 +129,7 @@ class AstTransformer {
       if (parent.data.labels[label]) {
         this.vfile.message('heading name collision', node);
       }
-      parent.data.labels[label] = path;
+      parent.data.labels[label] = { path, node };
     });
   }
 
@@ -141,7 +150,7 @@ class AstTransformer {
           this.vfile.message(`invalid IFID ${s}`, fronmatter);
           return '';
         }).filter((s) => s !== '');
-        this.vfile.data.IFID = uuids;
+        this.data.IFID = uuids;
       } catch (e) {
         this.vfile.message(e as Error, fronmatter);
       }
@@ -275,7 +284,7 @@ class AstTransformer {
           this.vfile.message('expecting condition and branches', node);
         }
         const condition = label || 'false';
-        this.checkLua(`return(${label})`, node);
+        this.checkLua(condition, true, node);
         const children = list.children.map((child) => this.parseBlock(child)) as any;
         if (children.length >= 1 && children.length <= 2) {
           const ifElse: LuaIfElse = {
@@ -331,11 +340,11 @@ class AstTransformer {
     }
     let snippet;
     if (code.meta === 'global') {
-      this.globalLua.push(sourceNode(
+      this.data.globalLua?.push(sourceNode(
         code.position?.start.line,
         code.position?.start.column,
         this.vfile.path,
-        [code.value],
+        [this.checkLua(code.value, false, code)],
       ));
       snippet = '';
     } else if (code.meta === 'macro') {
@@ -345,7 +354,7 @@ class AstTransformer {
     }
     return {
       type: 'func',
-      code: this.checkLua(snippet, code),
+      code: snippet === '' ? '' : this.checkLua(snippet, false, code),
       children: [],
       node: code,
     };
@@ -458,7 +467,7 @@ class AstTransformer {
         plural = `v${i}`;
         v = v.substring(0, v.length - 1).trim();
       }
-      this.checkLua(`return(${v})`, node);
+      this.checkLua(v, true, node);
       redirected[`v${i}`] = v;
       i += 1;
     });
@@ -487,8 +496,12 @@ class AstTransformer {
     if (!linkNode.root) {
       delete linkNode.root;
     } else {
-      this.dependencies.add(`${linkNode.root}${match![2]}`);
+      const filename = `${linkNode.root}${match![2]}`;
+      if (!this.dependencies.has(filename)) {
+        this.dependencies.set(filename, toLink(linkNode));
+      }
     }
+    this.data.links?.push(toLink(linkNode));
     const expr = link.children[0];
     if (expr?.type as string === 'mdxTextExpression') {
       if (link.children.length > 1) {

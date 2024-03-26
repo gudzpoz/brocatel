@@ -10,12 +10,13 @@ import _wasmoon from 'wasmoon';
 import { directiveForMarkdown, mdxForMarkdown } from '@brocatel/md';
 
 import astCompiler from './ast-compiler';
+import * as debugging from './debug';
 import expandMacro from './expander';
-import remapLineNumbers from './line-remap';
-import transformAst from './transformer';
 import { LuaGettextData, compileGettextData } from './lgettext';
+import remapLineNumbers from './line-remap';
 import { StoryRunner } from './lua';
 import LuaTableGenerator from './lua-table';
+import transformAst from './transformer';
 import { sourceNode } from './utils';
 
 export {
@@ -61,12 +62,13 @@ function packBundle(
   outputs: Record<string, VFile | null>,
   globalLua: SourceNode[],
 ): [SourceNode, LuaGettextData[]] {
+  const data = debugging.getRootData(target);
   const gettextData: LuaGettextData[] = [];
   const contents = new LuaTableGenerator();
   contents.startTable().pair('').startTable();
-  if (target.data.IFID) {
+  if (data.IFID) {
     contents.pair('IFID').startTable();
-    (target.data.IFID as string[]).forEach((u) => {
+    data.IFID.forEach((u) => {
       contents.value(`UUID://${u}//`);
     });
     contents.endTable();
@@ -78,16 +80,17 @@ function packBundle(
     .value(removeMdExt(name))
     .endTable();
   Object.entries(outputs).forEach(([file, v]) => {
+    const fdata = v && debugging.getData(v);
     contents.pair(file);
-    if (v?.data.sourceMap) {
-      const source = v.data.sourceMap as SourceNode;
+    if (fdata?.sourceMap) {
+      const source = fdata.sourceMap;
       source.setSourceContent(file, inputs[file].toString());
       contents.raw(source);
     } else {
       contents.raw(v?.toString() ?? 'nil');
     }
-    if (v?.data.gettext) {
-      gettextData.push(v.data.gettext as LuaGettextData);
+    if (fdata?.gettext) {
+      gettextData.push(fdata.gettext);
     }
   });
   contents.endTable();
@@ -110,14 +113,15 @@ interface InvalidLink {
 }
 
 export async function validate(vfile: VFile) {
-  const inputs = vfile.data.inputs as Record<string, VFile>;
+  const data = debugging.getRootData(vfile);
+  const { inputs } = data;
   const story = new StoryRunner();
   try {
     await story.loadStory(vfile.value.toString());
   } catch (e) {
     const info = (e as Error).message.split('\n')[0];
     const match = /\[string "<input>"\]:(\d+): .*$/.exec(info);
-    const sourceMap = vfile.data.sourceMap as SourceNode | undefined;
+    const { sourceMap } = data;
     if (match && sourceMap) {
       const line = Number(match[1]); // 1-based
       const column = 0; // 0-based
@@ -125,7 +129,7 @@ export async function validate(vfile: VFile) {
         JSON.parse(sourceMap.toStringWithSourceMap().map.toString()),
       );
       const position = mapper.originalPositionFor({ line, column });
-      const file = inputs[removeMdExt(position.source)];
+      const file = inputs?.[removeMdExt(position.source)];
       (file ?? vfile).message('invalid lua code', {
         line: position.line,
         column: position.column + 1, // 0-base to 1-based
@@ -150,7 +154,7 @@ export async function validate(vfile: VFile) {
       const point = { line: Number(line), column: Number(column) };
       position = { start: point, end: point };
     }
-    inputs[l.root]?.message(
+    inputs?.[l.root]?.message(
       `link target not found: ${l.node.root ?? ''}#${l.node.link.join('#')}`,
       position,
     );
@@ -193,6 +197,7 @@ export class BrocatelCompiler {
   async compileAll(name: string, fetcher: (name: string) => Promise<string>) {
     const stem = removeMdExt(name);
     const target = new VFile({ path: `${stem}.lua` });
+    const rootData = debugging.getRootData(target);
     const gettextTarget = new VFile({ path: `${stem}.pot` });
     const outputs: Record<string, VFile | null> = {};
     const inputs: Record<string, VFile> = {}; // processed files
@@ -212,18 +217,21 @@ export class BrocatelCompiler {
         return;
       }
       const file = await this.compile(content, filename);
-      if (file.data.IFID && !target.data.IFID) {
-        target.data.IFID = file.data.IFID;
+      const data = debugging.getData(file);
+      // Only IFIDs from the first (i.e. the main file) is extracted.
+      if (data.IFID && !rootData.IFID) {
+        rootData.IFID = data.IFID;
       }
       outputs[task] = file;
-      const processed = new VFile({ path: filename });
+      const processed = new VFile({ path: `${task}.md` });
       inputs[task] = processed;
       processed.messages.push(...file.messages);
       processed.value = content;
+      processed.data = file.data;
 
-      globalLua.push(...(file.data.globalLua as SourceNode[]));
+      globalLua.push(...data.globalLua || []);
       const tasks: Promise<any>[] = [];
-      (file.data.dependencies as Set<string>).forEach((f) => {
+      (data.dependencies ?? new Map()).forEach((_, f) => {
         if (typeof outputs[removeMdExt(f)] === 'undefined') {
           outputs[f] = null;
           tasks.push(asyncCompile(f));
@@ -241,10 +249,10 @@ export class BrocatelCompiler {
       globalLua,
     );
     target.value = bundle.toString();
-    target.data.sourceMap = bundle;
-    target.data.inputs = inputs;
+    rootData.sourceMap = bundle;
+    rootData.inputs = inputs;
     gettextTarget.value = compileGettextData(gettextData);
-    target.data.gettext = gettextTarget;
+    rootData.gettext = gettextTarget;
     try {
       await validate(target);
     } catch (e) {
@@ -283,7 +291,7 @@ export class BrocatelCompiler {
       }
       vfile = new VFile(newLines.join('\n'));
       vfile.path = filename ?? '<unknown>';
-      vfile.data.lineMapping = {
+      debugging.getData(vfile).lineMapping = {
         original: originalLineNumbers,
         newLines: newLineNumbers,
       };
@@ -291,7 +299,7 @@ export class BrocatelCompiler {
       vfile = new VFile(preprocessed);
     }
     if (this.config.debug) {
-      vfile.data.debug = true;
+      debugging.getData(vfile).debug = true;
     }
     return this.remark.process(vfile);
   }
@@ -316,3 +324,17 @@ export class BrocatelCompiler {
 }
 
 export const wasmoon = _wasmoon;
+
+export namespace debug {
+  export const { getData, getRootData } = debugging;
+  export type CompilationData = debugging.CompilationData;
+  export type RootData = debugging.RootData;
+
+  export type CodeSnippet = debugging.CodeSnippet;
+  export type LuaGettextData = debugging.LuaGettextData;
+  export type LuaHeadingTree = debugging.LuaHeadingTree;
+  export type LineMapping = debugging.LineMapping;
+  export type SourceNode = debugging.SourceNode;
+  export type StoryLink = debugging.StoryLink;
+  export type VFile = debugging.VirtualFile;
+}

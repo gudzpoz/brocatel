@@ -75,7 +75,7 @@ test('Transform link', async () => {
 test('Transform code blocks', async () => {
   assert.deepInclude(assertOnlyChild(await parse('`a()`')), { type: 'func', code: 'a()' });
   assert.deepInclude(assertOnlyChild(await parse('```lua\na()\n```')), { type: 'func', code: 'a()' });
-  assert.deepInclude(assertOnlyChild(await parse('```lua global\na\n```')), { type: 'func', code: '' });
+  assert.deepInclude(assertOnlyChild(await parse('```lua global\nreturn\n```')), { type: 'func', code: '' });
   assert.deepInclude(assertOnlyChild(await parse('```lua macro\na\n```')), { type: 'func', code: '' });
 });
 

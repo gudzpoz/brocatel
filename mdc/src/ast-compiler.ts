@@ -4,6 +4,7 @@ import { VFile } from 'vfile';
 import {
   LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaText,
 } from './ast';
+import { CompilationData, getData, toHeadingTree } from './debug';
 import { collectGettextData } from './lgettext';
 import { isIdentifier } from './lua';
 import LuaTableGenerator from './lua-table';
@@ -55,19 +56,25 @@ class AstCompiler {
 
   vfile: VFile;
 
+  data: CompilationData;
+
   private builder: LuaTableGenerator;
 
   constructor(root: LuaArray, vfile: VFile) {
     this.root = root;
     this.vfile = vfile;
+    this.data = getData(vfile);
     this.builder = new LuaTableGenerator('_', vfile.path);
   }
 
   compile() {
     this.visitAll();
-    this.vfile.data.gettext = collectGettextData(this.root, this.vfile);
+    this.data.gettext = collectGettextData(this.root, this.vfile);
     const sourceMap = this.builder.toSourceNode();
-    this.vfile.data.sourceMap = sourceMap;
+    this.data.sourceMap = sourceMap;
+    if (this.data.debug) {
+      this.data.headings = toHeadingTree(this.root);
+    }
     return this.builder.toString();
   }
 
@@ -161,7 +168,7 @@ class AstCompiler {
     switch (node.type) {
       case 'array': {
         this.builder.startTable(node.node.position).startTable();
-        if (this.vfile.data.debug) {
+        if (this.data.debug) {
           const positions = [serializePosition(node)];
           node.children.forEach((child) => positions.push(serializePosition(child)));
           let prev = 0;
@@ -184,7 +191,7 @@ class AstCompiler {
         }
         const labels = serializeTableInner(
           node.data?.labels || {},
-          (p) => `{${p.map((s) => JSON.stringify(s)).join(',')}}`,
+          ({ path }) => `{${path.map((s) => JSON.stringify(s)).join(',')}}`,
         );
         if (labels) {
           this.builder.pair('labels').startTable().raw(labels).endTable();

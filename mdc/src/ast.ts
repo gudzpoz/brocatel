@@ -29,7 +29,9 @@ export interface Metadata extends Data {
   /**
    * Paths to labeled children.
    */
-  labels: { [label: string]: RelativePath };
+  labels: {
+    [label: string]: { path: RelativePath, node: LuaArray },
+  };
   /**
    * Function info.
    */

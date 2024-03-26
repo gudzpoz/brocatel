@@ -3,6 +3,7 @@ import path from 'path';
 import { VFile } from 'vfile';
 
 import { BrocatelCompiler } from '.';
+import { getRootData } from './debug';
 
 /* eslint-disable no-console */
 function displayWarnings(input: string, vfile: VFile) {
@@ -34,9 +35,9 @@ compiler.compileAll(filename, async (f) => {
   return buffer.toString();
 }).then((output) => {
   fs.writeFile(path.join(dir, output.path), output.value);
-  const gettextOutput: VFile = output.data.gettext as VFile;
+  const gettextOutput = getRootData(output).gettext ?? new VFile();
   fs.writeFile(path.join(dir, gettextOutput.path), gettextOutput.value);
   Object
-    .entries(output.data.inputs as { [f: string]: VFile })
+    .entries(getRootData(output).inputs ?? {})
     .forEach(([f, vfile]) => displayWarnings(path.join(dir, `${f}.md`), vfile));
 });

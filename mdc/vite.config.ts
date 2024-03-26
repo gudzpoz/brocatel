@@ -14,14 +14,13 @@ export default defineConfig({
       name: 'brocatel-mdc',
       formats: ['es', 'cjs'],
       fileName: (format, entry) => {
-        console.log(entry);
         const ext = format === 'es' ? '.es.js' : `.cjs`;
         return `${entry}${ext}`;
       },
     },
     rollupOptions: {
       external: ['fs', 'path'],
-    }
+    },
   },
   plugins: [
     dts({ rollupTypes: true }),

@@ -4,14 +4,14 @@ import { Node } from 'unist';
 import { visitParents } from 'unist-util-visit-parents';
 import { VFile } from 'vfile';
 
+import { getData } from './debug';
+
 const remapLineNumbers: Plugin = () => (rootNode: Node, vfile: VFile) => {
-  if (!vfile.data.lineMapping) {
+  const data = getData(vfile);
+  if (!data.lineMapping) {
     return rootNode;
   }
-  const { original, newLines } = vfile.data.lineMapping as {
-    original: number[],
-    newLines: number[],
-  };
+  const { original, newLines } = data.lineMapping;
   const root = rootNode as Root;
   function binarySearch(value: number, start: number, end: number): number {
     if (end - start <= 1) {
@@ -31,6 +31,8 @@ const remapLineNumbers: Plugin = () => (rootNode: Node, vfile: VFile) => {
     if (pos) {
       pos.start.line = original[binarySearch(pos.start.line, 0, newLines.length)] + 1;
       pos.end.line = original[binarySearch(pos.end.line, 0, newLines.length)] + 1;
+      pos.start.offset = 0;
+      pos.end.offset = 0;
     }
   });
   return root;
