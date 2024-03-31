@@ -27,8 +27,8 @@ features:
       even in browsers and consoles.
   - title: Localization
     details: |
-      Designed with internalization needs in mind.
-      A context-rich [POT file](https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html)
+      Designed with internalization needs in mind. A context-rich
+      <a href="https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html">POT file</a>
       is generated upon compilation for integration with
       <a href="https://www.gnu.org/software/gettext/">GNU gettext</a>.
   - title: Fully Customizable

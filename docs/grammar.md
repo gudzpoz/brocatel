@@ -168,9 +168,9 @@ to avoid conflicts with the user-defined macros.
   :::if `score == 100`
   - You win!
   - You lose. (The else branch here.)
-  :::else
+  ~~~
 
-- `do`: Calls a Lua function, passing the arguments specific in the list.
+- `do`: Calls a Lua function, passing the arguments specified in the list.
 
   ~~~markdown
   :::do `function_name`
@@ -210,13 +210,13 @@ as examples of custom macros. See `mdc/src/macros/builtin.lua` for details.
 - `switch`: Evaluates an expression, and executes the corresponding case.
 
   ~~~markdown
-  :::switch `expression`
-  - `1`
-    Result: 1
-  - `2`
-    Result: 2
-  - `3`
-    Result: 3
+  :::switch `a = 100`
+  - `a == 0`
+    Result: 0
+  - `0 < a and a < 100`
+    Result: 1~99
+  - `a == 100`
+    Result: 100
   ~~~
 
 ## Threads & Coroutine Grammar

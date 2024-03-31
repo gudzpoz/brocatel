@@ -46,7 +46,7 @@ import type { Diagnostic } from '@brocatel/mde';
 import { debounce } from '@github/mini-throttle';
 import { VFile } from 'vfile';
 import { useData } from 'vitepress';
-import { onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 
 import { useCompiler } from './compiler';
 import { parse } from './markdown';
@@ -56,10 +56,16 @@ import '@brocatel/mde/dist/style.css';
 const props = defineProps<{
   height?: string,
   autoScroll?: boolean,
+  markdown?: string,
 }>();
 const { isDark } = useData();
 
 const markdown = ref('');
+watch(() => props.markdown, (md) => {
+  if (md !== undefined) {
+    handleChangeNow(md);
+  }
+});
 // Automatically compile new script.
 const story = new StoryRunner();
 
@@ -99,7 +105,7 @@ const inSight = ref(false);
 function refetch(intoView?: boolean) {
   if (defaultText.value && (inSight.value || intoView)) {
     const pre = defaultText.value?.querySelector('pre');
-    handleChangeNow(pre ? pre.innerText : '');
+    handleChangeNow(props.markdown ?? (pre ? pre.innerText : ''));
     inSight.value = true;
   }
 }
