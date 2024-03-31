@@ -143,6 +143,24 @@ END
 `, [], ['1', '2', '3', '5', '8', '13', '21', '34', 'END']);
 });
 
+test('Switch macro', async () => {
+  await assertOutput(`
+\`i = 0\`
+# start
+:::switch
+- \`i == 0\`
+  0
+- \`i == 1\`
+  1
+- \`i == 2\`
+  2
+- \`true\`
+  end
+\`i = i + 1\`
+\`i < 4\` [](#start)
+`, [], ['0', '1', '2', 'end']);
+});
+
 test('Save and load', async () => {
   await loadStory('- 0\n  A\n  B\n  C');
   assert.equal((runner.next(

@@ -10,7 +10,7 @@
       >
         <input
           type="checkbox"
-          :checked="plainText"
+          :checked="useCodeMirror"
           @change="(e) => {
             useCodeMirror = (e.target as HTMLInputElement).checked;
             emit('update:plainText', useCodeMirror);
@@ -94,9 +94,11 @@ import {
 } from '@milkdown/preset-commonmark';
 import { nord as nordConfig } from '@milkdown/theme-nord';
 import { callCommand, replaceAll, type $Command } from '@milkdown/utils';
-import { Milkdown, useEditor, useInstance } from '@milkdown/vue';
+import { Milkdown, useEditor } from '@milkdown/vue';
 import { useNodeViewFactory } from '@prosemirror-adapter/vue';
-import { provide, ref, watch } from 'vue';
+import {
+  nextTick, provide, ref, watch,
+} from 'vue';
 
 import brocatelPlugins from '../plugins/index';
 import { insertDirectiveCommand } from '../nodes/directive';
@@ -121,6 +123,11 @@ const props = defineProps<{
   prompt(message: string): string | null;
 }>();
 const useCodeMirror = ref(props.plainText ?? false);
+watch(() => props.plainText, (newValue) => {
+  if (newValue !== undefined) {
+    useCodeMirror.value = newValue;
+  }
+});
 
 const emit = defineEmits<{
   'update:modelValue': [value: string],
@@ -133,7 +140,7 @@ const headings = ref<string[]>([]);
 provide('headings', headings);
 
 const nodeViewFactory = useNodeViewFactory();
-useEditor((root) => {
+const { get: getEditor } = useEditor((root) => {
   let editor = Editor.make()
     .config((ctx) => {
       ctx.set(rootCtx, root);
@@ -161,20 +168,25 @@ useEditor((root) => {
   return editor;
 });
 
-const [, editor] = useInstance();
-
 function updateMilkdown(value: string) {
-  editor()?.action((ctx) => replaceAll(value)(ctx));
+  getEditor()?.action(replaceAll(value, true));
 }
 watch(() => props.modelValue, (value) => {
   if (value !== markdown.value) {
-    markdown.value = value;
-    updateMilkdown(value);
+    // Weird bugs happening when Vue is updating the tree,
+    // so we need to remove Milkdown from tree and wait for the next tick.
+    // TODO: Report this bug to Vue or prosemirror-adapter.
+    emit('update:plainText', true);
+    useCodeMirror.value = true;
+    nextTick(() => {
+      markdown.value = value;
+      updateMilkdown(value);
+    });
   }
 });
 
 function call<T>(command: $Command<T>, payload?: T) {
-  return editor()?.action(callCommand(command.key, payload));
+  return getEditor()?.action(callCommand(command.key, payload));
 }
 function toggleLink() {
   try {

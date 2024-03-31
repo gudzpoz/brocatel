@@ -21,6 +21,7 @@ export default defineConfig({
     rollupOptions: {
       external: ['fs', 'path'],
     },
+    sourcemap: true,
   },
   plugins: [
     dts({ rollupTypes: true }),

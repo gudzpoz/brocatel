@@ -30,7 +30,7 @@ import type { Node } from '@milkdown/prose/model';
 import { TextSelection } from '@milkdown/prose/state';
 import { useInstance } from '@milkdown/vue';
 import { useNodeViewContext } from '@prosemirror-adapter/vue';
-import { computed } from 'vue';
+import { ref, watch } from 'vue';
 
 import ResizableInput from './ResizableInput.vue';
 
@@ -39,24 +39,6 @@ const {
 } = useNodeViewContext();
 
 const [, useEditor] = useInstance();
-
-function updateHref(href: string) {
-  const editor = useEditor();
-  editor?.action((ctx) => {
-    const pos = getPos();
-    if (pos) {
-      const { state } = view;
-      const { tr } = state;
-      view.dispatch(state.tr.setSelection(new TextSelection(tr.doc.resolve(pos + 1))));
-      ctx.get(commandsCtx).call(updateLinkCommand.key, { href });
-    }
-  });
-}
-
-function getLinkHref(n: Node) {
-  const href = n.firstChild?.marks[0]?.attrs?.href;
-  return typeof href === 'string' ? href : '#';
-}
 
 function isMarkedText(n: Node, mark: 'inlineCode' | 'link') {
   if (n?.isText) {
@@ -86,8 +68,32 @@ function getType(n: Node): 'link' | 'code' | 'conditional' | 'normal' {
   return 'normal';
 }
 
-const type = computed(() => getType(node.value));
-const href = computed(() => getLinkHref(node.value));
+function getLinkHref(n: Node) {
+  const href = n.firstChild?.marks[0]?.attrs?.href;
+  return typeof href === 'string' ? href : '#';
+}
+
+// Using computed seems to cause undefined bugs...
+const type = ref<ReturnType<typeof getType>>('normal');
+const href = ref('');
+watch(() => node.value, (n) => {
+  type.value = getType(n);
+  href.value = getLinkHref(n);
+});
+
+function updateHref(url: string) {
+  const editor = useEditor();
+  href.value = url;
+  editor?.action((ctx) => {
+    const pos = getPos();
+    if (pos) {
+      const { state } = view;
+      const { tr } = state;
+      view.dispatch(state.tr.setSelection(new TextSelection(tr.doc.resolve(pos + 1))));
+      ctx.get(commandsCtx).call(updateLinkCommand.key, { url });
+    }
+  });
+}
 </script>
 <style>
 .ProseMirror .paragraph {
