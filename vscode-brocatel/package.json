@@ -20,7 +20,19 @@
         "command": "vscode-brocatel.preview",
         "title": "Brocatel: Preview Story"
       }
-    ]
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Brocatel Dev Tools",
+      "properties": {
+        "brocatel.lintAllMarkdownFiles": {
+          "scope": "resource",
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to lint all markdown files in the workspace."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile",

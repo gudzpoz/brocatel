@@ -12,16 +12,35 @@ import {
   TextDocumentPositionParams,
   CompletionItemKind,
   ProposedFeatures,
+  DidChangeConfigurationNotification,
 } from 'vscode-languageserver/node';
 import { Position, TextDocument } from 'vscode-languageserver-textdocument';
 
 import { BrocatelCompiler, debug } from '@brocatel/mdc';
 
+interface Settings {
+  lintAllMarkdownFiles: boolean;
+}
+const defaultSettings: Settings = {
+  lintAllMarkdownFiles: false,
+};
+let globalSettings: Settings = defaultSettings;
+const documentSettings: Map<string, Thenable<Settings>> = new Map();
+let hasConfigurationCapability = false;
+let hasWorkspaceFolderCapability = false;
+
 const connection = createConnection(ProposedFeatures.all);
 
 const documents = new TextDocuments(TextDocument);
 
-connection.onInitialize(() => {
+connection.onInitialize(({ capabilities }) => {
+  hasConfigurationCapability = !!(
+    capabilities.workspace && !!capabilities.workspace.configuration
+  );
+  hasWorkspaceFolderCapability = !!(
+    capabilities.workspace && !!capabilities.workspace.workspaceFolders
+  );
+
   const result: InitializeResult = {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Incremental,
@@ -31,8 +50,49 @@ connection.onInitialize(() => {
       },
     },
   };
+  if (hasWorkspaceFolderCapability) {
+    result.capabilities.workspace = {
+      workspaceFolders: {
+        supported: true,
+      },
+    };
+  }
   return result;
 });
+
+connection.onInitialized(() => {
+  if (hasConfigurationCapability) {
+    connection.client.register(DidChangeConfigurationNotification.type, undefined);
+  }
+  if (hasWorkspaceFolderCapability) {
+    connection.workspace.onDidChangeWorkspaceFolders(() => {
+      connection.console.log('Workspace folder change event received.');
+    });
+  }
+});
+
+connection.onDidChangeConfiguration((change) => {
+  if (hasConfigurationCapability) {
+    documentSettings.clear();
+  } else {
+    globalSettings = change.settings.languageServerExample as Settings || defaultSettings;
+  }
+});
+
+function getDocumentSettings(resource: string): Thenable<Settings> {
+  if (!hasConfigurationCapability) {
+    return Promise.resolve(globalSettings);
+  }
+  let result = documentSettings.get(resource);
+  if (!result) {
+    result = connection.workspace.getConfiguration({
+      scopeUri: resource,
+      section: 'brocatel',
+    });
+    documentSettings.set(resource, result);
+  }
+  return result;
+}
 
 const compiler = new BrocatelCompiler({
   autoNewLine: true,
@@ -89,23 +149,25 @@ function newRange(start: Position, end: Position) {
   };
 }
 
-async function sendDiagnostics(tracked: Tracked) {
+async function sendDiagnostics(tracked: Tracked, empty?: boolean) {
   const { document, compiled, files: prevFiles } = tracked;
-  if (!compiled) {
+  if (!empty && !compiled) {
     return [];
   }
   const groups: Record<string, VFile['messages']> = Object.fromEntries(
     prevFiles.map((file) => [file, []]),
   );
-  compiled.messages.forEach((message) => {
-    if (!message.file) {
-      return;
-    }
-    if (!groups[message.file]) {
-      groups[message.file] = [];
-    }
-    groups[message.file].push(message);
-  });
+  if (!empty) {
+    compiled.messages.forEach((message) => {
+      if (!message.file) {
+        return;
+      }
+      if (!groups[message.file]) {
+        groups[message.file] = [];
+      }
+      groups[message.file].push(message);
+    });
+  }
   const base = new URL(document.uri);
   const dirname = path.dirname(base.pathname);
   const files = await Promise.all(Object.entries(groups).map(async ([file, messages]) => {
@@ -129,9 +191,30 @@ async function sendDiagnostics(tracked: Tracked) {
   return files.flat();
 }
 
+const HTML_COMMENT_REGEX = /^<!--\s*brocatel\s*-->/gi;
+const FRONT_MATTER_REGEX = /^---\nbrocatel:$/gm;
+async function isBrocatelDocument(document: TextDocument) {
+  const settings = await getDocumentSettings(document.uri);
+  if (settings.lintAllMarkdownFiles) {
+    return true;
+  }
+  const text = document.getText();
+  if (HTML_COMMENT_REGEX.test(text)) {
+    return true;
+  }
+  if (FRONT_MATTER_REGEX.test(text)) {
+    return true;
+  }
+  return false;
+}
+
 const validateBrocatelDocument = debounce(async (document: TextDocument) => {
   const tracked = trackedContents.get(document.uri);
   if (!tracked) {
+    return;
+  }
+  if (!(await isBrocatelDocument(document))) {
+    await sendDiagnostics(tracked, true);
     return;
   }
   const compiled = await compileDocument(document);
