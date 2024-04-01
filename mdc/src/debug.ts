@@ -1,5 +1,5 @@
 import { Root } from 'mdast';
-import { SourceNode } from 'source-map-js';
+import { SourceMapConsumer, SourceNode } from 'source-map-js';
 import { Position } from 'unist';
 import { VFile } from 'vfile';
 
@@ -76,4 +76,28 @@ export interface RootData {
 
 export function getRootData(vfile: VFile): RootData {
   return vfile.data as RootData;
+}
+
+export function luaErrorToSource(data: RootData, e?: Error) {
+  if (!(e?.message)) {
+    return null;
+  }
+  const info = e.message.split('\n')[0];
+  const match = /\[string "<input>"\]:(\d+): (.*)$/.exec(info);
+  const { sourceMap } = data;
+  if (!match || !sourceMap) {
+    return null;
+  }
+  const line = Number(match[1]); // 1-based
+  const column = 0; // 0-based
+  const mapper = new SourceMapConsumer(
+    JSON.parse(sourceMap.toStringWithSourceMap().map.toString()),
+  );
+  const position = mapper.originalPositionFor({ line, column });
+  return {
+    message: match[2],
+    source: position.source,
+    line: position.line,
+    column: position.column + 1, // 0-base to 1-based
+  };
 }

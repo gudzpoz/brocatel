@@ -6,7 +6,6 @@ import type { MdxTextExpression } from 'mdast-util-mdx-expression';
 import type { Plugin } from 'unified';
 import type { VFile } from 'vfile';
 import { visitParents } from 'unist-util-visit-parents';
-import { v4 as uuidv4 } from 'uuid';
 import { parse as parseYaml } from 'yaml';
 
 import { getAnchorString, isNormalLink } from '@brocatel/md';
@@ -421,10 +420,16 @@ class AstTransformer {
   toTextNode(para: Paragraph, tags: LuaTags): LuaText {
     const original = toMarkdownString(para);
     const references: { [id: string]: [string, MdxTextExpression] } = {};
+    let i = 1;
     visitParents(para, (n) => {
       if (n.type as string === 'mdxTextExpression') {
+        let id = `__brocatel_variable_${i}__`;
+        while (original.includes(id)) {
+          i += 1;
+          id = `__brocatel_variable_${i}__`;
+        }
+        i += 1;
         const node = n as unknown as MdxTextExpression;
-        const id = uuidv4();
         references[id] = [node.value, node];
         node.value = id;
       }

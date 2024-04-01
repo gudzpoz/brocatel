@@ -11,8 +11,8 @@
     "Other"
   ],
   "activationEvents": [
-		"onLanguage:markdown"
-	],
+    "onLanguage:markdown"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [

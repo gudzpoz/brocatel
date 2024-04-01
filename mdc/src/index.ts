@@ -1,7 +1,7 @@
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkJoinCJKLines from 'remark-join-cjk-lines';
 import remarkParse from 'remark-parse';
-import { SourceMapConsumer, SourceNode } from 'source-map-js';
+import { SourceNode } from 'source-map-js';
 import { Processor, unified } from 'unified';
 import { Position } from 'unist';
 import { VFile } from 'vfile';
@@ -119,23 +119,15 @@ export async function validate(vfile: VFile) {
   try {
     await story.loadStory(vfile.value.toString());
   } catch (e) {
-    const info = (e as Error).message.split('\n')[0];
-    const match = /\[string "<input>"\]:(\d+): .*$/.exec(info);
-    const { sourceMap } = data;
-    if (match && sourceMap) {
-      const line = Number(match[1]); // 1-based
-      const column = 0; // 0-based
-      const mapper = new SourceMapConsumer(
-        JSON.parse(sourceMap.toStringWithSourceMap().map.toString()),
-      );
-      const position = mapper.originalPositionFor({ line, column });
-      const file = inputs?.[removeMdExt(position.source)];
+    const err = debugging.luaErrorToSource(data, e as Error);
+    if (err) {
+      const file = inputs?.[removeMdExt(err.source)];
       (file ?? vfile).message('invalid lua code', {
-        line: position.line,
-        column: position.column + 1, // 0-base to 1-based
+        line: err.line,
+        column: err.column,
       });
     } else {
-      vfile.message(`invalid lua code found: ${info}`);
+      vfile.message(`invalid lua code found: ${e}`);
     }
     return;
   }
@@ -326,7 +318,7 @@ export class BrocatelCompiler {
 export const wasmoon = _wasmoon;
 
 export namespace debug {
-  export const { getData, getRootData } = debugging;
+  export const { getData, getRootData, luaErrorToSource } = debugging;
   export type CompilationData = debugging.CompilationData;
   export type RootData = debugging.RootData;
 
