@@ -12,11 +12,8 @@ export function activate(context: vscode.ExtensionContext) {
     .then((c) => context.subscriptions.push(c))
     .catch((e) => error('error starting language server', e));
 
-  const errorDecoration = vscode.window.createTextEditorDecorationType({
-    border: '1px solid red',
-    isWholeLine: true,
-  });
-  context.subscriptions.push(errorDecoration);
+  const diagnostics = vscode.languages.createDiagnosticCollection('brocatel');
+  context.subscriptions.push(diagnostics);
 
   const worker = new WorkerInstance();
   context.subscriptions.push(worker);
@@ -46,7 +43,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (editor && editor.document.fileName.endsWith('.md')) {
       let previewer = trackedDocuments.get(editor.document.fileName);
       if (!previewer) {
-        previewer = new BrocatelPreviewer(errorDecoration, editor, worker, (disposed) => {
+        previewer = new BrocatelPreviewer(diagnostics, editor, worker, (disposed) => {
           trackedDocuments.delete(disposed.fileName());
         });
         trackedDocuments.set(editor.document.fileName, previewer);

@@ -6,7 +6,7 @@ import remarkHtml from 'remark-html';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 
-import { BrocatelCompiler, StoryRunner } from '@brocatel/mdc';
+import { BrocatelCompiler, StoryRunner, debug } from '@brocatel/mdc';
 
 const remark = unified().use(remarkParse).use(remarkHtml);
 
@@ -31,7 +31,11 @@ function splitPath(file) {
 
 const compiler = new BrocatelCompiler({});
 /**
+ * @typedef {Awaited<ReturnType<typeof compiler.compileAll>>} VFile
+ */
+/**
  * @param {string} file
+ * @returns {Promise<VFile>}
  */
 async function storyFromSource(file) {
   const { name, directory } = splitPath(file);
@@ -64,9 +68,28 @@ function send(id, type, payload) {
 function error(id, message) {
   send(id, 'error', { messages: Array.isArray(message) ? message : [message] });
 }
+/**
+ * @param {number} id
+ * @param {VFile} file
+ * @param {() => void} func
+ */
+function captureLuaError(id, file, func) {
+  try {
+    func();
+  } catch (e) {
+    const err = debug.luaErrorToSource(
+      debug.getRootData(file),
+      /** @type {Error} */ (e),
+    );
+    if (!err) {
+      throw e;
+    }
+    error(id, [err]);
+  }
+}
 
 /**
- * @type {Map<number, StoryRunner>}
+ * @type {Map<number, { runner: StoryRunner, file: VFile }>}
  */
 const stories = new Map();
 /**
@@ -94,20 +117,26 @@ async function process(id, type, payload) {
       const sid = allocateId();
       const story = await storyFromSource(payload);
       const runner = new StoryRunner();
-      await runner.loadStory(story.value.toString());
-      stories.set(sid, runner);
-      send(id, 'loaded', { sid });
+      captureLuaError(id, story, () => {
+        runner.loadStory(story.value.toString());
+        stories.set(sid, { runner, file: story });
+        send(id, 'loaded', { sid });
+      });
       break;
     }
     case 'reload': {
-      const story = getStory(payload.sid);
-      story.reload();
-      send(id, 'reloaded', { sid: payload.sid });
+      const { runner, file } = getStory(payload.sid);
+      captureLuaError(id, file, () => {
+        runner.reload();
+        send(id, 'reloaded', { sid: payload.sid });
+      });
       break;
     }
     case 'next': {
-      const story = getStory(payload.sid);
-      send(id, 'output', { output: story.next(payload.input) });
+      const { runner, file } = getStory(payload.sid);
+      captureLuaError(id, file, () => {
+        send(id, 'output', { output: runner.next(payload.input) });
+      });
       break;
     }
     case 'close': {

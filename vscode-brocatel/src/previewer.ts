@@ -1,3 +1,5 @@
+import path from 'path';
+
 import * as vscode from 'vscode';
 
 import WorkerInstance from './worker-instance';
@@ -21,7 +23,7 @@ function point2Position(point?: Point): vscode.Position {
 }
 
 export default class BrocatelPreviewer {
-  private decoration: vscode.TextEditorDecorationType;
+  private diagnotics: vscode.DiagnosticCollection;
 
   private editor: vscode.TextEditor;
 
@@ -34,12 +36,12 @@ export default class BrocatelPreviewer {
   onDisposed: (previewer: BrocatelPreviewer) => void;
 
   constructor(
-    decoration: vscode.TextEditorDecorationType,
+    diagnotics: vscode.DiagnosticCollection,
     editor: vscode.TextEditor,
     worker: WorkerInstance,
     onDisposed: (previewer: BrocatelPreviewer) => void,
   ) {
-    this.decoration = decoration;
+    this.diagnotics = diagnotics;
     this.editor = editor;
     this.worker = worker;
     this.onDisposed = onDisposed;
@@ -152,14 +154,49 @@ function reload() {
           default:
             break;
         }
+        this.annotateEditor([]);
       } catch (e) {
-        vscode.window.showErrorMessage((e as Error).message);
+        const err = e as Error;
+        const { cause } = err;
+        if (!cause) {
+          vscode.window.showErrorMessage((e as Error).toString());
+          return;
+        }
+        const { messages } = cause as { messages: any[] };
+        const annotations: Message[] = [];
+        const serialized = messages.map((m) => {
+          if (typeof m === 'string') {
+            return m;
+          }
+          const msg = m as { message: string, source: string, line: number, column: number };
+          if (path.basename(msg.source) === path.basename(this.fileName())) {
+            annotations.push({
+              message: msg.message,
+              position: { start: msg, end: msg },
+            });
+          }
+          return msg.message;
+        });
+        this.annotateEditor(annotations);
+        vscode.window.showErrorMessage(serialized.join('\n'));
       }
     });
   }
 
   fileName() {
     return this.editor.document.fileName;
+  }
+
+  private async ensureSid() {
+    if (this.sid !== -1) {
+      return this.sid;
+    }
+    if (await this.compile()) {
+      if (this.sid !== -1) {
+        return this.sid;
+      }
+    }
+    throw new Error('compilation failure');
   }
 
   async compile() {
@@ -183,21 +220,15 @@ function reload() {
   }
 
   async annotateEditor(messages: Message[]) {
-    this.editor.setDecorations(
-      this.decoration,
-      messages.map((message) => {
-        const start = point2Position(message.position?.start);
-        const end = point2Position(message.position?.end);
-        const range = new vscode.Range(
-          start,
-          start.isEqual(end) ? end.translate(0, 1) : end,
-        );
-        return {
-          range,
-          hoverMessage: message.message,
-        };
-      }),
-    );
+    this.diagnotics.clear();
+    this.diagnotics.set(this.editor.document.uri, messages.map((m) => ({
+      message: m.message,
+      severity: vscode.DiagnosticSeverity.Error,
+      range: new vscode.Range(
+        point2Position(m.position?.start),
+        point2Position(m.position?.end),
+      ),
+    })));
   }
 
   async pushLine(line: StoryLine | null, replace: boolean) {
@@ -239,7 +270,7 @@ ${(
       return;
     }
     let replace = input !== undefined;
-    let line = await this.worker.next(this.sid, input);
+    let line = await this.worker.next(await this.ensureSid(), input);
     while (line.output) {
       // eslint-disable-next-line no-await-in-loop
       await this.pushLine(line.output, replace);
@@ -256,7 +287,7 @@ ${(
   }
 
   async reload() {
-    await this.worker.reload(this.sid);
+    await this.worker.reload(await this.ensureSid());
     await this.panel.webview.postMessage({ type: 'reload' });
     await this.next();
   }
