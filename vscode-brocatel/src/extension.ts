@@ -1,15 +1,20 @@
 import * as vscode from 'vscode';
 
+import newClient from './lsp-client';
 import BrocatelPreviewer from './previewer';
+import { error, log } from './utils';
 import WorkerInstance from './worker-instance';
-
-import { log } from './utils';
 
 const trackedDocuments = new Map<string, BrocatelPreviewer>();
 
 export function activate(context: vscode.ExtensionContext) {
+  newClient(context)
+    .then((c) => context.subscriptions.push(c))
+    .catch((e) => error('error starting language server', e));
+
   const errorDecoration = vscode.window.createTextEditorDecorationType({
     border: '1px solid red',
+    isWholeLine: true,
   });
   context.subscriptions.push(errorDecoration);
 
@@ -53,4 +58,7 @@ export function activate(context: vscode.ExtensionContext) {
   }));
 }
 
-export function deactivate() { }
+export function deactivate() {
+  trackedDocuments.forEach((previewer) => previewer.dispose());
+  trackedDocuments.clear();
+}

@@ -1,0 +1,274 @@
+import path from 'path';
+
+import debounce from 'debounce';
+import { Content, Parent, Root } from 'mdast';
+import {
+  createConnection,
+  TextDocuments,
+  Diagnostic,
+  DiagnosticSeverity,
+  TextDocumentSyncKind,
+  InitializeResult,
+  TextDocumentPositionParams,
+  CompletionItemKind,
+  ProposedFeatures,
+} from 'vscode-languageserver/node';
+import { Position, TextDocument } from 'vscode-languageserver-textdocument';
+
+import { BrocatelCompiler, debug } from '@brocatel/mdc';
+
+const connection = createConnection(ProposedFeatures.all);
+
+const documents = new TextDocuments(TextDocument);
+
+connection.onInitialize(() => {
+  const result: InitializeResult = {
+    capabilities: {
+      textDocumentSync: TextDocumentSyncKind.Incremental,
+      definitionProvider: true,
+      completionProvider: {
+        resolveProvider: true,
+      },
+    },
+  };
+  return result;
+});
+
+const compiler = new BrocatelCompiler({
+  autoNewLine: true,
+});
+
+type VFile = Awaited<ReturnType<BrocatelCompiler['compileAll']>>;
+type Tracked = {
+  document: TextDocument,
+  compiled?: VFile,
+  files: string[],
+};
+
+const trackedContents = new Map<string, Tracked>();
+
+async function compileDocument(document: TextDocument) {
+  const { uri } = document;
+  const base = new URL(uri);
+  const basename = path.basename(base.pathname);
+  const dirname = path.dirname(base.pathname);
+  const compiled = await compiler.compileAll(basename, async (name: string) => {
+    const file = new URL(path.resolve(dirname, `${name}.md`), base);
+    if (trackedContents.has(file.href)) {
+      const content = trackedContents.get(file.href);
+      if (content) {
+        return content.document.getText();
+      }
+    }
+    const response = await fetch(file);
+    const content = await response.text();
+    return content;
+  });
+  return compiled;
+}
+
+function point2Point(point?: { line: number, column: number }) {
+  return {
+    line: Math.max(point ? point.line - 1 : 0, 0),
+    character: Math.max(point ? point.column - 1 : 0, 0),
+  };
+}
+
+function newRange(start: Position, end: Position) {
+  let left = start;
+  let right = end;
+  if (left.line === right.line && left.character === right.character) {
+    right.character += 1;
+  }
+  if (left.line > right.line || (left.line === right.line && left.character > right.character)) {
+    [left, right] = [right, left];
+  }
+  return {
+    start: left,
+    end: right,
+  };
+}
+
+async function sendDiagnostics(tracked: Tracked) {
+  const { document, compiled, files: prevFiles } = tracked;
+  if (!compiled) {
+    return [];
+  }
+  const groups: Record<string, VFile['messages']> = Object.fromEntries(
+    prevFiles.map((file) => [file, []]),
+  );
+  compiled.messages.forEach((message) => {
+    if (!message.file) {
+      return;
+    }
+    if (!groups[message.file]) {
+      groups[message.file] = [];
+    }
+    groups[message.file].push(message);
+  });
+  const base = new URL(document.uri);
+  const dirname = path.dirname(base.pathname);
+  const files = await Promise.all(Object.entries(groups).map(async ([file, messages]) => {
+    const fileUri = new URL(path.resolve(dirname, file), base);
+    return connection.sendDiagnostics({
+      uri: fileUri.toString(),
+      diagnostics: messages.map((message) => {
+        const range = newRange(
+          point2Point(message.position?.start),
+          point2Point(message.position?.end),
+        );
+        const diagnostic: Diagnostic = {
+          severity: DiagnosticSeverity.Error,
+          range,
+          message: message.message,
+        };
+        return diagnostic;
+      }),
+    }).then(() => (messages.length === 0 ? [] : [file]));
+  }));
+  return files.flat();
+}
+
+const validateBrocatelDocument = debounce(async (document: TextDocument) => {
+  const tracked = trackedContents.get(document.uri);
+  if (!tracked) {
+    return;
+  }
+  const compiled = await compileDocument(document);
+  tracked.compiled = compiled;
+  tracked.files = await sendDiagnostics(tracked);
+}, 1000);
+
+documents.onDidOpen(async ({ document }) => {
+  trackedContents.set(document.uri, { document, files: [] });
+  await validateBrocatelDocument(document);
+});
+documents.onDidClose(({ document }) => {
+  trackedContents.delete(document.uri);
+});
+documents.onDidChangeContent(async (change) => {
+  const { document } = change;
+  const tracked = trackedContents.get(document.uri);
+  if (!tracked) {
+    return;
+  }
+  tracked.document = document;
+  await validateBrocatelDocument(change.document);
+});
+
+interface Point {
+  line: number;
+  column: number;
+}
+
+function comparePoints(a: Point, b: Point) {
+  return a.line - b.line || a.column - b.column;
+}
+
+function findNodeByPoint(root: Root, point: Point) {
+  const candidates: (Content | Root)[] = [root];
+  while (candidates.length > 0) {
+    const candidate = candidates.pop()!;
+    if (!(candidate as any).children) {
+      if (candidate.position) {
+        // Auto-completable node should have a position
+        if (comparePoints(point, candidate.position.start) > 0
+          && comparePoints(point, candidate.position.end) < 0
+        ) {
+          return candidate;
+        }
+      }
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+    const { children } = candidate as Parent;
+    // Bisect by position
+    let left = 0;
+    let right = children.length;
+    while (right - left > 1) {
+      const center = Math.floor((left + right) / 2);
+      // Find a child around mid whose position is defined
+      let mid = center;
+      while (left < mid && !children[mid].position) {
+        mid -= 1;
+      }
+      if (mid === left) {
+        // The other direction
+        mid = center + 1;
+        while (mid < right - 1 && !children[mid].position) {
+          mid += 1;
+        }
+        if (mid === right - 1) {
+          // All, undefined, are, candidates.
+          break;
+        }
+      }
+      const child = children[mid];
+      const position = child.position!;
+      const cmp = comparePoints(point, position.start);
+      // mid is in (left, right - 1), narrowing the range
+      if (cmp < 0) {
+        right = mid;
+      } else if (cmp > 0) {
+        left = mid + 1;
+      } else {
+        left = mid;
+      }
+    }
+    candidates.push(...children.slice(left, right));
+  }
+  return null;
+}
+
+function headingsToAnchor(heading: debug.LuaHeadingTree, prefix: string = ''): string[] {
+  const headings = Object.entries(heading.children).flatMap(([name, h]) => {
+    const children = headingsToAnchor(h, `${prefix}${name}#`);
+    children.push(`${prefix}${name}`);
+    return children;
+  });
+  return headings;
+}
+
+connection.onCompletion((param: TextDocumentPositionParams) => {
+  const document = trackedContents.get(param.textDocument.uri);
+  if (!document) {
+    return [];
+  }
+  const { compiled } = document;
+  if (!compiled) {
+    return [];
+  }
+  const rootData = debug.getRootData(compiled);
+  const point = {
+    line: param.position.line + 1,
+    column: param.position.character + 1,
+  };
+  const name = compiled.path.endsWith('.lua') ? compiled.path.slice(0, -4) : compiled.path;
+  const input = rootData.inputs?.[name];
+  if (input) {
+    const data = debug.getData(input);
+    if (data.markdown) {
+      const node = findNodeByPoint(data.markdown, point);
+      switch (node?.type) {
+        case 'link': {
+          if (node.url.startsWith('#')) {
+            if (data.headings) {
+              return headingsToAnchor(data.headings).map((anchor) => ({
+                label: anchor,
+                kind: CompletionItemKind.Reference,
+              }));
+            }
+          }
+          break;
+        }
+        default: {
+          break;
+        }
+      }
+    }
+  }
+  return [];
+});
+
+documents.listen(connection);
+connection.listen();

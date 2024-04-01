@@ -93,18 +93,10 @@ async function process(id, type, payload) {
     case 'load': {
       const sid = allocateId();
       const story = await storyFromSource(payload);
-      if (story.messages.length > 0) {
-        send(id, 'error', {
-          messages: story.messages.map(
-            ({ message, position, file }) => ({ message, position, file }),
-          ),
-        });
-      } else {
-        const runner = new StoryRunner();
-        await runner.loadStory(story.value.toString());
-        stories.set(sid, runner);
-        send(id, 'loaded', { sid });
-      }
+      const runner = new StoryRunner();
+      await runner.loadStory(story.value.toString());
+      stories.set(sid, runner);
+      send(id, 'loaded', { sid });
       break;
     }
     case 'reload': {

@@ -1,3 +1,4 @@
+import markdownItTodo from 'markdown-it-task-lists';
 import { defineConfig } from 'vitepress';
 
 // https://vitepress.dev/reference/site-config
@@ -5,6 +6,11 @@ export default defineConfig({
   title: 'Brocatel',
   base: '/brocatel/',
   description: 'Write your game plots in Markdown and Lua.',
+  markdown: {
+    config: (md) => {
+      md.use(markdownItTodo);
+    },
+  },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [

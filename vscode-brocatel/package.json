@@ -1,6 +1,6 @@
 {
   "name": "vscode-brocatel",
-  "displayName": "vscode-brocatel",
+  "displayName": "Brocatel Dev Tools",
   "description": "Run and test Brocatel stories in VS Code",
   "version": "0.0.1",
   "private": true,
@@ -10,7 +10,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+		"onLanguage:markdown"
+	],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -32,7 +34,8 @@
     "@brocatel/mdc": "workspace:^",
     "remark-html": "^15.0.2",
     "remark-parse": "^10.0.2",
-    "unified": "^10.1.2"
+    "unified": "^10.1.2",
+    "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",
@@ -42,7 +45,7 @@
     "@typescript-eslint/parser": "^7.0.2",
     "@vscode/test-cli": "^0.0.6",
     "@vscode/test-electron": "^2.3.9",
-    "eslint": "^8.56.0",
+    "eslint": "^8.57.0",
     "typescript": "^5.3.3",
     "vfile": "^5.3.7"
   }

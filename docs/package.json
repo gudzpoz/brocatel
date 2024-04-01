@@ -35,7 +35,8 @@
   "dependencies": {
     "@brocatel/mdc": "workspace:^",
     "@brocatel/mde": "workspace:^",
-    "@github/mini-throttle": "^2.1.1",
+    "debounce": "^2.0.0",
+    "markdown-it-task-lists": "^2.1.1",
     "remark": "^14.0.3",
     "remark-html": "^15.0.2",
     "vfile": "^5.3.7"

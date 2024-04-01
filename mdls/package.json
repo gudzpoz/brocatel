@@ -1,0 +1,39 @@
+{
+  "name": "@brocatel/mdls",
+  "version": "0.0.1",
+  "description": "Language Server for Brocatel",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "brocatel-mdls": "dist/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "vite build"
+  },
+  "keywords": [],
+  "author": "gudzpoz",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/mdast": "^3.0.15",
+    "@types/node": "^20.11.30",
+    "@typescript-eslint/eslint-plugin": "^7.3.1",
+    "@typescript-eslint/parser": "^7.3.1",
+    "eslint": "^8.57.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-airbnb-typescript": "^18.0.0",
+    "eslint-plugin-import": "^2.29.1",
+    "typescript": "^5.4.3",
+    "vite": "^5.2.2",
+    "vite-node": "^1.4.0",
+    "vite-plugin-dts": "^3.7.3",
+    "vitest": "^1.4.0"
+  },
+  "dependencies": {
+    "@brocatel/mdc": "workspace:^",
+    "debounce": "^2.0.0",
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11"
+  }
+}

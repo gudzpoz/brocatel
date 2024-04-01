@@ -3,5 +3,6 @@ packages:
   - "./md"
   - "./mdc"
   - "./mde"
+  - "./mdls"
   - "./vm"
   - "./vscode-brocatel"

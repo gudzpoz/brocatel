@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { StoryRunner, type SelectLine, type TextLine } from '@brocatel/mdc';
 import type { Diagnostic } from '@brocatel/mde';
-import { debounce } from '@github/mini-throttle';
+import debounce from 'debounce';
 import { VFile } from 'vfile';
 import { useData } from 'vitepress';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
