@@ -137,7 +137,7 @@ class AstTransformer {
     if (fronmatter?.type === 'yaml') {
       try {
         const metadata: Record<string, unknown> = parseYaml(fronmatter.value);
-        const ids = metadata.IFID ?? metadata.ifid ?? metadata.UUID ?? metadata.uuid;
+        const ids = metadata.IFID ?? metadata.ifid ?? metadata.UUID ?? metadata.uuid ?? [];
         const uuids: string[] = (Array.isArray(ids) ? ids : [ids]).map((s) => {
           if (typeof s === 'string') {
             const uuid = s.toUpperCase();

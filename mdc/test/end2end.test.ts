@@ -206,6 +206,10 @@ version=1,
 entry="main"},
 main={{debug={"1:1","8:1"}},
 "Hello"}}`);
+  assertOutput(`---
+brocatel: true
+---
+Hello`, [], ['Hello']);
 });
 
 test('Routine local variables', async () => {
