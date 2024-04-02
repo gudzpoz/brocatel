@@ -25,14 +25,6 @@
     ```
     ~~~
 
-### Tags
-
-- Usage: Prefixes the text with an inline directive to tag the text.
-- Semantics: Attaches extra info to the text to be used by external programs.
-
-  - `:tag Text`.
-  - `:tag[value] Text`.
-
 ### Interpolation
 
 - Usage: Use Lua code in MDX expressions to interpolate the text with Lua values.
@@ -47,6 +39,17 @@
 
   - `You have { 1 + 1 ?} apples.` will generate a `msgid_plural` entry in the POT file so that
     the translation can be done in a better way.
+
+### Tags
+
+- Usage: Prefixes the text with an inline directive to tag the text.
+- Semantics: Attaches extra info to the text to be used by external programs.
+
+  - `:tag Text`.
+  - `:tag[value] Text`.
+  - `:data[{ 1 + 1 }] Text.`: Interpolation is allowed in tags.
+    However, since tags are intended to pass program-specific data, plurality marks are ignored,
+    and the string will not get passed to Gettext.
 
 ## Headings
 

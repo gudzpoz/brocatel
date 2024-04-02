@@ -130,7 +130,17 @@ Valid elements are _texts_, _links_, _if-else nodes_ and _function nodes_.
     -- [optional] Mark one of the interpolation value as affecting plural forms.
     plural = "total_count",
     -- [optional] Tags or attributes.
-    tags = { colorful = "", size = "32" },
+    -- Dynamic tags are Text nodes excluding the `plural` and the `tags` fields.
+    tags = {
+      colorful = "",
+      size = "32",
+      dynamic = {
+        text = "data: {total_count}",
+        values = {
+          total_count = function() return total_count end,
+        },
+      },
+    },
   }
   ```
 

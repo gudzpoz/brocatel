@@ -395,10 +395,12 @@ class AstTransformer {
       if (tag.attributes && Object.entries(tag.attributes).length !== 0) {
         this.vfile.message('directive attribute not supported');
       }
-      tags[tag.name] = (
-        tag.children.length === 0 ? ''
-          : toMarkdownString({ type: 'paragraph', children: tag.children })
-      );
+      tags[tag.name] = tag.children.length === 0 ? {
+        type: 'tag',
+        text: '',
+        values: {},
+        node: tag,
+      } : this.toTextNode({ type: 'paragraph', children: tag.children }, {});
       i += 1;
       const gap = para.children[i];
       if (gap?.type === 'text') {

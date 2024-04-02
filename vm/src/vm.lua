@@ -323,6 +323,28 @@ function VM:current()
     end
 end
 
+--- Interpolates the text with the supplied values.
+--- @param text string
+--- @param values table<string, function>
+--- @param translate boolean
+--- @param plural string|nil
+function VM:interpolate(text, values, translate, plural)
+    local computed = {}
+    if values then
+        for k, v in pairs(values) do
+            computed[k] = v()
+        end
+    end
+    if translate then
+        text = self:translate(text, plural and computed[plural] or nil)
+    end
+    for key, value in pairs(computed) do
+        -- The key should be a valid Lua identifier and need no regex-escaping.
+        text = string.gsub(text, "{" .. key .. "}", tostring(value))
+    end
+    return text
+end
+
 --- Returns the current node and goes to the next.
 ---
 --- For normal users, use `VM.next` instead.
@@ -355,22 +377,17 @@ function VM:fetch_and_next(ip)
         ip:step(root)
         return self:translate(node), true
     elseif node_type == "tagged_text" then
-        local values = node.values
-        local computed = {}
         ip:step(root)
-        if values then
-            for k, v in pairs(values) do
-                computed[k] = v()
+        local formatted = self:interpolate(node.text, node.values, true, node.plural)
+        local tags = {} --- @type table<string, string>
+        for k, v in pairs(type(node.tags) == "table" and node.tags or {}) do
+            if type(v) == "table" then
+                tags[k] = self:interpolate(v.text, v.values, false)
+            else
+                tags[k] = tostring(v)
             end
         end
-        local text = node.text --- @type string
-        local plural = node.plural
-        local formatted = self:translate(text, plural and computed[plural] or nil)
-        for key, value in pairs(computed) do
-            -- The key should be a valid Lua identifier and need no regex-escaping.
-            formatted = string.gsub(formatted, "{" .. key .. "}", tostring(value))
-        end
-        return formatted, node.tags or true
+        return formatted, tags or true
     elseif node_type == "link" then
         local new_root_name = node.root
         if new_root_name then
@@ -590,6 +607,7 @@ function brocatel.load_vm(content, save, extra_env)
         math = shallow_copy(math),
         string = shallow_copy(string),
         table = shallow_copy(table),
+        _G = env.env,
     })
     local chunk = savedata.load_with_env(env.env, content)()
     local vm = VM.new(chunk, env)

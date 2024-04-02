@@ -24,6 +24,7 @@ Markdown compiler implementation:
 
 - [X] Plain text nodes.
 - [X] Tagged text nodes.
+  - [X] Tag data interpolation.
 - [X] Links.
   - [X] Compile-time link validity checking.
 - [X] Options.

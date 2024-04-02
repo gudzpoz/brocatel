@@ -63,6 +63,9 @@ test('Texts', async () => {
   await assertOutput('String: {type("")}', [], ['String: string']);
   await assertOutput('`a = 1024`\nValue: {a} + {a} = {a + a}', [], ['Value: 1024 + 1024 = 2048']);
   await assertOutput(':a[b] :c d :e[f] g', [], [{ text: 'd :e[f] g', tags: { a: 'b', c: '' } }]);
+  await assertOutput(':a[result: {1 + 1}] :c[{2 + 2}] e {4 + 4}', [], [
+    { text: 'e 8', tags: { a: 'result: 2', c: '4' } },
+  ]);
 });
 
 test('Conditionals', async () => {

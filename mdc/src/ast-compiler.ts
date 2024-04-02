@@ -136,9 +136,28 @@ class AstCompiler {
       if (child.plural) {
         this.builder.pair('plural').value(child.plural);
       }
-      const tags = serializeTableInner(child.tags, (s) => JSON.stringify(s));
-      if (tags !== '') {
-        this.builder.pair('tags').startTable().raw(tags).endTable();
+      const tags = Object.entries(child.tags);
+      if (tags.length !== 0) {
+        this.builder.pair('tags').startTable();
+        tags.forEach(([k, v]) => {
+          const subValues = serializeTableInner(
+            v.values,
+            (s) => `function()return(${s})end`,
+          );
+          this.builder.pair(k, v.node.position);
+          if (subValues === '') {
+            this.builder.value(v.text, v.node.position);
+            return;
+          }
+          this.builder.startTable()
+            .pair('text').value(v.text)
+            .pair('values')
+            .startTable()
+            .raw(subValues)
+            .endTable()
+            .endTable();
+        });
+        this.builder.endTable();
       }
       this.builder.pair('text').value(child.text);
       const values = serializeTableInner(

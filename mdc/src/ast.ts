@@ -68,7 +68,15 @@ export interface LuaNode extends Node {
   node: MarkdownNode;
 }
 
-export type LuaTags = { [key: string]: string };
+export interface LuaInterpolatable extends LuaNode {
+  text: string;
+  /**
+   * Values used for interpolation.
+   */
+  values: { [key: string]: string };
+}
+
+export type LuaTags = Record<string, LuaInterpolatable>;
 
 /**
  * The text node.
@@ -81,17 +89,12 @@ export type LuaTags = { [key: string]: string };
  *
  * (See LuaLink and LuaIfElse for "abnormal" paragraphs.)
  */
-export interface LuaText extends LuaNode {
+export interface LuaText extends LuaInterpolatable {
   type: 'text';
-  text: string;
   /**
    * Tags, used by external programs (i.e. your games).
    */
   tags: LuaTags;
-  /**
-   * Values used for interpolation.
-   */
-  values: { [key: string]: string };
   /**
    * The plural value. See `ngettext`.
    */

@@ -7,13 +7,16 @@
 local TablePath = {}
 TablePath.__index = TablePath
 
+--- @class Interpolatable
+--- @field text string
+--- @field values table<string, function>
 
 --- @alias Array (Node|string)[]
 
 --- @class Node
 ---
 --- @field text string|nil
---- @field tags table<string, string>|nil
+--- @field tags table<string, string|Interpolatable>|nil
 --- @field plural string|nil
 --- @field values table<string, function>|nil
 ---

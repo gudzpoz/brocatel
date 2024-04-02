@@ -3,7 +3,7 @@ import { mdxExpression } from 'micromark-extension-mdx-expression';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
 import { VFile } from 'vfile';
-import { assert, test } from 'vitest';
+import { assert, expect, test } from 'vitest';
 
 import { directiveForMarkdown } from '@brocatel/md';
 
@@ -28,7 +28,7 @@ const parser = unified()
 
 async function parse(input: string): Promise<LuaArray> {
   const vfile = new VFile();
-  const ast = await parser.run(parser.parse(input), vfile) as LuaArray;
+  const ast = (await parser.run(parser.parse(input), vfile)) as LuaArray;
   assert.isEmpty(
     vfile.messages.filter((e) => e.fatal !== null),
     vfile.messages.map((m) => m.message).join(', '),
@@ -42,41 +42,102 @@ function assertOnlyChild(root: LuaArray): LuaElement {
 }
 
 test('Transform text', async () => {
-  assert.deepInclude(assertOnlyChild(await parse('a')), { type: 'text', text: 'a' });
-  assert.deepInclude(
-    assertOnlyChild(await parse('a {a} b {b}')),
-    { type: 'text', text: 'a {v1} b {v2}', values: { v1: 'a', v2: 'b' } },
+  assert.deepInclude(assertOnlyChild(await parse('a')), {
+    type: 'text',
+    text: 'a',
+  });
+  assert.deepInclude(assertOnlyChild(await parse('a {a} b {b}')), {
+    type: 'text',
+    text: 'a {v1} b {v2}',
+    values: { v1: 'a', v2: 'b' },
+  });
+  expect(
+    assertOnlyChild(
+      await parse(':a[:a :b {1 + 1} :c] :b[text] :c a {a} b {b}'),
+    ) as any,
+  ).toEqual(
+    expect.objectContaining({
+      type: 'text',
+      text: 'a {v1} b {v2}',
+      values: { v1: 'a', v2: 'b' },
+      tags: {
+        a: expect.objectContaining({
+          type: 'text',
+          text: ':a :b {v1} :c',
+          values: { v1: '1 + 1' },
+        }),
+        b: expect.objectContaining({ type: 'text', text: 'text', values: {} }),
+        c: expect.objectContaining({ type: 'tag', text: '', values: {} }),
+      },
+    }),
   );
-  assert.deepInclude(
-    assertOnlyChild(await parse(':a :b a {a} b {b}')),
-    {
-      type: 'text', text: 'a {v1} b {v2}', values: { v1: 'a', v2: 'b' }, tags: { a: '', b: '' },
-    },
-  );
-  assert.deepInclude(
-    assertOnlyChild(await parse(':a :b a {a .. b?} b {b}')),
-    {
-      type: 'text', text: 'a {v1} b {v2}', values: { v1: 'a .. b', v2: 'b' }, tags: { a: '', b: '' }, plural: 'v1',
-    },
+  expect(
+    assertOnlyChild(
+      await parse(':a :b[{a}, {b}, {c}] a {a .. b?} b {b}'),
+    ) as any,
+  ).toEqual(
+    expect.objectContaining({
+      type: 'text',
+      text: 'a {v1} b {v2}',
+      values: { v1: 'a .. b', v2: 'b' },
+      tags: {
+        a: expect.objectContaining({ type: 'tag', text: '', values: {} }),
+        b: expect.objectContaining({
+          type: 'text',
+          text: '{v1}, {v2}, {v3}',
+          values: {
+            v1: 'a',
+            v2: 'b',
+            v3: 'c',
+          },
+        }),
+      },
+      plural: 'v1',
+    }),
   );
 });
 
 test('Transform link', async () => {
-  assert.deepInclude(assertOnlyChild(await parse('[](#a)')), { type: 'link', labels: ['a'] });
-  assert.deepInclude(assertOnlyChild(await parse('[](main.md#a#b)')), { type: 'link', labels: ['a', 'b'], root: 'main' });
-  assert.deepInclude(assertOnlyChild(await parse('[](main#a#b)')), { type: 'link', labels: ['main', 'a', 'b'] });
-  assert.deepInclude(assertOnlyChild(await parse('[](#main.md#a#b)')), { type: 'link', labels: ['mainmd', 'a', 'b'] });
-  assert.deepInclude(
-    assertOnlyChild(await parse('[main](www.example.com)')),
-    { type: 'text', text: '[main](www.example.com)' },
-  );
+  assert.deepInclude(assertOnlyChild(await parse('[](#a)')), {
+    type: 'link',
+    labels: ['a'],
+  });
+  assert.deepInclude(assertOnlyChild(await parse('[](main.md#a#b)')), {
+    type: 'link',
+    labels: ['a', 'b'],
+    root: 'main',
+  });
+  assert.deepInclude(assertOnlyChild(await parse('[](main#a#b)')), {
+    type: 'link',
+    labels: ['main', 'a', 'b'],
+  });
+  assert.deepInclude(assertOnlyChild(await parse('[](#main.md#a#b)')), {
+    type: 'link',
+    labels: ['mainmd', 'a', 'b'],
+  });
+  assert.deepInclude(assertOnlyChild(await parse('[main](www.example.com)')), {
+    type: 'text',
+    text: '[main](www.example.com)',
+  });
 });
 
 test('Transform code blocks', async () => {
-  assert.deepInclude(assertOnlyChild(await parse('`a()`')), { type: 'func', code: 'a()' });
-  assert.deepInclude(assertOnlyChild(await parse('```lua\na()\n```')), { type: 'func', code: 'a()' });
-  assert.deepInclude(assertOnlyChild(await parse('```lua global\nreturn\n```')), { type: 'func', code: '' });
-  assert.deepInclude(assertOnlyChild(await parse('```lua macro\na\n```')), { type: 'func', code: '' });
+  assert.deepInclude(assertOnlyChild(await parse('`a()`')), {
+    type: 'func',
+    code: 'a()',
+  });
+  assert.deepInclude(assertOnlyChild(await parse('```lua\na()\n```')), {
+    type: 'func',
+    code: 'a()',
+  });
+  assert.deepInclude(
+    assertOnlyChild(await parse('```lua global\nreturn\n```')),
+    { type: 'func', code: '' },
+  );
+  assert.deepInclude(assertOnlyChild(await parse('```lua macro\na\n```')), {
+    type: 'func',
+    code: '',
+  });
 });
 
 function assertBranch(node: LuaArray | undefined, text: string) {
@@ -99,7 +160,9 @@ test('Transform simple if-else', async () => {
 });
 
 test('Transform manual if-else', async () => {
-  const parsed = assertOnlyChild(await parse(':::if`ok`\n- ok\n- no ok')) as LuaIfElse;
+  const parsed = assertOnlyChild(
+    await parse(':::if`ok`\n- ok\n- no ok'),
+  ) as LuaIfElse;
   assert.deepInclude(parsed, { type: 'if-else', condition: 'ok' });
   assert.lengthOf(parsed.children, 2);
   assertBranch(parsed.children[0], 'ok');
@@ -123,7 +186,9 @@ test('Transform FUNC.S_RECUR func', async () => {
 });
 
 test('Transform some func', async () => {
-  const parsed = assertOnlyChild(await parse(':::do`FUNC.WHATEVER`\n- c\n - d')) as LuaCode;
+  const parsed = assertOnlyChild(
+    await parse(':::do`FUNC.WHATEVER`\n- c\n - d'),
+  ) as LuaCode;
   assert.deepInclude(parsed, { type: 'func', code: 'FUNC.WHATEVER(args)' });
   assert.lengthOf(parsed.children, 2);
   assertBranch(parsed.children[0], 'c');
@@ -154,7 +219,15 @@ test('Functions', async () => {
   assert.isOk(func.data?.routine?.parameters);
   assert.lengthOf(func.data?.routine?.parameters!, 0);
   assert.lengthOf(func.children, 3);
-  assert.deepInclude(func.children[0], { type: 'link', labels: ['func'], params: '{}' });
-  assert.deepInclude(func.children[1], { type: 'link', labels: ['func'], params: '{a=1}' });
+  assert.deepInclude(func.children[0], {
+    type: 'link',
+    labels: ['func'],
+    params: '{}',
+  });
+  assert.deepInclude(func.children[1], {
+    type: 'link',
+    labels: ['func'],
+    params: '{a=1}',
+  });
   assert.deepInclude(func.children[2], { type: 'func', code: 'END()' });
 });
