@@ -102,6 +102,9 @@ type VFile = Awaited<ReturnType<BrocatelCompiler['compileAll']>>;
 type Tracked = {
   document: TextDocument,
   compiled?: VFile,
+  /**
+   * Used to clear previous diagnotics.
+   */
   files: string[],
 };
 
@@ -158,7 +161,7 @@ async function sendDiagnostics(tracked: Tracked, empty?: boolean) {
     prevFiles.map((file) => [file, []]),
   );
   if (!empty) {
-    compiled.messages.forEach((message) => {
+    compiled!.messages.forEach((message) => {
       if (!message.file) {
         return;
       }
@@ -191,14 +194,17 @@ async function sendDiagnostics(tracked: Tracked, empty?: boolean) {
   return files.flat();
 }
 
-const HTML_COMMENT_REGEX = /^<!--\s*brocatel\s*-->/gi;
-const FRONT_MATTER_REGEX = /^---\nbrocatel:$/gm;
+const HTML_COMMENT_REGEX = /^<!--\s*brocatel\s*-->/i;
+const FRONT_MATTER_REGEX = /^---\nbrocatel:/m;
 async function isBrocatelDocument(document: TextDocument) {
   const settings = await getDocumentSettings(document.uri);
   if (settings.lintAllMarkdownFiles) {
     return true;
   }
-  const text = document.getText();
+  const text = document.getText({
+    start: { line: 0, character: 0 },
+    end: { line: 15, character: 0 },
+  });
   if (HTML_COMMENT_REGEX.test(text)) {
     return true;
   }

@@ -122,9 +122,9 @@ export async function validate(vfile: VFile) {
     const err = debugging.luaErrorToSource(data, e as Error);
     if (err) {
       const file = inputs?.[removeMdExt(err.source)];
+      const point = { line: err.line, column: err.column };
       (file ?? vfile).message('invalid lua code', {
-        line: err.line,
-        column: err.column,
+        start: point, end: point,
       });
     } else {
       vfile.message(`invalid lua code found: ${e}`);

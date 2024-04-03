@@ -13,7 +13,7 @@ export default async function newClient(context: vscode.ExtensionContext) {
   const serverModule = context.asAbsolutePath(path.join('..', 'mdls', 'dist', 'index.js'));
   const debugOptions = { execArgv: ['--nolazy', '--inspect=6009'] };
   const serverOptions: ServerOptions = {
-    run: { module: serverModule, transport: TransportKind.pipe },
+    run: { module: serverModule, transport: TransportKind.ipc },
     debug: {
       module: serverModule,
       transport: TransportKind.ipc,
