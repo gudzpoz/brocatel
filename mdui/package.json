@@ -1,0 +1,44 @@
+{
+  "name": "@brocatel/mdui",
+  "version": "0.0.1",
+  "description": "A front-end for Brocatel",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "keywords": [],
+  "author": "gudzpoz",
+  "license": "MIT",
+  "devDependencies": {
+    "@rushstack/eslint-patch": "^1.8.0",
+    "@types/bezier-js": "^4.1.3",
+    "@types/mdast": "^3.0.15",
+    "@types/node": "^20.11.30",
+    "@types/vscode-webview": "^1.57.5",
+    "@typescript-eslint/eslint-plugin": "^7.3.1",
+    "@typescript-eslint/parser": "^7.3.1",
+    "@vitejs/plugin-vue": "^5.0.4",
+    "@vue/eslint-config-typescript": "^13.0.0",
+    "@vue/tsconfig": "^0.5.1",
+    "eslint": "^8.57.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-airbnb-typescript": "^18.0.0",
+    "eslint-plugin-import": "^2.29.1",
+    "typescript": "^5.4.3",
+    "vite": "^5.2.2",
+    "vite-node": "^1.4.0",
+    "vite-plugin-singlefile": "^2.0.1",
+    "vitest": "^1.4.0",
+    "vue-tsc": "^2.0.7"
+  },
+  "dependencies": {
+    "@brocatel/mdc": "workspace:^",
+    "bezier-js": "^6.1.4",
+    "remark-html": "^15.0.2",
+    "remark-parse": "^10.0.2",
+    "unified": "^10.1.2",
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0"
+  }
+}

@@ -43,6 +43,13 @@
 					"description": "Traces the communication between VS Code and the language server."
 				}
       }
+    },
+    "configurationDefaults": {
+      "[markdown]": {
+        "editor.quickSuggestions": {
+          "other": "on"
+        }
+      }
     }
   },
   "scripts": {
@@ -55,6 +62,7 @@
   },
   "dependencies": {
     "@brocatel/mdc": "workspace:^",
+    "@brocatel/mdui": "workspace:^",
     "remark-html": "^15.0.2",
     "remark-parse": "^10.0.2",
     "unified": "^10.1.2",

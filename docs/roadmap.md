@@ -106,6 +106,16 @@ Documentation, tutorials, etc.
 - [X] Porting [Cloak of Darkness](./cloak.md).
 - [ ] Follow suit: [Tutorial for Ink](https://www.inklestudios.com/ink/web-tutorial/) (better still if interactive).
 - [ ] IDE implementation (or probably just a VS Code plugin with language server protocol implementation).
+  - [X] Simplistic LSP implementation detecting compilation errors.
+  - [ ] Using Lua LSP for Lua checking & completion.
+  - [X] Executing stories right from VS Code.
+    - [X] Highlighting runtime errors in the Markdown source code.
+  - [ ] Simplistic debugging interface by implementing the Debug Adapter Protocol.
+    - [ ] Stepping.
+    - [ ] Breakpoints.
+    - [ ] Pause/continue/stop/restart.
+    - [ ] Lua variables.
+  - [ ] Allow exporting stories into a single web page to be exported online.
 - [ ] Frontend implementation, so that one can easily publish their IF online.
   - [ ] Choice-based stories.
   - [ ] A bit parser-like frontend.

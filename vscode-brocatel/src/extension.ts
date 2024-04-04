@@ -2,8 +2,7 @@ import * as vscode from 'vscode';
 
 import newClient from './lsp-client';
 import BrocatelPreviewer from './previewer';
-import { error, log } from './utils';
-import WorkerInstance from './worker-instance';
+import { error } from './utils';
 
 const trackedDocuments = new Map<string, BrocatelPreviewer>();
 
@@ -12,21 +11,8 @@ export function activate(context: vscode.ExtensionContext) {
     .then((c) => context.subscriptions.push(c))
     .catch((e) => error('error starting language server', e));
 
-  const diagnostics = vscode.languages.createDiagnosticCollection('brocatel');
-  context.subscriptions.push(diagnostics);
-
-  const worker = new WorkerInstance();
-  context.subscriptions.push(worker);
-  worker.echo('hello')
-    .then((msg) => log('worker says', msg))
-    .catch((e) => vscode.window.showErrorMessage(e.message));
-
   vscode.workspace.onDidCloseTextDocument((doc) => {
-    const previewer = trackedDocuments.get(doc.fileName);
-    if (previewer) {
-      trackedDocuments.delete(doc.fileName);
-      previewer.dispose();
-    }
+    trackedDocuments.delete(doc.fileName);
   });
 
   vscode.workspace.onDidSaveTextDocument((doc) => {
@@ -43,7 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (editor && editor.document.fileName.endsWith('.md')) {
       let previewer = trackedDocuments.get(editor.document.fileName);
       if (!previewer) {
-        previewer = new BrocatelPreviewer(diagnostics, editor, worker, (disposed) => {
+        previewer = new BrocatelPreviewer(context, editor, (disposed) => {
           trackedDocuments.delete(disposed.fileName());
         });
         trackedDocuments.set(editor.document.fileName, previewer);
@@ -56,6 +42,5 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-  trackedDocuments.forEach((previewer) => previewer.dispose());
   trackedDocuments.clear();
 }
