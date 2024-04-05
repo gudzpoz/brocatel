@@ -413,6 +413,12 @@ importers:
       '@types/mdast':
         specifier: ^3.0.15
         version: 3.0.15
+      '@types/node':
+        specifier: ^20.12.4
+        version: 20.12.5
+      '@types/webpack-env':
+        specifier: ^1.18.4
+        version: 1.18.4
       '@typescript-eslint/eslint-plugin':
         specifier: ^7.5.0
         version: 7.5.0(@typescript-eslint/parser@7.5.0)(eslint@8.57.0)(typescript@5.4.4)
@@ -431,21 +437,18 @@ importers:
       eslint-plugin-import:
         specifier: ^2.29.1
         version: 2.29.1(@typescript-eslint/parser@7.5.0)(eslint@8.57.0)
+      ts-loader:
+        specifier: ^9.5.1
+        version: 9.5.1(typescript@5.4.4)(webpack@5.91.0)
       typescript:
         specifier: ^5.4.4
         version: 5.4.4
-      vite:
-        specifier: ^5.2.8
-        version: 5.2.8(@types/node@20.12.5)
-      vite-node:
-        specifier: ^1.4.0
-        version: 1.4.0(@types/node@20.12.5)
-      vite-plugin-dts:
-        specifier: ^3.8.1
-        version: 3.8.1(typescript@5.4.4)(vite@5.2.8)
-      vitest:
-        specifier: ^1.4.0
-        version: 1.4.0(@types/node@20.12.5)
+      webpack:
+        specifier: ^5.91.0
+        version: 5.91.0(webpack-cli@5.1.4)
+      webpack-cli:
+        specifier: ^5.1.4
+        version: 5.1.4(webpack@5.91.0)
 
   mdui:
     dependencies:
@@ -571,6 +574,9 @@ importers:
       '@types/mocha':
         specifier: ^10.0.6
         version: 10.0.6
+      '@types/node':
+        specifier: ^20.12.4
+        version: 20.12.5
       '@types/vscode':
         specifier: ^1.88.0
         version: 1.88.0
@@ -7226,31 +7232,6 @@ packages:
     dev: true
 
   /vite-plugin-dts@3.8.1(@types/node@20.12.5)(rollup@4.14.0)(typescript@5.4.4)(vite@5.2.8):
-    resolution: {integrity: sha512-zEYyQxH7lKto1VTKZHF3ZZeOPkkJgnMrePY4VxDHfDSvDjmYMMfWjZxYmNwW8QxbaItWJQhhXY+geAbyNphI7g==}
-    engines: {node: ^14.18.0 || >=16.0.0}
-    peerDependencies:
-      typescript: '*'
-      vite: '*'
-    peerDependenciesMeta:
-      vite:
-        optional: true
-    dependencies:
-      '@microsoft/api-extractor': 7.43.0(@types/node@20.12.5)
-      '@rollup/pluginutils': 5.1.0(rollup@4.14.0)
-      '@vue/language-core': 1.8.27(typescript@5.4.4)
-      debug: 4.3.4(supports-color@8.1.1)
-      kolorist: 1.8.0
-      magic-string: 0.30.9
-      typescript: 5.4.4
-      vite: 5.2.8(@types/node@20.12.5)
-      vue-tsc: 1.8.27(typescript@5.4.4)
-    transitivePeerDependencies:
-      - '@types/node'
-      - rollup
-      - supports-color
-    dev: true
-
-  /vite-plugin-dts@3.8.1(typescript@5.4.4)(vite@5.2.8):
     resolution: {integrity: sha512-zEYyQxH7lKto1VTKZHF3ZZeOPkkJgnMrePY4VxDHfDSvDjmYMMfWjZxYmNwW8QxbaItWJQhhXY+geAbyNphI7g==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
