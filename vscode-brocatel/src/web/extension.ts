@@ -30,7 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
       let previewer = trackedDocuments.get(editor.document.fileName);
       if (!previewer) {
         previewer = new BrocatelPreviewer(context, editor, (disposed) => {
-          trackedDocuments.delete(disposed.fileName());
+          trackedDocuments.delete(disposed.fileUri().fsPath);
         });
         trackedDocuments.set(editor.document.fileName, previewer);
       }

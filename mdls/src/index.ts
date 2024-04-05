@@ -1,5 +1,3 @@
-import path from 'path';
-
 import debounce from 'debounce';
 import { Content, Parent, Root } from 'mdast';
 import {
@@ -11,10 +9,12 @@ import {
   InitializeResult,
   TextDocumentPositionParams,
   CompletionItemKind,
-  ProposedFeatures,
   DidChangeConfigurationNotification,
-} from 'vscode-languageserver/node';
+  BrowserMessageReader,
+  BrowserMessageWriter,
+} from 'vscode-languageserver/browser';
 import { Position, TextDocument } from 'vscode-languageserver-textdocument';
+import { URI, Utils as path } from 'vscode-uri';
 
 import { BrocatelCompiler, debug } from '@brocatel/mdc';
 
@@ -29,7 +29,10 @@ const documentSettings: Map<string, Thenable<Settings>> = new Map();
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
 
-const connection = createConnection(ProposedFeatures.all);
+declare const self: DedicatedWorkerGlobalScope;
+const messageReader = new BrowserMessageReader(self);
+const messageWriter = new BrowserMessageWriter(self);
+const connection = createConnection(messageReader, messageWriter);
 
 const documents = new TextDocuments(TextDocument);
 
@@ -110,20 +113,28 @@ type Tracked = {
 
 const trackedContents = new Map<string, Tracked>();
 
+function norm(uri: string) {
+  return URI.parse(uri).toString();
+}
+function split(uri: string) {
+  const file = URI.parse(uri);
+  return {
+    directory: path.dirname(file),
+    fileName: path.basename(file),
+  };
+}
+
 async function compileDocument(document: TextDocument) {
-  const { uri } = document;
-  const base = new URL(uri);
-  const basename = path.basename(base.pathname);
-  const dirname = path.dirname(base.pathname);
-  const compiled = await compiler.compileAll(basename, async (name: string) => {
-    const file = new URL(path.resolve(dirname, `${name}.md`), base);
-    if (trackedContents.has(file.href)) {
-      const content = trackedContents.get(file.href);
+  const { directory, fileName } = split(document.uri);
+  const compiled = await compiler.compileAll(fileName, async (name: string) => {
+    const file = path.joinPath(directory, `${name}.md`);
+    if (trackedContents.has(file.toString())) {
+      const content = trackedContents.get(file.toString());
       if (content) {
         return content.document.getText();
       }
     }
-    const response = await fetch(file);
+    const response = await fetch(file.toString());
     const content = await response.text();
     return content;
   });
@@ -171,10 +182,9 @@ async function sendDiagnostics(tracked: Tracked, empty?: boolean) {
       groups[message.file].push(message);
     });
   }
-  const base = new URL(document.uri);
-  const dirname = path.dirname(base.pathname);
+  const { directory } = split(document.uri);
   const files = await Promise.all(Object.entries(groups).map(async ([file, messages]) => {
-    const fileUri = new URL(path.resolve(dirname, file), base);
+    const fileUri = path.joinPath(directory, file);
     return connection.sendDiagnostics({
       uri: fileUri.toString(),
       diagnostics: messages.map((message) => {
@@ -215,7 +225,7 @@ async function isBrocatelDocument(document: TextDocument) {
 }
 
 const validateBrocatelDocument = debounce(async (document: TextDocument) => {
-  const tracked = trackedContents.get(document.uri);
+  const tracked = trackedContents.get(norm(document.uri));
   if (!tracked) {
     return;
   }
@@ -229,15 +239,15 @@ const validateBrocatelDocument = debounce(async (document: TextDocument) => {
 }, 1000);
 
 documents.onDidOpen(async ({ document }) => {
-  trackedContents.set(document.uri, { document, files: [] });
+  trackedContents.set(norm(document.uri), { document, files: [] });
   await validateBrocatelDocument(document);
 });
 documents.onDidClose(({ document }) => {
-  trackedContents.delete(document.uri);
+  trackedContents.delete(norm(document.uri));
 });
 documents.onDidChangeContent(async (change) => {
   const { document } = change;
-  const tracked = trackedContents.get(document.uri);
+  const tracked = trackedContents.get(norm(document.uri));
   if (!tracked) {
     return;
   }
@@ -319,7 +329,7 @@ function headingsToAnchor(heading: debug.LuaHeadingTree, prefix: string = ''): s
 }
 
 connection.onCompletion((param: TextDocumentPositionParams) => {
-  const document = trackedContents.get(param.textDocument.uri);
+  const document = trackedContents.get(norm(param.textDocument.uri));
   if (!document) {
     return [];
   }

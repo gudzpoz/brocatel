@@ -16,9 +16,6 @@ export default defineConfig({
         return `${entry}${ext}`;
       },
     },
-    rollupOptions: {
-      external: ['fs', 'path'],
-    },
   },
   plugins: [dts({ rollupTypes: true })],
   test: {},

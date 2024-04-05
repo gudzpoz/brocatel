@@ -6,25 +6,33 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Run Extension",
-			"type": "extensionHost",
+			"name": "Run Web Extension ",
+			"type": "pwa-extensionHost",
+			"debugWebWorkerHost": true,
 			"request": "launch",
 			"args": [
-				"--extensionDevelopmentPath=${workspaceFolder}"
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--extensionDevelopmentKind=web"
 			],
 			"outFiles": [
-				"${workspaceFolder}/out/**/*.js"
+				"${workspaceFolder}/dist/web/**/*.js"
 			],
-			"preLaunchTask": "${defaultBuildTask}"
+			"preLaunchTask": "npm: watch-web"
 		},
 		{
-			"name": "Attach",
-			"port": 6009,
-			"request": "attach",
-			"skipFiles": [
-				"<node_internals>/**"
+			"name": "Extension Tests",
+			"type": "extensionHost",
+			"debugWebWorkerHost": true,
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--extensionDevelopmentKind=web",
+				"--extensionTestsPath=${workspaceFolder}/dist/web/test/suite/index"
 			],
-			"type": "node"
+			"outFiles": [
+				"${workspaceFolder}/dist/web/**/*.js"
+			],
+			"preLaunchTask": "npm: watch-web"
 		}
 	]
 }

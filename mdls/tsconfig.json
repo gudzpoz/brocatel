@@ -5,6 +5,10 @@
     "module": "ESNext",
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "lib": [
+      "ES2020",
+      "WebWorker"
+    ],
 
     /* Bundler mode */
     "moduleResolution": "node",

@@ -1,7 +1,6 @@
-import path from 'path';
-import fs from 'fs/promises';
-
 import * as vscode from 'vscode';
+import { Utils as path } from 'vscode-uri';
+import innerHtml from '@brocatel/mdui/dist/index.html';
 
 interface Point {
   line: number;
@@ -19,8 +18,6 @@ function point2Position(point?: Point): vscode.Position {
   }
   return new vscode.Position(point.line - 1, point.column - 1);
 }
-
-const indexHtml = 'node_modules/@brocatel/mdui/dist/index.html';
 
 export default class BrocatelPreviewer {
   private diagnostics: vscode.DiagnosticCollection;
@@ -62,7 +59,8 @@ export default class BrocatelPreviewer {
               return m;
             }
             const msg = m as { message: string, source: string, line: number, column: number };
-            if (path.basename(msg.source) === path.basename(this.fileName())) {
+            const directory = path.dirname(this.fileUri());
+            if (path.basename(path.joinPath(directory, msg.source)) === path.basename(this.fileUri())) {
               annotations.push({
                 message: msg.message,
                 position: { start: msg, end: msg },
@@ -77,9 +75,9 @@ export default class BrocatelPreviewer {
         case 'read': {
           const { payload, id } = message as { payload: string, id: number };
           const name = payload.endsWith('.md') ? payload : `${payload}.md`;
-          const directory = path.dirname(this.fileName());
-          const file = path.join(directory, name);
-          const content = (await fs.readFile(file)).toString('utf-8');
+          const directory = path.dirname(this.fileUri());
+          const file = path.joinPath(directory, name);
+          const content = (await vscode.workspace.openTextDocument(file)).getText();
           this.panel.webview.postMessage({ type: 'result', result: content, id });
           break;
         }
@@ -87,18 +85,12 @@ export default class BrocatelPreviewer {
           break;
       }
     });
-    this.getHtmlForWebview(context);
+    this.panel.webview.html = innerHtml;
+    this.update();
   }
 
-  async getHtmlForWebview(context: vscode.ExtensionContext) {
-    const index = context.asAbsolutePath(indexHtml);
-    const file = await fs.readFile(index);
-    this.panel.webview.html = file.toString();
-    await this.update();
-  }
-
-  fileName() {
-    return this.editor.document.fileName;
+  fileUri() {
+    return this.editor.document.uri;
   }
 
   async annotateEditor(messages: Message[]) {
@@ -117,7 +109,7 @@ export default class BrocatelPreviewer {
     try {
       await this.panel.webview.postMessage({
         type: 'reload',
-        file: path.basename(this.fileName()),
+        file: path.basename(this.fileUri()),
         payload: this.editor.document.getText(),
       });
     } catch (e) {
