@@ -29,7 +29,7 @@ async function assertOutput(
     const result = runner.next(option);
     option = undefined;
     if (typeof line === 'string') {
-      assert.equal((result as TextLine).text, line);
+      assert.equal((result as TextLine)?.text, line);
     } else if (Array.isArray(line)) {
       const { select } = result as SelectLine;
       assert.isArray(select);
@@ -162,6 +162,18 @@ test('Switch macro', async () => {
 \`i = i + 1\`
 \`i < 4\` [](#start)
 `, [], ['0', '1', '2', 'end']);
+});
+
+test('Visit counts', async () => {
+  await assertOutput(`
+# start
+Count: {VISITS(counted)}
+\`VISITS(counted) >= 9\` [](#ended)
+[](#counted)
+## counted
+[](#start)
+# ended
+`, [], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => `Count: ${i}`));
 });
 
 test('Save and load', async () => {

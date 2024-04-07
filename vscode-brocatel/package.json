@@ -1,5 +1,6 @@
 {
   "name": "vscode-brocatel",
+  "publisher": "gudzpoz",
   "displayName": "Brocatel Dev Tools",
   "description": "Run and test Brocatel stories in VS Code",
   "version": "0.0.1",
