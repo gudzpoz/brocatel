@@ -50,6 +50,9 @@ const webExtensionConfig = {
 		}, {
 			test: /\.html$/,
 			type: 'asset/source',
+		}, {
+			test: /\?raw$/,
+			type: 'asset/source',
 		}]
 	},
 	plugins: [

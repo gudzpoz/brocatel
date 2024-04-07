@@ -7,7 +7,7 @@ import { error } from './utils';
 const trackedDocuments = new Map<string, BrocatelPreviewer>();
 
 export function activate(context: vscode.ExtensionContext) {
-  newClient(context)
+  newClient()
     .then((c) => context.subscriptions.push(c))
     .catch((e) => error('error starting language server', e));
 

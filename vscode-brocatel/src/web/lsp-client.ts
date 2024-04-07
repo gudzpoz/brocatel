@@ -4,14 +4,14 @@ import {
   LanguageClientOptions,
 } from 'vscode-languageclient/browser';
 
+import serverJs from '@brocatel/mdls/dist/server.js?raw';
+
 import { log } from './utils';
 
-export default async function newClient(context: vscode.ExtensionContext) {
-  const serverMain = vscode.Uri.joinPath(
-    context.extensionUri,
-    'node_modules/@brocatel/mdls/dist/server.js',
-  );
-  const worker = new Worker(serverMain.toString(true));
+const serverJsBlob = new Blob([serverJs], { type: 'text/javascript' });
+
+export default async function newClient() {
+  const worker = new Worker(URL.createObjectURL(serverJsBlob), { type: 'module' });
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: 'file', language: 'markdown' }],
     markdown: {
