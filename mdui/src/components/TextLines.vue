@@ -2,14 +2,12 @@
   <div class="lines">
     <AutoScrollable>
       <template #default>
-        <ClientOnly>
-          <TransitionGroup name="line">
-            <div v-for="line in lines" :key="line.html" class="line">
-              <div v-if="line.speakerHtml" v-html="line.speakerHtml"></div>
-              <div v-if="line.html" v-html="line.html"></div>
-            </div>
-          </TransitionGroup>
-        </ClientOnly>
+        <TransitionGroup name="line" v-if="lines.length > 0">
+          <div v-for="line in lines" :key="line.html" class="line">
+            <div v-if="line.speakerHtml" v-html="line.speakerHtml"></div>
+            <div v-if="line.html" v-html="line.html"></div>
+          </div>
+        </TransitionGroup>
       </template>
       <template #footer>
         <Transition name="footer">
