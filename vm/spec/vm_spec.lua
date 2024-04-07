@@ -288,4 +288,23 @@ describe("VM", function()
         -- Options exhausted
         assert.equal("Hello", vm:next().text)
     end)
+
+    it("save and load", function()
+        local vm --- @type VM
+        vm = wrap({
+            {},
+            "Start",
+            "End",
+        })
+        assert.equal("Start", vm:next().text)
+        local save_mid = vm:save()
+        assert.equal("End", vm:next().text)
+        local save_end = vm:save()
+
+        vm:load(save_mid)
+        assert.equal("End", vm:next().text)
+
+        vm:load(save_end)
+        assert.is_nil(vm:next())
+    end)
 end)

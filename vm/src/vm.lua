@@ -43,7 +43,7 @@ function VM.new(compiled_chunk, env)
         savedata = savedata.init(assert(compiled_chunk[""], "invalidate runtime format")),
     }
     setmetatable(vm, VM)
-    vm:init()
+    vm:init(true)
     return vm
 end
 
@@ -58,7 +58,8 @@ function VM:set_up_listener(co)
 end
 
 --- Initializes the VM state.
-function VM:init()
+--- @param init_ip boolean whether to re-adjust the IP pointer (false if loading savedata)
+function VM:init(init_ip)
     if self.savedata.version > VM.version then
         error("library version outdated")
     end
@@ -80,7 +81,9 @@ function VM:init()
     self.env:set_init(false)
     local ip = assert(self:get_coroutine()).ip
     local root = assert(self:ensure_root(ip))
-    ip:step(root, true)
+    if init_ip then
+        ip:step(root, true)
+    end
     self:set_env()
 end
 
@@ -563,7 +566,7 @@ end
 
 function VM:load(s)
     self.savedata = savedata.load(s)
-    self:init()
+    self:init(false)
 end
 
 --- @param t table

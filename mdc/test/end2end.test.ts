@@ -175,6 +175,31 @@ test('Save and load', async () => {
   runner.load(save);
   assert.equal((runner.next() as TextLine).text, 'B');
   assert.equal((runner.next() as TextLine).text, 'C');
+
+  await loadStory(`
+\`i = 1\`
+:::loop \`spin1\`
+- \`i = i + 1\`
+- :::if \`i > 5\`
+  - \`END(spin1)\`
+Count: {i}
+:::loop \`spin2\`
+- \`i = i + 1\`
+- :::if \`i > 10\`
+  - \`END(spin2)\`
+Count: {i}
+`);
+  const saveStart = runner.save();
+  assert.equal((runner.next() as TextLine).text, 'Count: 6');
+  const saveMid = runner.save();
+  assert.equal((runner.next() as TextLine).text, 'Count: 11');
+  const saveEnd = runner.save();
+  runner.load(saveStart);
+  assert.equal((runner.next() as TextLine).text, 'Count: 6');
+  runner.load(saveMid);
+  assert.equal((runner.next() as TextLine).text, 'Count: 11');
+  runner.load(saveEnd);
+  assert.isNull(runner.next());
 });
 
 test('IFID', async () => {
