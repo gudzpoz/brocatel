@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { StoryRunner, type SelectLine, type TextLine } from '@brocatel/mdc';
+import { StoryRunner, type SelectLine, type TextLine, debug } from '@brocatel/mdc';
 import type { Diagnostic } from '@brocatel/mde';
 import debounce from 'debounce';
 import { VFile } from 'vfile';
@@ -72,8 +72,8 @@ const story = new StoryRunner();
 const diagnostics = ref<Diagnostic[]>([]);
 function annotateErrors(vfile: VFile) {
   diagnostics.value = vfile.messages.map((msg) => ({
-    from: msg.position?.start.offset ?? 0,
-    to: msg.position?.end.offset ?? 0,
+    from: debug.point2Position(msg.place)?.start.offset ?? 0,
+    to: debug.point2Position(msg.place)?.end.offset ?? 0,
     severity: 'error',
     message: msg.message,
   }));

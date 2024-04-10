@@ -52,47 +52,47 @@ function assertWarning(input: string, message: string) {
 
 test('Parsing and generating', () => {
   assertMatch('a');
-  assertMatch(':::a\n\n*   a');
-  assertMatch(':::a\n\n1.  a');
-  assertMatch(':::a`10`\n\n*   a');
+  assertMatch(':::a\n\n* a');
+  assertMatch(':::a\n\n1. a');
+  assertMatch(':::a`10`\n\n* a');
 
   assertMatch(`
 > :::a\`10\`
 >
-> *   a`);
+> * a`);
 
   assertMatch(`
 :::a\`10\`
 
-*   b
+* b
 
-    :::c\`10\`
+  :::c\`10\`
 
-    *   d`);
+  * d`);
 
   assertWarning(`
   :::a
-  
+
   \`\`\`lua func
   IP:set(arg:resolve(2))
   \`\`\`
-  
+
   *   b`, 'function directive not implemented yet');
 
   assertMatch(`
 :::loop\`10\`
 
-*   :::switch\`a\`
+* :::switch\`a\`
 
-    *   \`10\`
+  * \`10\`
 
-        b
-    *   \`20\`
+    b
+  * \`20\`
 
-        c
-    *   \`30\`
+    c
+  * \`30\`
 
-        d`);
+    d`);
 });
 
 test('Parser warnings', () => {

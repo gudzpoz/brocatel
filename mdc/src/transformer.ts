@@ -12,7 +12,7 @@ import { getAnchorString, isNormalLink } from '@brocatel/md';
 
 import {
   LuaArray, LuaCode, LuaElement, LuaIfElse, LuaLink, LuaTags, LuaText,
-  MarkdownNode, MarkdownParent, RelativePath, luaArray,
+  MarkdownNode, MarkdownParent, Metadata, RelativePath, luaArray,
 } from './ast';
 import {
   CompilationData, StoryLink, getData, toLink,
@@ -102,7 +102,7 @@ class AstTransformer {
       let i;
       for (i = parents.length - 1; i > 0; i -= 1) {
         const element = parents[i];
-        if (element.data?.label) {
+        if ((element.data as Metadata | undefined)?.label) {
           break;
         }
       }
@@ -121,6 +121,10 @@ class AstTransformer {
           path.push('args');
         }
         path.push(index + 2);
+      }
+      if (parent.type !== 'array') {
+        this.vfile.message('expecting an array', parent);
+        return;
       }
       if (!parent.data?.labels) {
         parent.data = { labels: {} };

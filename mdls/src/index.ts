@@ -189,8 +189,8 @@ async function sendDiagnostics(tracked: Tracked, empty?: boolean) {
       uri: fileUri.toString(),
       diagnostics: messages.map((message) => {
         const range = newRange(
-          point2Point(message.position?.start),
-          point2Point(message.position?.end),
+          point2Point(debug.point2Position(message.place)?.start),
+          point2Point(debug.point2Position(message.place)?.end),
         );
         const diagnostic: Diagnostic = {
           severity: DiagnosticSeverity.Error,

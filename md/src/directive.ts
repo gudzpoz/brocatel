@@ -1,6 +1,6 @@
 import type {
-  Content, InlineCode, Paragraph,
-  Parent, PhrasingContent, Root, Text,
+  InlineCode, Paragraph, Parent, PhrasingContent,
+  Root, RootContent, Text,
 } from 'mdast';
 import {
   directiveFromMarkdown as allDirectivesFromMarkdown,
@@ -12,12 +12,10 @@ import type { Info, Options, State } from 'mdast-util-to-markdown';
 import { directive as allDirectivesMircomark } from 'micromark-extension-directive';
 import type { Plugin } from 'unified';
 import type { Node } from 'unist';
+import { visitParents } from 'unist-util-visit-parents';
 import type { VFile } from 'vfile';
 
-import { containerFlow } from 'mdast-util-to-markdown/lib/util/container-flow';
-import { containerPhrasing } from 'mdast-util-to-markdown/lib/util/container-phrasing';
-import { track } from 'mdast-util-to-markdown/lib/util/track';
-import { visitParents } from 'unist-util-visit-parents';
+import type { MarkdownData } from './types';
 
 export const directiveLabelType = 'containerDirectiveLabel';
 
@@ -41,14 +39,15 @@ declare module 'mdast' {
 }
 
 function handleDirective(node: ContainerDirective, _: any, state: State, info: Info): string {
-  const tracker = track(info);
+  const tracker = state.createTracker(info);
   const containerExit = state.enter('containerDirective');
   let value = tracker.move(`:::${node.name}`);
   const label = node.children[0];
   let content;
   if (label.type === directiveLabelType) {
     const exit = state.enter('label');
-    value += tracker.move(containerPhrasing(label, state, {
+    // The PhrasingParents definition in mdast-util-to-markdown is hard-coded...
+    value += tracker.move(state.containerPhrasing(label as any as Paragraph, {
       ...tracker.current(),
       before: value,
       after: '\n',
@@ -60,7 +59,7 @@ function handleDirective(node: ContainerDirective, _: any, state: State, info: I
   }
   value += tracker.move('\n');
   value += tracker.move('\n');
-  value += tracker.move(containerFlow(content, state, tracker.current()));
+  value += tracker.move(state.containerFlow(content, tracker.current()));
   containerExit();
   return value;
 }
@@ -70,8 +69,9 @@ function handleDirective(node: ContainerDirective, _: any, state: State, info: I
  * and `containerDirective` to Markdown.
  */
 export const directiveToMarkdown: Options = {
+  // The definition is borrowed from mdast-util-directive.
   handlers: {
-    textDirective: allDirectivesToMarkdown.handlers!.textDirective,
+    textDirective: allDirectivesToMarkdown().handlers!.textDirective,
     containerDirective: handleDirective,
     containerDirectiveLabel: () => '',
   },
@@ -94,7 +94,7 @@ export const directiveToMarkdown: Options = {
   ],
 };
 
-function isDirectiveLine(node: Content): boolean {
+function isDirectiveLine(node: RootContent): boolean {
   if (node.type !== 'paragraph' || node.children.length === 0) {
     return false;
   }
@@ -154,13 +154,18 @@ function filterFields(
   );
 }
 
+const {
+  enter: allDirectivesFromMarkdownEnter,
+  exit: allDirectivesFromMarkdownExit,
+} = allDirectivesFromMarkdown();
 /**
  * A `mdast-util-from-markdown` extension that parses `textDirective` nodes.
  */
 export const tagDirectiveFromMarkdown: FromExtension = {
+  // The definition is borrowed from mdast-util-directive.
   canContainEols: ['textDirective'],
-  enter: filterFields(allDirectivesFromMarkdown.enter!, 'directiveText'),
-  exit: filterFields(allDirectivesFromMarkdown.exit!, 'directiveText'),
+  enter: filterFields(allDirectivesFromMarkdownEnter!, 'directiveText'),
+  exit: filterFields(allDirectivesFromMarkdownExit!, 'directiveText'),
 };
 
 /**
@@ -172,9 +177,9 @@ export const tagDirectiveFromMarkdown: FromExtension = {
  * - `remark`: a transformer that parses `containerDirective`.
  */
 // eslint-disable-next-line func-names
-export const directiveForMarkdown: Plugin<any[], Root> = function () {
-  const data = this.data();
-  function addTo(field: string, ext: any) {
+export const directiveForMarkdown: Plugin<Root[], Root> = function () {
+  const data = this.data() as any as MarkdownData;
+  function addTo(field: keyof MarkdownData, ext: any) {
     if (data[field]) {
       (data[field] as Array<any>).push(ext);
     } else {
@@ -194,7 +199,7 @@ export const directiveForMarkdown: Plugin<any[], Root> = function () {
       const container = node as Parent;
       const { children } = container;
       if (children && children.some(isDirectiveLine)) {
-        const merged: Content[] = [];
+        const merged: RootContent[] = [];
         let inDirective = false;
         children.forEach((child) => {
           if (inDirective) {

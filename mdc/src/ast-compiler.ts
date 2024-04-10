@@ -234,7 +234,13 @@ class AstCompiler {
 }
 
 const compileAst: Plugin = function astCompiler() {
-  this.Compiler = AstCompiler;
+  this.compiler = (tree, file) => {
+    if (tree.type !== 'array') {
+      throw new Error('can only serialize LuaArray nodes');
+    }
+    const compiler = new AstCompiler(tree as LuaArray, file);
+    return compiler.compile();
+  };
 };
 
 export default compileAst;

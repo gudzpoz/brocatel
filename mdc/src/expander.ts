@@ -1,7 +1,7 @@
 import {
-  Code, Content, List, Root,
+  Code, List, Root, RootContent,
 } from 'mdast';
-import { ContainerDirective, Directive } from 'mdast-util-directive';
+import { ContainerDirective, Directives } from 'mdast-util-directive';
 import { mdxExpressionToMarkdown } from 'mdast-util-mdx-expression';
 import { toMarkdown } from 'mdast-util-to-markdown';
 import { visitParents } from 'unist-util-visit-parents';
@@ -17,7 +17,7 @@ import { overwrite, shallowCopy, subParagraph } from './utils';
 
 import builtInMacros from './macros/builtin.lua?raw';
 
-type Node = Root | Content | Directive;
+type Node = Root | RootContent | Directives;
 
 export function isBuiltInMacro(name: string): boolean {
   return name === 'do' || name === 'if' || name === 'local' || name === 'nil';
@@ -25,8 +25,14 @@ export function isBuiltInMacro(name: string): boolean {
 
 export function toMarkdownString(node: MarkdownNode): string {
   return toMarkdown(node, {
-    extensions: [directiveToMarkdown, mdxExpressionToMarkdown],
+    extensions: [directiveToMarkdown, mdxExpressionToMarkdown()],
   }).trim();
+}
+
+declare module 'mdast' {
+  interface LinkData {
+    coroutine?: boolean;
+  }
 }
 
 class MacroExpander {

@@ -1,6 +1,6 @@
 import { Paragraph } from 'mdast';
 import { SourceNode } from 'source-map-js/lib/source-node';
-import { Node } from 'unist';
+import { Node, Point, Position } from 'unist';
 
 /**
  * Shallow-copeis an object.
@@ -82,4 +82,17 @@ export function sourceNode(
     file ?? null as any,
     children ?? [] as any,
   );
+}
+
+/**
+ * Returns a position created from a point or position.
+ */
+export function point2Position(p?: Point | Position): Position | null {
+  if (!p) {
+    return null;
+  }
+  return (p as Position).start ? (p as Position) : {
+    start: p as Point,
+    end: p as Point,
+  };
 }

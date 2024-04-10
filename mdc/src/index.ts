@@ -1,9 +1,10 @@
+import { Root } from 'mdast';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkJoinCJKLines from 'remark-join-cjk-lines';
 import remarkParse from 'remark-parse';
 import { SourceNode } from 'source-map-js';
 import { Processor, unified } from 'unified';
-import { Position } from 'unist';
+import { Node, Position } from 'unist';
 import { VFile } from 'vfile';
 import _wasmoon from 'wasmoon';
 
@@ -17,7 +18,7 @@ import remapLineNumbers from './line-remap';
 import { StoryRunner } from './lua';
 import LuaTableGenerator from './lua-table';
 import transformAst from './transformer';
-import { sourceNode } from './utils';
+import { point2Position as _point2Position, sourceNode } from './utils';
 
 export {
   StoryRunner,
@@ -159,7 +160,7 @@ export async function validate(vfile: VFile) {
 export class BrocatelCompiler {
   config: CompilerConfig;
 
-  remark: Processor;
+  remark: Processor<Root, Node, Node>;
 
   constructor(config: CompilerConfig) {
     this.config = {
@@ -319,6 +320,7 @@ export const wasmoon = _wasmoon;
 
 export namespace debug {
   export const { getData, getRootData, luaErrorToSource } = debugging;
+  export const point2Position = _point2Position;
   export type CompilationData = debugging.CompilationData;
   export type RootData = debugging.RootData;
 

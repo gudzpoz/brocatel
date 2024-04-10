@@ -144,7 +144,7 @@ a = 1
 
 :::if\`a == 1\`
 
-*   Conditional.
+* Conditional.
 
 \`\`\`lua global
 

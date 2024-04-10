@@ -8,7 +8,7 @@ import { assert, expect, test } from 'vitest';
 import { directiveForMarkdown } from '@brocatel/md';
 
 import {
-  LuaArray, LuaCode, LuaElement, LuaIfElse,
+  LuaArray, LuaCode, LuaElement, LuaIfElse, Metadata,
 } from '../src/ast';
 import expandMacro from '../src/expander';
 import transformAst from '../src/transformer';
@@ -19,7 +19,7 @@ const parser = unified()
     // Remark-Mdx expects the expressions to be JS expressions,
     // while we use them as Lua ones.
     const data = this.data();
-    data.fromMarkdownExtensions = [[mdxExpressionFromMarkdown]];
+    data.fromMarkdownExtensions = [[mdxExpressionFromMarkdown()]];
     data.micromarkExtensions = [mdxExpression()];
   })
   .use(directiveForMarkdown)
@@ -203,9 +203,9 @@ test('Transform heading levels', async () => {
   assert.equal(level1.data?.label, 'b');
   assert.lengthOf(level1.children, 5);
   assert.deepInclude(level1.children[0], { type: 'text', text: 'c' });
-  assert.equal(level1.children[2].data?.label, 'd');
+  assert.equal((level1.children[2].data as Metadata)?.label, 'd');
   assertBranch(level1.children[2] as LuaArray, 'e');
-  assert.equal(level1.children[4].data?.label, 'f');
+  assert.equal((level1.children[4].data as Metadata)?.label, 'f');
   assertBranch(level1.children[4] as LuaArray, 'g');
 });
 

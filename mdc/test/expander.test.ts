@@ -27,7 +27,7 @@ async function assertMatch(input: string, expectedOutput: string) {
 }
 
 test('Expand list', async () => {
-  await assertMatch('- a\n- b', ':::do`FUNC.S_ONCE`\n\n*   a\n*   b');
+  await assertMatch('- a\n- b', ':::do`FUNC.S_ONCE`\n\n* a\n* b');
 });
 
 test('Expand code', async () => {
@@ -35,21 +35,21 @@ test('Expand code', async () => {
 });
 
 test('Expand conditional', async () => {
-  assertMatch('`a` _**b**_', ':::if`a`\n\n*   ***b***');
-  assertMatch('`a` `b` c', ':::if`a`\n\n*   :::if`b`\n\n    *   c');
+  assertMatch('`a` _**b**_', ':::if`a`\n\n* ***b***');
+  assertMatch('`a` `b` c', ':::if`a`\n\n* :::if`b`\n\n  * c');
 });
 
 test('Expand macro', async () => {
   await assertMatch(':::loop\n- a', `
 :::local
 
-*   # \\\\#loop-1
+* # \\\\#loop-1
 
-*   :::local
+* :::local
 
-    *   a
+  * a
 
-*   [](\\\\#loop-1)
+* [](\\\\#loop-1)
   `);
 
   await assertMatch(':::switch`a = 0`\n- `a == 1`\n\n  ok\n- `a == 0`\n\n  ok', `
@@ -65,8 +65,8 @@ a == 0
 )then return IP:set(args:resolve(3))end
 \`\`\`
 
-*   ok
+* ok
 
-*   ok
+* ok
   `);
 });

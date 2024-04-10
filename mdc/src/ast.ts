@@ -50,12 +50,20 @@ export type LuaElement = LuaArray | LuaText | LuaLink | LuaIfElse | LuaCode;
  * Any block of Markdown lines will turn into one or multiple LuaArrays.
  * Also, every heading generates a new labeled LuaArray.
  */
-export interface LuaArray extends Parent<LuaElement, Metadata> {
+export interface LuaArray extends Parent {
   type: 'array';
   /**
    * The original node.
    */
   node: MarkdownNode;
+  /**
+   * The array metadata.
+   */
+  data?: Metadata;
+  /**
+   * Children.
+   */
+  children: LuaElement[];
 }
 
 /**
@@ -150,7 +158,7 @@ export interface LuaLink extends LuaNode {
  *
  * Conditional links should be supported: `` `conditional` [](somewhere) ``.
  */
-export interface LuaIfElse extends Parent<LuaArray> {
+export interface LuaIfElse extends Parent {
   type: 'if-else';
   /**
    * A Lua expresssion (e.g. `true`, `#list == 1`, etc.).
@@ -200,7 +208,7 @@ export interface LuaIfElse extends Parent<LuaArray> {
  *
  * (The `do` macro manipulates internal data in the AST nodes.)
  */
-export interface LuaCode extends Parent<LuaArray> {
+export interface LuaCode extends Parent {
   type: 'func';
   /**
    * The Lua snippet (e.g. `return true`, `a = 1`, etc.).
@@ -210,6 +218,10 @@ export interface LuaCode extends Parent<LuaArray> {
    * The original node.
    */
   node: MarkdownNode;
+  /**
+   * The arguments.
+   */
+  children: LuaArray[];
 }
 
 /**
@@ -218,13 +230,17 @@ export interface LuaCode extends Parent<LuaArray> {
  * Its children are the root nodes compiled from Markdown files,
  * whose filenames are recorded in the `files` field.
  */
-export interface LuaEntry extends Parent<LuaArray> {
+export interface LuaEntry extends Parent {
   type: 'root';
   ['']: {
     entry: string;
     version: number;
   };
   files: string[];
+  /**
+   * Root nodes.
+   */
+  children: LuaArray[];
 }
 
 export function luaArray(node: MarkdownNode, label?: string, parameters?: string[]): LuaArray {

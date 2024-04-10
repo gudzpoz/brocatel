@@ -2,6 +2,7 @@ import { assert, test } from 'vitest';
 import {
   BrocatelCompiler, StoryRunner, type SelectLine, type TextLine,
 } from '../src/index';
+import { point2Position } from '../src/utils';
 
 const compiler = new BrocatelCompiler({
   autoNewLine: true,
@@ -293,7 +294,7 @@ test('Lua validation', async () => {
   assert.equal(compiled.messages[1].message, 'invalid lua code');
   compiled.messages.forEach((msg) => {
     assert.equal(msg.file, 'other.md');
-    assert.equal(msg.position?.start.line, 4);
+    assert.equal(point2Position(msg.place)?.start.line, 4);
   });
 });
 
@@ -305,7 +306,7 @@ test('Link validation', async () => {
 `);
   assert.lengthOf(compiled.messages, 1);
   assert.include(compiled.messages[0].message, 'link target not found: #b');
-  assert.equal(compiled.messages[0].position?.start.line, 4);
+  assert.equal(point2Position(compiled.messages[0].place)?.start.line, 4);
 });
 
 test('Link destination checks', async () => {

@@ -4,20 +4,22 @@ import { VFile } from 'vfile';
 
 import { BrocatelCompiler } from '.';
 import { getRootData } from './debug';
+import { point2Position } from './utils';
 
 /* eslint-disable no-console */
 function displayWarnings(input: string, vfile: VFile) {
   const lines = vfile.toString().split('\n');
   vfile.messages.forEach((m) => {
     console.warn(input, m.message);
-    const p = m.position;
-    if (p && p.start.line) {
-      console.log('', `Line ${p.start.line}, Column ${p.start.column}`);
-      const line = lines[Math.max(p.start.line - 1, 0)];
+    const p = m.place;
+    if (p) {
+      const { start, end } = point2Position(p)!;
+      console.log('', `Line ${start.line}, Column ${start.column}`);
+      const line = lines[Math.max(start.line - 1, 0)];
       console.log('', line);
-      const indent = Math.max(p.start.column - 1, 0);
-      if (p.start.line === p.end.line) {
-        console.log('', `${' '.repeat(indent)}${'^'.repeat(Math.max(p.end.column - p.start.column + 1, 0))}`);
+      const indent = Math.max(start.column - 1, 0);
+      if (start.line === end.line) {
+        console.log('', `${' '.repeat(indent)}${'^'.repeat(Math.max(end.column - start.column + 1, 0))}`);
       } else {
         console.log('', `${' '.repeat(indent)}^`);
       }
