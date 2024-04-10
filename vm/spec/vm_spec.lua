@@ -1,11 +1,11 @@
-local brocatel = require("vm")
+local brocatel = require("brocatel")
 local utils = require("spec.test_utils")
-local StackedEnv = require("stacked_env")
-local TablePath = require("table_path")
+local StackedEnv = require("mdvm.stacked_env")
+local TablePath = require("mdvm.table_path")
 
 --- @param root table
 local function wrap(root)
-    return brocatel.VM.new({
+    return brocatel.VM._new({
         [""] = {
             version = 1,
             entry = "main",
@@ -58,7 +58,7 @@ describe("VM", function()
 
     describe("provides a runtime for functions", function()
         it("like a global IP (instruction pointer)", function()
-            local vm = nil --- @type VM
+            local vm = nil --- @type brocatel.VM
             vm = wrap({
                 {},
                 {
@@ -78,7 +78,7 @@ describe("VM", function()
             assert.same({ "arg 2", "end" }, utils.gather_til_end(vm))
         end)
         it("like manual evaluation", function()
-            local vm = nil --- @type VM
+            local vm = nil --- @type brocatel.VM
             vm = wrap({
                 {},
                 {
@@ -102,7 +102,7 @@ describe("VM", function()
             assert.same({ "end" }, utils.gather_til_end(vm))
         end)
         it("like custom data storage", function()
-            local vm = nil --- @type VM
+            local vm = nil --- @type brocatel.VM
             vm = wrap({
                 { labels = { a = { 2, "args", 2 } } },
                 {
@@ -187,10 +187,10 @@ describe("VM", function()
         local _, line = vm:lookup_label({ "first" })
         assert.equal("Hello", line)
         _, line = vm:lookup_label({ "main", "last" })
-        assert.is_not_nil(line.link)
+        assert.is_not_nil(line and line.link)
         _, line = vm:lookup_label({ "curious", "first" })
         assert.equal(1, #line)
-        assert.equal(0, #line[1])
+        assert.equal(0, line and #line[1])
     end)
 
     it("with translation", function()
@@ -217,7 +217,7 @@ describe("VM", function()
 
     it("with select function", function()
         local call_count = 0
-        local vm = nil --- @type VM
+        local vm = nil --- @type brocatel.VM
         vm = wrap({
             {},
             {
@@ -290,7 +290,7 @@ describe("VM", function()
     end)
 
     it("save and load", function()
-        local vm --- @type VM
+        local vm --- @type brocatel.VM
         vm = wrap({
             {},
             "Start",

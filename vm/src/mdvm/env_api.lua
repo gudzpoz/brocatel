@@ -1,11 +1,12 @@
-local TablePath = require("table_path")
-local history = require("history")
+local TablePath = require("mdvm.table_path")
+local history = require("mdvm.history")
+local utils   = require("mdvm.utils")
 
 --- Sets up the runtime API.
----@param self VM
+---@param self brocatel.VM
 return function (self)
     local env = self.env
-    local ip = assert(self:get_coroutine()).ip
+    local ip = assert(self:_get_coroutine()).ip
     local lua = env:get_lua_env()
     lua.IP = ip
     lua.VM = self
@@ -22,7 +23,7 @@ return function (self)
             end
         end
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
-        history.set(self.savedata.stats, assert(self:ensure_root(path)), path, key, value)
+        history.set(self.savedata.stats, assert(self:_ensure_root(path)), path, key, value)
     end)
 
     env:set_api("END", function(path)
@@ -40,7 +41,7 @@ return function (self)
         -- For calls like `END({ "label", "path_name" })`, it breaks that array (which is probably a loop or something).
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         assert(path:is_parent_to(IP))
-        local root = assert(self:ensure_root(path))
+        local root = assert(self:_ensure_root(path))
         path = path:copy()
         path:step(root)
         IP:set(path)
@@ -65,7 +66,7 @@ return function (self)
     local function user_select(args, recur)
         local current = self.savedata.current
         local counts = history.get(self.savedata.stats, args, "S") or {}
-        local root = assert(self:ensure_root(args))
+        local root = assert(self:_ensure_root(args))
         if current.input then
             env:get("IP"):set(args:copy():resolve(current.input, 3))
             local count = counts[current.input] or 0
@@ -105,7 +106,7 @@ return function (self)
                     end
                 })
             end
-            local line, tags = self:eval_with_env(local_env, args:copy():resolve(i), self.get_keys(inner))
+            local line, tags = self:eval_with_env(local_env, args:copy():resolve(i), utils.get_keys(inner))
             if line and should_recur and tags then
                 selectables[#selectables + 1] = {
                     option = { text = line, tags = tags },

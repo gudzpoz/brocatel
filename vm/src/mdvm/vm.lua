@@ -1,40 +1,42 @@
-local TablePath = require("table_path")
-local StackedEnv = require("stacked_env")
-local history = require("history")
-local lookup = require("lookup")
-local savedata = require("savedata")
-
---- The brocatel module, containing the core brocatel.VM implementation.
----
---- @see VM
-local brocatel = {}
-brocatel.StackedEnv = StackedEnv
-brocatel.TablePath = TablePath
+local TablePath = require("mdvm.table_path")
+local history = require("mdvm.history")
+local lookup = require("mdvm.lookup")
+local savedata = require("mdvm.savedata")
+local utils = require("mdvm.utils")
 
 --- The brocatel runtime VM.
 ---
---- @class VM
+--- Basic usage:
+--- ++++++++++++
+---
+--- * Going through the story with :any:`brocatel.VM.next`
+--- * Saving the VM state with :any:`brocatel.VM.save`
+--- * Loading the VM state with :any:`brocatel.VM.load`
+--- * Supplying a gettext implementation with :any:`brocatel.VM.set_gettext`
+---
+--- @class brocatel.VM
 --- @field code table<string, table> the compiled brocatel scripts
 --- @field env StackedEnv the environment handle
 --- @field savedata SaveData save data
 --- @field flags table inner api for data storage, cleaned on each `next` call
 --- @field gettext Gettext GNU Gettext config
 local VM = {}
-brocatel.VM = VM
 VM.__index = VM
 VM.version = 1
-VM.set_up_env_api = require("env_api")
+VM.set_up_env_api = require("mdvm.env_api")
 
 --- Creates a VM from compiled brocatel scripts, in brocatel runtime format.
 ---
+--- The compiled chunk is expected to have been loaded within the stacked environment.
+---
 --- @param compiled_chunk table<string, table> the loaded chunk
 --- @param env StackedEnv the environment used to load the chunk
---- @return VM vm the created VM
-function VM.new(compiled_chunk, env)
+--- @return brocatel.VM vm the created VM
+function VM._new(compiled_chunk, env)
     local meta = compiled_chunk[""]
     assert(meta, "the compiled chunk must contain a meta node")
     assert(meta.entry and meta.version, "invalid meta node for the compiled chunk")
-    --- @type VM
+    --- @type brocatel.VM
     local vm = {
         code = compiled_chunk,
         env = env,
@@ -43,15 +45,15 @@ function VM.new(compiled_chunk, env)
         savedata = savedata.init(assert(compiled_chunk[""], "invalidate runtime format")),
     }
     setmetatable(vm, VM)
-    vm:init(true)
+    vm:_init(true)
     return vm
 end
 
 --- @param co Coroutine
-function VM:set_up_listener(co)
+function VM:_set_up_listener(co)
     co.ip:set_listener(function(old, new)
-        assert(self:ensure_root(new), "invalid ip assigned")
-        local current_co = assert(self:get_coroutine())
+        assert(self:_ensure_root(new), "invalid ip assigned")
+        local current_co = assert(self:_get_coroutine())
         history.record_simple(self.savedata.stats, self.code, current_co.prev_ip, old)
         current_co.prev_ip = old:copy()
     end)
@@ -59,7 +61,7 @@ end
 
 --- Initializes the VM state.
 --- @param init_ip boolean whether to re-adjust the IP pointer (false if loading savedata)
-function VM:init(init_ip)
+function VM:_init(init_ip)
     if self.savedata.version > VM.version then
         error("library version outdated")
     end
@@ -70,7 +72,7 @@ function VM:init(init_ip)
             if co.prev_ip then
                 co.prev_ip = TablePath.from(co.prev_ip)
             end
-            self:set_up_listener(co)
+            self:_set_up_listener(co)
         end
     end
     self:set_up_env_api()
@@ -79,24 +81,24 @@ function VM:init(init_ip)
         return self:lookup_label(keys)
     end)
     self.env:set_init(false)
-    local ip = assert(self:get_coroutine()).ip
-    local root = assert(self:ensure_root(ip))
+    local ip = assert(self:_get_coroutine()).ip
+    local root = assert(self:_ensure_root(ip))
     if init_ip then
         ip:step(root, true)
     end
-    self:set_env()
+    self:_set_env()
 end
 
 --- Fetches the root, ensuring existence of the specified root node.
 ---
 --- @param name string|TablePath|nil the root node name
 --- @return table<string, Element>|nil root the root node
-function VM:ensure_root(name)
+function VM:_ensure_root(name)
     if type(name) == "table" then
         assert(#name >= 1, "not a valid TablePath")
         name = name[1]
     elseif not name then
-        return self:ensure_root(self:get_coroutine().ip)
+        return self:_ensure_root(self:_get_coroutine().ip)
     end
     local root = self.code[name]
     if not root then
@@ -109,21 +111,10 @@ function VM:ensure_root(name)
         self.env:set_init(true)
         self.code[name] = root()
         self.env:set_init(false)
-        return self:ensure_root(name)
+        return self:_ensure_root(name)
     end
     error("expecting a table or a function")
 end
-
---- @param values table
---- @return table keys
-function VM.get_keys(values)
-    local keys = {}
-    for key, _ in pairs(values) do
-        keys[key] = true
-    end
-    return keys
-end
-
 
 --- Calls a function with the supplied environment pushed into the stacked env.
 ---
@@ -134,7 +125,7 @@ end
 --- @param func function
 function VM:call_with_env(env, func, ...)
     env = env or {}
-    self.env:push(self.get_keys(env), env)
+    self.env:push(utils.get_keys(env), env)
     local result = { func(...) }
     self.env:pop()
     ---@diagnostic disable-next-line: deprecated
@@ -149,12 +140,12 @@ end
 --- @param ip TablePath
 --- @param env_keys table|nil
 function VM:eval_with_env(env, ip, env_keys)
-    ip:step(assert(self:ensure_root(ip)), true)
+    ip:step(assert(self:_ensure_root(ip)), true)
     env = env or {}
-    env_keys = env_keys or self.get_keys(env)
+    env_keys = env_keys or utils.get_keys(env)
     self.env:push(env_keys, env)
     while true do
-        local line, tags = self:fetch_and_next(ip)
+        local line, tags = self:_fetch_and_next(ip)
         if line or not tags or self.flags["if-else"] == false or self.flags["empty"] then
             self.env:pop()
             return line, tags
@@ -163,6 +154,9 @@ function VM:eval_with_env(env, ip, env_keys)
 end
 
 --- @class Gettext
+---
+--- GNU gettext interface supplied by the user to offload translation to GNU gettext.
+---
 --- @field gettext nil | fun(msgid: string):string
 --- @field ngettext nil | fun(msgid: string, count: number):string
 
@@ -174,9 +168,11 @@ end
 --- If you are wrapping gettext library calls and using PO fields
 --- generated by our `lgettext`, you can just pass an empty string as
 --- `msgid-plural`.
+--- See also `gettext(3) <https://www.man7.org/linux/man-pages/man3/gettext.3.html>`_
+--- and `ngettext(3) <https://www.man7.org/linux/man-pages/man3/ngettext.3.html>`_.
 ---
---- @param gettext fun(msgid: string):string
---- @param ngettext fun(msgid: string, count: number):string
+--- @param gettext fun(msgid: string):string see ``gettext(3)``
+--- @param ngettext fun(msgid: string, count: number):string see ``ngettext(3)``
 function VM:set_gettext(gettext, ngettext)
     assert(gettext)
     assert(ngettext)
@@ -188,7 +184,7 @@ end
 ---
 --- @param thread_name string|nil the thread name
 --- @return Thread|nil thread
-function VM:get_thread(thread_name)
+function VM:_get_thread(thread_name)
     if not thread_name then
         thread_name = self.savedata.current_thread
     end
@@ -200,8 +196,8 @@ end
 --- @param thread_name string|nil the thread name
 --- @param coroutine_id number|nil the coroutine id
 --- @return Coroutine|nil co
-function VM:get_coroutine(thread_name, coroutine_id)
-    local thread = self:get_thread(thread_name)
+function VM:_get_coroutine(thread_name, coroutine_id)
+    local thread = self:_get_thread(thread_name)
     if not thread then
         return nil
     end
@@ -213,8 +209,8 @@ end
 
 --- @param params table coroutine-local variables
 --- @param target TablePath the target routine
-function VM:set_up_coroutine(params, target)
-    local thread = assert(self:get_thread())
+function VM:_set_up_coroutine(params, target)
+    local thread = assert(self:_get_thread())
     local id = 1
     while thread.coroutines[id] do
         id = id + 1
@@ -226,20 +222,23 @@ function VM:set_up_coroutine(params, target)
         co.locals.values[key] = value
     end
     local current = thread.current_coroutine
-    self:switch_coroutine(id)
-    local ip = assert(self:get_coroutine()).ip
-    local root = assert(self:ensure_root())
-    self:set_up_listener(co)
+    self:_switch_coroutine(id)
+    local ip = assert(self:_get_coroutine()).ip
+    local root = assert(self:_ensure_root())
+    self:_set_up_listener(co)
     ip:step(root, true)
-    self:switch_coroutine(current)
+    self:_switch_coroutine(current)
 end
 
+--- Performs a function call by pushing a new stack frame (with return address and params)
+--- and jumping to the supplied ip.
+---
 --- @param params table the parameters
 --- @param ip TablePath the return address
 --- @param extra_keys string[] names of function local variables
 function VM:push_stack_frame(params, ip, extra_keys)
-    local co = assert(self:get_coroutine())
-    local keys = self.get_keys(params)
+    local co = assert(self:_get_coroutine())
+    local keys = utils.get_keys(params)
     for _, key in ipairs(extra_keys) do
         keys[key] = true
     end
@@ -251,31 +250,33 @@ function VM:push_stack_frame(params, ip, extra_keys)
     self.env:push(keys, params)
 end
 
+--- Pops a stack frame and jumps to the return address.
+---
 --- @return boolean success false if no function call in stack
 function VM:pop_stack_frame()
-    local co = assert(self:get_coroutine())
+    local co = assert(self:_get_coroutine())
     if #co.stack == 0 then
         return false
     end
     local ip = TablePath.from(co.stack[#co.stack].ret)
     co.stack[#co.stack] = nil
     self.env:pop()
-    local root = assert(self:ensure_root(ip))
+    local root = assert(self:_ensure_root(ip))
     ip:step(root)
     co.ip:set(ip)
     return true
 end
 
 --- @param id number
-function VM:switch_coroutine(id)
-    local thread = assert(self:get_thread())
+function VM:_switch_coroutine(id)
+    local thread = assert(self:_get_thread())
     thread.current_coroutine = id
-    self:set_env()
+    self:_set_env()
 end
 
 --- @return boolean success false if no other coroutine left
-function VM:kill_coroutine()
-    local thread = assert(self:get_thread())
+function VM:_kill_coroutine()
+    local thread = assert(self:_get_thread())
     local another = nil --- @type number|nil
     for id, _ in pairs(thread.coroutines) do
         if id ~= thread.current_coroutine then
@@ -286,13 +287,14 @@ function VM:kill_coroutine()
         return false
     end
     thread.coroutines[thread.current_coroutine] = nil
-    self:switch_coroutine(another)
+    self:_switch_coroutine(another)
     return true
 end
 
 --- Yields the next line.
 ---
---- @param input number|nil
+--- @param input number|nil the input when the previous line is a list of options
+--- @return Output|nil line the next line or nil if the story has ended
 function VM:next(input)
     local current = self.savedata.current
     if input then
@@ -303,6 +305,8 @@ function VM:next(input)
 end
 
 --- Returns the current line.
+---
+--- @return Output|nil the current line or nil if the story has ended
 function VM:current()
     local current = self.savedata.current
     local output = current.output
@@ -311,7 +315,7 @@ function VM:current()
     end
 
     while true do
-        local line, tags = self:fetch_and_next()
+        local line, tags = self:_fetch_and_next()
         if not tags then
             return nil
         end
@@ -327,6 +331,7 @@ function VM:current()
 end
 
 --- Interpolates the text with the supplied values.
+---
 --- @param text string
 --- @param values table<string, function>
 --- @param translate boolean
@@ -361,11 +366,11 @@ end
 --- @param ip TablePath|nil the pointer
 --- @return string|nil result
 --- @return table<string, string>|boolean|nil tags `nil` if reaches the end
-function VM:fetch_and_next(ip)
-    ip = ip or assert(self:get_coroutine()).ip
-    local root = assert(self:ensure_root(ip))
+function VM:_fetch_and_next(ip)
+    ip = ip or assert(self:_get_coroutine()).ip
+    local root = assert(self:_ensure_root(ip))
     if ip:is_done() then
-        if self:kill_coroutine() then
+        if self:_kill_coroutine() then
             return nil, true
         end
         return nil, nil
@@ -374,7 +379,7 @@ function VM:fetch_and_next(ip)
     self.flags = {}
 
     local node = assert(ip:get(root))
-    local node_type = VM.node_type(node)
+    local node_type = VM._node_type(node)
 
     if node_type == "text" and type(node) == "string" then
         ip:step(root)
@@ -394,7 +399,7 @@ function VM:fetch_and_next(ip)
     elseif node_type == "link" then
         local new_root_name = node.root
         if new_root_name then
-            assert(self:ensure_root(new_root_name))
+            assert(self:_ensure_root(new_root_name))
         end
         local found = lookup.find_by_labels(root, new_root_name or ip, node.link)
         assert(#found == 1, "not found / found too many: " .. tostring(#found))
@@ -404,7 +409,7 @@ function VM:fetch_and_next(ip)
                 local params = type(node.params) == "function" and node.params() or {}
                 if node.coroutine then
                     -- Coroutine call.
-                    self:set_up_coroutine(params, found[1])
+                    self:_set_up_coroutine(params, found[1])
                     ip:step(root)
                     found[1] = ip
                 else
@@ -427,7 +432,7 @@ function VM:fetch_and_next(ip)
         ip:step(root)
         node.func(args)
         if not ip:is_done() then
-            ip:step(assert(self:ensure_root(ip)), true)
+            ip:step(assert(self:_ensure_root(ip)), true)
         end
         return nil, true
     end
@@ -437,7 +442,7 @@ end
 --- Returns "text", "tagged_text", "func", "if-else", or "link" depending on the node type.
 ---
 --- @param node Node
-function VM.node_type(node)
+function VM._node_type(node)
     local t = type(node)
     if t == "string" then
         return "text"
@@ -476,12 +481,12 @@ end
 ---
 --- @param keys table relative label path
 --- @return TablePath|nil
---- @return any
+--- @return Element|nil
 function VM:lookup_label(keys)
-    local results = lookup.deep_lookup(assert(self:get_coroutine()).ip, keys, self.code)
+    local results = lookup.deep_lookup(assert(self:_get_coroutine()).ip, keys, self.code)
     if #results == 0 and self.code[keys[1]] then
         local root = keys[1]
-        if self:ensure_root(root) then
+        if self:_ensure_root(root) then
             local path = {}
             for i = 2, #keys do
                 path[i - 1] = keys[i]
@@ -495,12 +500,22 @@ function VM:lookup_label(keys)
     return results[1], results[1]:get(self.code)
 end
 
---- @return table incorrect incorrect link nodes
+--- @class InvalidLink
+--- @field node Node the invalid link node
+--- @field root string the root name
+--- @field source string|nil the source position
+
+--- Checks if there is any invalid links.
+---
+--- The function is mainly called by the compiler to detect invalid links.
+--- The users need not to check link validity themselves.
+---
+--- @return InvalidLink[] incorrect incorrect link nodes
 function VM:validate_links()
-    local incorrect = {}
+    local incorrect = {} --- @type { node: Node, root: string, source: string|nil }[]
     for root_name, _ in pairs(self.code) do
         if root_name ~= "" then
-            self:ensure_root(root_name)
+            self:_ensure_root(root_name)
             local path = TablePath.from({ root_name })
             while true do
                 local node = path:get(self.code)
@@ -519,7 +534,7 @@ function VM:validate_links()
                         local debug_info = parent[1] and parent[1].debug or {}
                         local new_root_name = node.root
                         if new_root_name then
-                            assert(self:ensure_root(new_root_name))
+                            assert(self:_ensure_root(new_root_name))
                         end
                         local found = lookup.find_by_labels(self.code, new_root_name or path, node.link)
                         if #found ~= 1 then
@@ -550,74 +565,32 @@ function VM:validate_links()
 end
 
 --- Sets the environment up.
-function VM:set_env()
+function VM:_set_env()
     self.env:clear()
-    self.env:push(self:get_thread().thread_locals.keys, self:get_thread().thread_locals.values)
-    local co = assert(self:get_coroutine())
-    self.env:push(co.locals.keys, self:get_coroutine().locals.values)
+    self.env:push(self:_get_thread().thread_locals.keys, self:_get_thread().thread_locals.values)
+    local co = assert(self:_get_coroutine())
+    self.env:push(co.locals.keys, self:_get_coroutine().locals.values)
     for _, frame in ipairs(co.stack) do
         self.env:push(frame.keys, frame.values)
     end
 end
 
+--- Returns a string that can be loaded to restore the VM state.
+---
+--- Internally, the returned string is just a serialized Lua table,
+--- without any obfuscation.
+---
+--- @return string state the VM state serialized to a string
 function VM:save()
     return savedata.save(self.savedata)
 end
 
-function VM:load(s)
-    self.savedata = savedata.load(s)
-    self:init(false)
+--- Loads a string generated by `save()` to restore to a certain VM.
+---
+--- @param state string the VM state serialized to a string
+function VM:load(state)
+    self.savedata = savedata.load(state)
+    self:_init(false)
 end
 
---- @param t table
---- @return table copy
-local function shallow_copy(t)
-    local copy = {}
-    for key, value in pairs(t) do
-        copy[key] = value
-    end
-    return copy
-end
-
---- @param content string the compile brocatel chunk
---- @param save string|nil the savedata content
---- @param extra_env table|nil extra Lua environment globals (only `extern`, `print` and `require` permitted)
---- @return VM vm
-function brocatel.load_vm(content, save, extra_env)
-    local env = StackedEnv.new()
-    if not extra_env then
-        extra_env = {}
-    end
-    env:set_lua_env({
-        assert = assert,
-        error = error,
-        ipairs = ipairs,
-        next = next,
-        pairs = pairs,
-        select = select,
-        ---@diagnostic disable-next-line: deprecated
-        unpack = unpack,
-        pcall = pcall,
-        xpcall = xpcall,
-        tonumber = tonumber,
-        tostring = tonumber,
-        type = type,
-        print = extra_env.print,
-        require = extra_env.require,
-        extern = extra_env.extern,
-
-        os = { time = os.time },
-        math = shallow_copy(math),
-        string = shallow_copy(string),
-        table = shallow_copy(table),
-        _G = env.env,
-    })
-    local chunk = savedata.load_with_env(env.env, content)()
-    local vm = VM.new(chunk, env)
-    if save then
-        vm:load(save)
-    end
-    return vm
-end
-
-return brocatel
+return VM

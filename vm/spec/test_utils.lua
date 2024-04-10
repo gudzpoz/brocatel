@@ -1,4 +1,4 @@
---- @param vm VM
+--- @param vm brocatel.VM
 --- @param limit number|nil
 local function gather_til_end(vm, limit)
     limit = limit or 1e6

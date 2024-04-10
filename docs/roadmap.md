@@ -71,6 +71,9 @@ Markdown compiler implementation:
 - [ ] Save & load.
   - [X] API.
 - [ ] Fast-forward (skipping only texts that users have read).
+  - [ ] Instead, we should probably export read counts along with the lines
+    to let the user / the outer game engine decide whether to skip lines
+    (or even display some relevant text / highlighting).
 - [ ] Complete porting The Intercept, which is a little bit lengthy.
 
 ### `v0.4.0`

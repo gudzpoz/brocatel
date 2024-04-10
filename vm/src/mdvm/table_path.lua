@@ -7,44 +7,45 @@
 local TablePath = {}
 TablePath.__index = TablePath
 
+--- @alias TablePathSeg string|number segment of a TablePath
+
 --- @class Interpolatable
---- @field text string
---- @field values table<string, function>
+--- @field text string the text to interpolate
+--- @field values table<string, function> the arguments to interpolate
 
 --- @alias Array (Node|string)[]
 
 --- @class Node
 ---
---- @field text string|nil
---- @field tags table<string, string|Interpolatable>|nil
---- @field plural string|nil
---- @field values table<string, function>|nil
+--- @field text string|nil text of a text node
+--- @field tags table<string, string|Interpolatable>|nil tags of a text node
+--- @field plural string|nil key of an interpolated value that is used to pluralize the text
+--- @field values table<string, function>|nil interpolated values of a text node
 ---
---- @field func function|nil
---- @field args Array[]|nil
+--- @field func function|nil the function of a function node
+--- @field args Array[]|nil the arguments of a function node
 ---
---- @field link TablePath|nil
---- @field root string|nil
---- @field params function|boolean|nil
---- @field coroutine boolean|nil
+--- @field link TablePath|nil the destination labels of a link node
+--- @field root string|nil the root node name of a link node
+--- @field params function|boolean|nil the routine-call parameters of a link node
+--- @field coroutine boolean|nil the coroutine flag of a link node
 ---
---- @field label string|nil
---- @field labels table<string, TablePath>|nil
---- @field routine string[]|nil
---- @field debug string[]|nil
+--- @field label string|nil the label of an array metadata node
+--- @field labels table<string, TablePath>|nil the label lookup table in an array metadata node
+--- @field routine string[]|nil the routine params of an array metadata node
+--- @field debug string[]|nil the debug info of an array metadata node
 ---
---- @field I number|nil
---- @field R table<number, number>|nil
+--- @field I number|nil read counts in history stats for array nodes
+--- @field R table<number, number>|nil read bitmap in history stats for text nodes
 
 --- @alias Element Node|Array
-
 
 --- Creates a path from an array.
 ---
 --- The table is copied into the new path.
 --- Listeners are not copied.
 ---
---- @param t (string|number)[]|TablePath the path
+--- @param t TablePathSeg[]|TablePath the path
 --- @return TablePath
 function TablePath.from(t)
     assert(type(t) == "table", "expecting a table")
@@ -65,6 +66,7 @@ function TablePath:copy()
 end
 
 local LISTENER_KEY = {}
+
 --- Sets the path change listener.
 ---
 --- When the path is changed, it calls the listener, passing the new path and

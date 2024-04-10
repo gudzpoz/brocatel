@@ -1,5 +1,5 @@
-local history = require("history")
-local TablePath = require("table_path")
+local history = require("mdvm.history")
+local TablePath = require("mdvm.table_path")
 
 describe("Module history", function()
     describe("uses bitsets", function()

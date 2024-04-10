@@ -1,7 +1,7 @@
 import { LuaFactory, type LuaEngine } from 'wasmoon';
 import wasmoonWasm from 'wasmoon/dist/glue.wasm';
 
-import vmBundle from '../../vm/vm-bundle.lua?raw';
+import vmBundle from '../../vm/brocatel.lua?raw';
 
 const factory = new LuaFactory(wasmoonWasm);
 function newLuaState(): Promise<LuaEngine> {

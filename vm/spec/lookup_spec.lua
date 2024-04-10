@@ -1,5 +1,5 @@
-local lookup = require("lookup")
-local TabelPath = require("table_path")
+local lookup = require("mdvm.lookup")
+local TabelPath = require("mdvm.table_path")
 
 describe("Module labels", function()
     local root = {

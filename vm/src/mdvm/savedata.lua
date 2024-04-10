@@ -1,46 +1,56 @@
 local savedata = {}
 
-local TablePath = require("table_path")
+local TablePath = require("mdvm.table_path")
 
 --- @class LocalEnv
---- @field keys table<string, boolean>
---- @field values table<string, any>
+--- @field keys table<string, boolean> the keys caught by the environment
+--- @field values table<string, any> the values in the environment
 
 --- @class Coroutine
---- @field ip TablePath
---- @field prev_ip TablePath|nil
---- @field locals LocalEnv
---- @field stack table
+--- @field ip TablePath the current instruction pointer (IP) of the coroutine
+--- @field prev_ip TablePath|nil the previous instruction pointer (IP) of the coroutine, used for history tracking
+--- @field locals LocalEnv the coroutine-local variables
+--- @field stack table the coroutine routine-call stack
 
 --- @class Thread
---- @field current_coroutine number
---- @field coroutines table<number, Coroutine>
---- @field thread_locals LocalEnv
+--- @field current_coroutine number the index of the current coroutine
+--- @field coroutines table<number, Coroutine> the coroutines of the thread
+--- @field thread_locals LocalEnv the thread-local variables
 
 --- @class Text
---- @field tags table<string, string>|boolean|nil
---- @field text string|nil
+---
+--- A text line.
+---
+--- @field tags table<string, string>|boolean|nil tags
+--- @field text string|nil the translated and interpolated text
 
 --- @class Selectable
---- @field key number
---- @field option Text
+---
+--- A selectable option.
+---
+--- @field key number a number referring to the option, to be passed to `VM.next` to select to option
+--- @field option Text the displayed text
 
 --- @class Output
---- @field tags table<string, string>|boolean|nil
---- @field text string|nil
---- @field select Selectable[]|nil
+---
+--- The output of a `VM.next` call. It is either a `Text` line or an array of `Selectable` options.
+--- (The `text/tags` field and the select field is mutually exclusive.)
+---
+--- @field tags table<string, string>|boolean|nil tags
+--- @field text string|nil the translated and interpolated text
+--- @field select Selectable[]|nil the selectable options
 
 --- @class IOCache
---- @field input number|nil
---- @field output Output|nil
+--- @field input number|nil the user input (selected options)
+--- @field output Output|nil last output of the current `VM.next` call
 
 --- @class SaveData
---- @field version number
---- @field current_thread string
---- @field threads table<string, Thread>
---- @field stats table
---- @field globals table<string, any>
---- @field current IOCache
+--- @field version number the version of the savedata format
+--- @field current_thread string the name of the current thread
+--- @field threads table<string, Thread> the threads of the game
+--- @field stats table history and stats of the game
+--- @field globals table<string, any> the global variables of the game
+--- @field current IOCache the current IO cache of the game
 
 --- Initializes a savedata table from metadata.
 ---

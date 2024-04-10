@@ -32,6 +32,18 @@ jobs:
       - name: Bundle Brocatel VM Runtime
         run: |
           pnpm bundle
+      - name: Setup PDM
+        uses: pdm-project/setup-pdm@v4
+      - name: Install Sphinx dependencies
+        run: |
+          cd vm
+          pdm install
+      - name: Build VM Sphinx documentation
+        run: |
+          cd vm
+          source .venv/bin/activate
+          make doc
+          cp -r public ../docs/public/api
       - name: Build VitePress
         run: |
           cd docs

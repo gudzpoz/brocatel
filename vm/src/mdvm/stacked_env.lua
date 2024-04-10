@@ -2,6 +2,21 @@
 ---
 --- File-local scopes are not supported yet.
 ---
+--- ### Usage
+---
+--- Any __index or __newindex operations to the `StackedEnv.env` table is
+--- intercepted and redirected to the first scope that matches the key.
+---
+--- The order is as follows:
+--- 1. The last-pushed scope on the stack.
+--- 2. The first-pushed scope on the stack.
+--- 3. Label lookup handler.
+--- 4. The global scope.
+--- 5. The Lua environment.
+---
+--- The Lua environment is only writable with `StackedEnv.init`
+--- set to `true` (with `StackedEnv.set_init`).
+---
 --- @class StackedEnv
 --- @field lua table the Lua environment
 --- @field global table the global scope

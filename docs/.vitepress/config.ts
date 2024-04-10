@@ -5,6 +5,9 @@ import { defineConfig } from 'vitepress';
 export default defineConfig({
   title: 'Brocatel',
   base: '/brocatel/',
+  head: [
+    ['link', { rel: 'icon', href: '/brocatel/favicon.png' }],
+  ],
   description: 'Write your game plots in Markdown and Lua.',
   markdown: {
     config: (md) => {
@@ -13,8 +16,10 @@ export default defineConfig({
   },
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
+    logo: '/favicon.svg',
     nav: [
       { text: 'Home', link: '/' },
+      { text: 'Lua API', link: '/api/index.html' },
     ],
 
     sidebar: [

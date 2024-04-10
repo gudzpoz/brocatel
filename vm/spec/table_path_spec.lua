@@ -1,4 +1,4 @@
-local TablePath = require("table_path")
+local TablePath = require("mdvm.table_path")
 
 describe("TablePath", function()
     describe("creation", function()

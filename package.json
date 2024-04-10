@@ -6,7 +6,7 @@
   "scripts": {
     "build": "pnpm bundle && cd md && pnpm build && cd ../mdc && pnpm build && cd ../mde && pnpm build && cd ../mdls && pnpm build && cd ../mdui && pnpm build",
     "build-extension": "pnpm build && cd vscode-brocatel && pnpm vscode:prepublish",
-    "bundle": "cd vm && make bundle && mkdir -p ../mdc/dist && cp vm-bundle.lua ../mdc/dist/",
+    "bundle": "cd vm && make bundle && mkdir -p ../mdc/dist && cp brocatel.lua ../mdc/dist/",
     "publish": "pnpm publish --access public --filter \"@brocatel/*\" --registry https://registry.npmjs.org"
   },
   "keywords": [],

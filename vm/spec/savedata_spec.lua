@@ -1,4 +1,4 @@
-local savedata = require("savedata")
+local savedata = require("mdvm.savedata")
 
 --- @param func function
 ---@param layer number

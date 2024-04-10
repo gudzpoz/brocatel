@@ -1,4 +1,13 @@
 .vscode/settings.json
 
+# Bundler
 node_modules/
-vm-bundle.lua
+brocatel.lua
+!src/brocatel.lua
+brocatel-*.rockspec
+
+# Python & Sphinx
+__pycache__
+.venv/
+.pdm-python
+public/
