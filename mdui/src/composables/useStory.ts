@@ -2,7 +2,7 @@ import {
   BrocatelCompiler, StoryLine, StoryRunner,
   debug,
 } from '@brocatel/mdc';
-import { Ref, nextTick, ref } from 'vue';
+import { ShallowRef, nextTick, shallowRef } from 'vue';
 
 import sample from '../assets/sample.md?raw';
 import useVsCode from './useVsCode';
@@ -27,7 +27,7 @@ type TryResult = Message | null;
 export class StoryContainer {
   file: debug.VFile | null = null;
 
-  ref: Ref<BrocatelStory> = ref(new BrocatelStory(this)) as any;
+  ref: ShallowRef<BrocatelStory> = shallowRef(new BrocatelStory(this));
 
   errorHandler?: typeof reportErrorVsCode;
 
@@ -44,15 +44,19 @@ export class StoryContainer {
       this.handleError(null, true);
       return null;
     } catch (e) {
-      if (!this.file) {
-        throw e;
+      const err = this.file && debug.luaErrorToSource(debug.getRootData(this.file), e as Error);
+      if (err) {
+        this.handleError([err], true);
+        return err;
+      } else {
+        const current = this.ref.value.currentNodeError((e as object).toString());
+        if (current) {
+          this.handleError([current], true);
+          return current;
+        } else {
+          throw e;
+        }
       }
-      const err = debug.luaErrorToSource(debug.getRootData(this.file), e as Error);
-      this.handleError(err ? [err] : null, true);
-      if (!err) {
-        throw e;
-      }
-      return err;
     }
   }
 
@@ -165,6 +169,13 @@ export class BrocatelStory {
     this.setErr(this.container.tryCatchLua(() => {
       this.story.load(data);
     }));
+  }
+
+  currentNodeError(message: string): debug.MarkdownSourceError | null {
+    if (!this.story.isLoaded()) {
+      return null;
+    }
+    return debug.nodeInfoToSourceError(message, this.story.currentDebugInfo());
   }
 }
 

@@ -51,7 +51,7 @@ const webExtensionConfig = {
 			test: /\.html$/,
 			type: 'asset/source',
 		}, {
-			test: /\?raw$/,
+			test: /mdls\/dist\/server\.js/,
 			type: 'asset/source',
 		}]
 	},

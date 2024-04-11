@@ -7,11 +7,13 @@ import { MarkdownSourceError } from '@brocatel/md';
 
 import { LuaArray, LuaLink } from './ast';
 import type { LuaGettextData } from './lgettext';
+import { InvalidNode } from './lua';
 
+export type { MarkdownSourceError, MarkdownPoint } from '@brocatel/md';
 export type { VFile as VirtualFile } from 'vfile';
 export type { SourceNode } from 'source-map-js';
 export type { LuaGettextData } from './lgettext';
-export type { MarkdownSourceError, MarkdownPoint } from '@brocatel/md';
+export type { InvalidNode } from './lua';
 
 export interface LuaHeadingTree {
   position?: Position;
@@ -103,6 +105,23 @@ export function luaErrorToSource(data: RootData, e?: Error): MarkdownSourceError
     start: {
       line: position.line,
       column: position.column + 1, // 0-base to 1-based
+    },
+  };
+}
+
+export function sourceToPosition(source: string) {
+  const [line, column] = source.split(':');
+  const point = { line: Number(line), column: Number(column) };
+  return { start: point, end: point };
+}
+
+export function nodeInfoToSourceError(message: string, node: InvalidNode): MarkdownSourceError {
+  return {
+    message,
+    source: node.root ? `${node.root}.md` : '<unknown>',
+    start: node.source ? sourceToPosition(node.source).start : {
+      line: 1,
+      column: 1,
     },
   };
 }

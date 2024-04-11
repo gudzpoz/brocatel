@@ -11,7 +11,6 @@ const enhanced: typeof Theme = {
       app.component('BrocatelEditor', defineAsyncComponent(async () => (await import('@brocatel/mde')).BrocatelEditor));
       app.component('MdExample', defineAsyncComponent(() => import('../components/MdExample.vue')));
       router.onBeforeRouteChange = (route) => {
-        console.log(route);
         if (!route.startsWith('/brocatel/api/')) {
           return true;
         }

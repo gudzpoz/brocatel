@@ -46,8 +46,12 @@ const container = new StoryContainer();
 const story = container.ref;
 
 const diagnostics = ref<debug.MarkdownSourceError[]>([]);
-container.errorHandler = (errors: debug.MarkdownSourceError[] | null) => {
-  diagnostics.value = errors ?? [];
+container.errorHandler = (errors: debug.MarkdownSourceError[] | null, runtime?: boolean) => {
+  if (runtime) {
+    diagnostics.value.push(...errors ?? []);
+  } else {
+    diagnostics.value = errors ?? [];
+  }
 };
 
 async function handleChangeNow(code: string) {

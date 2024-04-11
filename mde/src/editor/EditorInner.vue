@@ -58,8 +58,8 @@
           linter(() => diagnostics.map((err) => ({
             message: err.message,
             severity: 'error',
-            from: err.start.offset ?? 0,
-            to: err.end?.offset ?? err.start.offset ?? 0,
+            from: computeOffset(err.start),
+            to: computeOffset(err.end ?? err.start),
           }))),
           lintGutter(),
           EditorView.lineWrapping,
@@ -142,6 +142,16 @@ const emit = defineEmits<{
 }>();
 
 const markdown = ref(props.modelValue);
+
+function computeOffset(point: MarkdownSourceError["start"]) {
+  let i = 0;
+  let count = point.line - 1;
+  while (count > 0) {
+    i = markdown.value.indexOf('\n', i + 1);
+    count -= 1;
+  }
+  return i + 1 + point.column - 1;
+}
 
 const headings = ref<string[]>([]);
 provide('headings', headings);

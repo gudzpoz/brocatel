@@ -35,5 +35,10 @@
 		"licenser.disableAutoHeaderInsertion": true,
 		"Lua.workspace.useGitIgnore": true,
 		"editor.tabSize": 2,
+		"Lua.diagnostics.ignoredFiles": "Disable",
+		"Lua.workspace.ignoreDir": [
+			".vscode",
+			"node_modules"
+		],
 	}
 }

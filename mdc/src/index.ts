@@ -4,7 +4,7 @@ import remarkJoinCJKLines from 'remark-join-cjk-lines';
 import remarkParse from 'remark-parse';
 import { SourceNode } from 'source-map-js';
 import { Processor, unified } from 'unified';
-import { Node, Position } from 'unist';
+import { Node } from 'unist';
 import { VFile } from 'vfile';
 import _wasmoon from 'wasmoon';
 
@@ -15,7 +15,7 @@ import * as debugging from './debug';
 import expandMacro from './expander';
 import { LuaGettextData, compileGettextData } from './lgettext';
 import remapLineNumbers from './line-remap';
-import { StoryRunner } from './lua';
+import { InvalidNode, StoryRunner } from './lua';
 import LuaTableGenerator from './lua-table';
 import transformAst from './transformer';
 import * as utils from './utils';
@@ -107,12 +107,6 @@ function packBundle(
   return [bundle, gettextData];
 }
 
-interface InvalidLink {
-  node: { root?: string; link: string[] };
-  root: string;
-  source?: string;
-}
-
 export async function validate(vfile: VFile) {
   const data = debugging.getRootData(vfile);
   const { inputs } = data;
@@ -135,20 +129,15 @@ export async function validate(vfile: VFile) {
   if (!story.isLoaded()) {
     throw new Error('story not loaded');
   }
-  const invalidLinks: InvalidLink[] | Record<string, InvalidLink> = story.L!
+  const invalidLinks: InvalidNode[] | Record<string, InvalidNode> = story.L!
     .doStringSync('return story:validate_links()');
   (Array.isArray(invalidLinks)
     ? invalidLinks
     : Object.values(invalidLinks)
   ).forEach((l) => {
-    let position: Position | null = null;
-    if (l.source) {
-      const [line, column] = l.source.split(':');
-      const point = { line: Number(line), column: Number(column) };
-      position = { start: point, end: point };
-    }
+    const position = l.source ? debugging.sourceToPosition(l.source) : null;
     inputs?.[l.root]?.message(
-      `link target not found: ${l.node.root ?? ''}#${l.node.link.join('#')}`,
+      `link target not found: ${l.node.root ?? ''}#${l.node.link?.join('#')}`,
       position,
     );
   });
@@ -318,9 +307,28 @@ export class BrocatelCompiler {
 
 export const wasmoon = _wasmoon;
 
+/**
+ * Currently there are mainly three types of errors:
+ * 1. Compile-time errors, exposed through the `VFile` interface (in its `messages` field).
+ * 2. Runtime Lua errors from user code.
+ * 3. Runtime Lua errors emitted by the VM.
+ *
+ * The first kind contains source location info. However, the other two don't
+ * and need manual extraction by using source maps from the VM or embedded debug info:
+ *
+ * - Most Lua runtimes contains line numbers in their error messages. With the line numbers,
+ *   a source map can maps to its corresponding Markdown source location.
+ * - If the error originates in the VM code or if there is just no source maps, however,
+ *   the source-map approach no longer applies, and we will need to extract the debug info
+ *   manually (with the `VM:ip_debug_info` API on the Lua side).
+ *
+ * The utilities contained in the debug namespace aim to aid the extraction and help
+ * attaching type hints for values passed from the Lua side.
+ */
 export namespace debug {
   export type MarkdownSourceError = debugging.MarkdownSourceError;
-  export const { getData, getRootData, luaErrorToSource } = debugging;
+  export type InvalidNode = debugging.InvalidNode;
+  export const { getData, getRootData, luaErrorToSource, nodeInfoToSourceError } = debugging;
   export const point2Position = utils.point2Position;
   export type CompilationData = debugging.CompilationData;
   export type RootData = debugging.RootData;

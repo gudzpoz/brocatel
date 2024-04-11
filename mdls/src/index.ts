@@ -1,5 +1,5 @@
 import debounce from 'debounce';
-import { Content, Parent, Root } from 'mdast';
+import { Parent, Root, RootContent } from 'mdast';
 import {
   createConnection,
   TextDocuments,
@@ -265,7 +265,7 @@ function comparePoints(a: Point, b: Point) {
 }
 
 function findNodeByPoint(root: Root, point: Point) {
-  const candidates: (Content | Root)[] = [root];
+  const candidates: (RootContent | Root)[] = [root];
   while (candidates.length > 0) {
     const candidate = candidates.pop()!;
     if (!(candidate as any).children) {

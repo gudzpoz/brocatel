@@ -31,6 +31,7 @@ export default defineConfig({
       ...replace({
         delimiters: ['(?<!\\.)\\b', '\\b(?!\\.)'],
         include: ['**/wasmoon/dist/index.js'],
+        preventAssignment: true,
         values: {
           'typeof process': JSON.stringify('undefined'),
           'typeof location': JSON.stringify('object'),

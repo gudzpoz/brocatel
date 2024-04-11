@@ -2,17 +2,19 @@ import * as vscode from 'vscode';
 import { Utils as path } from 'vscode-uri';
 import innerHtml from '@brocatel/mdui/out/index.html';
 
-interface Point {
+export interface MarkdownPoint {
   line: number;
   column: number;
+  offset?: number;
 }
-
-interface Message {
+export interface MarkdownSourceError {
   message: string;
-  position?: { start: Point; end: Point };
+  source: string;
+  start: MarkdownPoint;
+  end?: MarkdownPoint;
 }
 
-function point2Position(point?: Point): vscode.Position {
+function point2Position(point?: MarkdownPoint): vscode.Position {
   if (!point) {
     return new vscode.Position(0, 0);
   }
@@ -53,18 +55,16 @@ export default class BrocatelPreviewer {
       switch (message.type) {
         case 'error': {
           const { messages } = message as { messages: any[] };
-          const annotations: Message[] = [];
+          const annotations: MarkdownSourceError[] = [];
           const serialized = messages.map((m) => {
             if (typeof m === 'string') {
               return m;
             }
-            const msg = m as { message: string, source: string, line: number, column: number };
+            const msg = m as MarkdownSourceError;
             const directory = path.dirname(this.fileUri());
+            console.log(msg);
             if (path.basename(path.joinPath(directory, msg.source)) === path.basename(this.fileUri())) {
-              annotations.push({
-                message: msg.message,
-                position: { start: msg, end: msg },
-              });
+              annotations.push(msg);
             }
             return msg.message;
           });
@@ -93,14 +93,14 @@ export default class BrocatelPreviewer {
     return this.editor.document.uri;
   }
 
-  async annotateEditor(messages: Message[]) {
+  async annotateEditor(messages: MarkdownSourceError[]) {
     this.diagnostics.clear();
     this.diagnostics.set(this.editor.document.uri, messages.map((m) => ({
       message: m.message,
       severity: vscode.DiagnosticSeverity.Error,
       range: new vscode.Range(
-        point2Position(m.position?.start),
-        point2Position(m.position?.end),
+        point2Position(m.start),
+        point2Position(m.end ?? m.start),
       ),
     })));
   }

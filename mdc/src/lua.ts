@@ -107,6 +107,12 @@ export type SelectLine = { select: { key: number, option: TextLine }[] };
 
 export type StoryLine = TextLine | SelectLine;
 
+export interface InvalidNode {
+  node: { root?: string; link?: string[] };
+  root: string;
+  source?: string;
+}
+
 export class StoryRunner {
   L?: LuaEngine;
 
@@ -155,6 +161,11 @@ export class StoryRunner {
     const result = L.doStringSync('return story:next(option)');
     L.global.setTop(top);
     return result;
+  }
+
+  currentDebugInfo(): InvalidNode {
+    const L = this.checkL();
+    return L.doStringSync('return story:ip_debug_info()');
   }
 
   close() {
