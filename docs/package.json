@@ -35,6 +35,7 @@
   "dependencies": {
     "@brocatel/mdc": "workspace:^",
     "@brocatel/mde": "workspace:^",
+    "@brocatel/mdui": "workspace:^",
     "debounce": "^2.0.0",
     "markdown-it-task-lists": "^2.1.1",
     "remark": "^15.0.1",

@@ -18,7 +18,7 @@ import remapLineNumbers from './line-remap';
 import { StoryRunner } from './lua';
 import LuaTableGenerator from './lua-table';
 import transformAst from './transformer';
-import { point2Position as _point2Position, sourceNode } from './utils';
+import * as utils from './utils';
 
 export {
   StoryRunner,
@@ -95,7 +95,7 @@ function packBundle(
     }
   });
   contents.endTable();
-  const bundle = sourceNode(
+  const bundle = utils.sourceNode(
     undefined,
     undefined,
     undefined,
@@ -123,9 +123,9 @@ export async function validate(vfile: VFile) {
     const err = debugging.luaErrorToSource(data, e as Error);
     if (err) {
       const file = inputs?.[removeMdExt(err.source)];
-      const point = { line: err.line, column: err.column };
+      const point = { line: err.start.line, column: err.start.column };
       (file ?? vfile).message('invalid lua code', {
-        start: point, end: point,
+        start: point, end: err.end ?? point,
       });
     } else {
       vfile.message(`invalid lua code found: ${e}`);
@@ -319,8 +319,9 @@ export class BrocatelCompiler {
 export const wasmoon = _wasmoon;
 
 export namespace debug {
+  export type MarkdownSourceError = debugging.MarkdownSourceError;
   export const { getData, getRootData, luaErrorToSource } = debugging;
-  export const point2Position = _point2Position;
+  export const point2Position = utils.point2Position;
   export type CompilationData = debugging.CompilationData;
   export type RootData = debugging.RootData;
 

@@ -21,6 +21,9 @@ importers:
       '@brocatel/mde':
         specifier: workspace:^
         version: link:../mde
+      '@brocatel/mdui':
+        specifier: workspace:^
+        version: link:../mdui
       debounce:
         specifier: ^2.0.0
         version: 2.0.0

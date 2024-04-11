@@ -55,7 +55,12 @@
       <codemirror
         :extensions="[
           codeMirrorMarkdown({ defaultCodeLanguage: StreamLanguage.define(lua) }),
-          linter(() => diagnostics),
+          linter(() => diagnostics.map((err) => ({
+            message: err.message,
+            severity: 'error',
+            from: err.start.offset ?? 0,
+            to: err.end?.offset ?? err.start.offset ?? 0,
+          }))),
           lintGutter(),
           EditorView.lineWrapping,
           darkMode ? oneDark : { extension: [] },
@@ -100,6 +105,8 @@ import {
   nextTick, provide, ref, watch,
 } from 'vue';
 
+import type { MarkdownPoint, MarkdownSourceError } from '@brocatel/md';
+
 import brocatelPlugins from '../plugins/index';
 import { insertDirectiveCommand } from '../nodes/directive';
 import { toggleMdxInlineCommand } from '../nodes/mdx';
@@ -118,7 +125,7 @@ const props = defineProps<{
   plainText: boolean,
   plainTextCheckbox: boolean,
   darkMode: boolean,
-  diagnostics: Diagnostic[],
+  diagnostics: MarkdownSourceError[],
 
   prompt(message: string): string | null;
 }>();
@@ -197,6 +204,10 @@ function toggleLink() {
       call(toggleLinkCommand, { href });
     }
   }
+}
+
+function point2Coords(point: MarkdownPoint) {
+  return { x: point.column, y: point.line };
 }
 </script>
 <style>

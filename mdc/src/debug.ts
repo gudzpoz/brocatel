@@ -3,12 +3,15 @@ import { SourceMapConsumer, SourceNode } from 'source-map-js';
 import { Position } from 'unist';
 import { VFile } from 'vfile';
 
+import { MarkdownSourceError } from '@brocatel/md';
+
 import { LuaArray, LuaLink } from './ast';
 import type { LuaGettextData } from './lgettext';
 
 export type { VFile as VirtualFile } from 'vfile';
 export type { SourceNode } from 'source-map-js';
 export type { LuaGettextData } from './lgettext';
+export type { MarkdownSourceError, MarkdownPoint } from '@brocatel/md';
 
 export interface LuaHeadingTree {
   position?: Position;
@@ -78,7 +81,7 @@ export function getRootData(vfile: VFile): RootData {
   return vfile.data as RootData;
 }
 
-export function luaErrorToSource(data: RootData, e?: Error) {
+export function luaErrorToSource(data: RootData, e?: Error): MarkdownSourceError | null {
   if (!(e?.message)) {
     return null;
   }
@@ -97,7 +100,9 @@ export function luaErrorToSource(data: RootData, e?: Error) {
   return {
     message: match[2],
     source: position.source,
-    line: position.line,
-    column: position.column + 1, // 0-base to 1-based
+    start: {
+      line: position.line,
+      column: position.column + 1, // 0-base to 1-based
+    },
   };
 }

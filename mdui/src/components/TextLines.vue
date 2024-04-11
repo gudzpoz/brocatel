@@ -11,12 +11,16 @@
       </template>
       <template #footer>
         <Transition name="footer">
-          <ul v-show="currentOptions.length !== 0">
+          <ul v-show="currentOptions.length !== 0" class="option-lines">
             <li
               v-for="option in currentOptions"
               :key="option.key"
             >
-              <a @click.prevent="selectOption(option.key)" href="#" v-html="option.html"></a>
+              <a
+                @click.prevent="selectOption(option.key)"
+                href="javascript:void(0)"
+                v-html="option.html"
+              />
             </li>
           </ul>
         </Transition>
@@ -68,6 +72,9 @@ function selectOption(key: number) {
   height: 100%;
 }
 .line > div {
+  display: inline;
+}
+.option-lines > li > a > :deep(*) {
   display: inline;
 }
 .footer-enter-active,

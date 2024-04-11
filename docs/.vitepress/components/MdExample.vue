@@ -9,31 +9,9 @@
       @update:modelValue="(s: string) => handleChange(s)"
     />
     <div ref="output" class="md-output">
-      <div><b>Story Output:</b></div>
+      <story-menu :container="container"/>
       <div class="output-container">
-        <div class="lines">
-          <TransitionGroup>
-            <p v-for="line, i in lines" :key="i" v-html="parse(line.text)" :style="line.tags === true ? {} : line.tags"></p>
-          </TransitionGroup>
-        </div>
-        <Transition>
-          <div v-show="options.length > 0">
-            <button v-for="option in options" :key="option.option.text"
-              @click="multiNext(10, option.key)" v-html="parse(option.option.text, true)"
-              :style="option.option.tags === true ? {} : option.option.tags"
-            >
-            </button>
-          </div>
-        </Transition>
-        <button v-show="options.length === 0 && story && completed && !ended" @click="multiNext(10)">
-          Next Few Lines
-        </button>
-        <Transition>
-          <div v-show="ended">
-            <div>~~ ended ~~</div>
-            <button @click="handleChangeNow(markdown)">Restart</button>
-          </div>
-        </Transition>
+        <story-teller :story="story" class="story" />
       </div>
     </div>
   </div>
@@ -41,17 +19,14 @@
 </template>
 
 <script setup lang="ts">
-import { StoryRunner, type SelectLine, type TextLine, debug } from '@brocatel/mdc';
-import type { Diagnostic } from '@brocatel/mde';
+import { debug } from '@brocatel/mdc';
+import { StoryContainer, StoryMenu, StoryTeller } from '@brocatel/mdui';
 import debounce from 'debounce';
-import { VFile } from 'vfile';
 import { useData } from 'vitepress';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 
-import { useCompiler } from './compiler';
-import { parse } from './markdown';
-
 import '@brocatel/mde/dist/style.css';
+import '@brocatel/mdui/dist/style.css';
 
 const props = defineProps<{
   height?: string,
@@ -66,33 +41,21 @@ watch(() => props.markdown, (md) => {
     handleChangeNow(md);
   }
 });
-// Automatically compile new script.
-const story = new StoryRunner();
 
-const diagnostics = ref<Diagnostic[]>([]);
-function annotateErrors(vfile: VFile) {
-  diagnostics.value = vfile.messages.map((msg) => ({
-    from: debug.point2Position(msg.place)?.start.offset ?? 0,
-    to: debug.point2Position(msg.place)?.end.offset ?? 0,
-    severity: 'error',
-    message: msg.message,
-  }));
-}
+const container = new StoryContainer();
+const story = container.ref;
+
+const diagnostics = ref<debug.MarkdownSourceError[]>([]);
+container.errorHandler = (errors: debug.MarkdownSourceError[] | null) => {
+  diagnostics.value = errors ?? [];
+};
+
 async function handleChangeNow(code: string) {
   if (code.trim() === '') {
     return;
   }
   markdown.value = code;
-  clear();
-  try {
-    const compiled = await useCompiler().compileAll('main', async () => code);
-    annotateErrors(compiled);
-    await story.loadStory(compiled.toString().trim());
-    multiNext(10);
-  } catch (e) {
-    console.log(code);
-    console.log(e);
-  }
+  await container.updateStory('main', async () => code);
 }
 const handleChange = debounce(handleChangeNow, 1000);
 
@@ -131,56 +94,6 @@ onUnmounted(() => {
   sightObserver?.disconnect();
   sightObserver = null;
 });
-
-// User interaction.
-const completed = ref(true);
-const ended = ref(false);
-const lines = ref<TextLine[]>([]);
-const options = ref<SelectLine['select']>([]);
-function clear() {
-  completed.value = true;
-  ended.value = false;
-  lines.value = [];
-  options.value = [];
-}
-function multiNext(count: number, option?: number) {
-  if (!completed.value) {
-    return;
-  }
-  function runNext(i: number, option?: number) {
-    const v = next(option);
-    if (i < count && v) {
-      setTimeout(() => runNext(i + 1), 1);
-    } else {
-      completed.value = true;
-    }
-  }
-  completed.value = false;
-  runNext(0, option);
-}
-function next(option?: number): boolean {
-  if (!story.isLoaded()) {
-    return false;
-  }
-  if (option) {
-    options.value = [];
-  }
-  const line = story.next(option);
-  if (!line) {
-    ended.value = true;
-    return false;
-  }
-  if ((line as TextLine).text) {
-    const l = line as TextLine;
-    l.tags = typeof l.tags === 'boolean' ? {} : l.tags;
-    lines.value.push(l);
-    return true;
-  } else if ((line as SelectLine).select) {
-    options.value = (line as SelectLine).select;
-    return false;
-  }
-  return false;
-}
 </script>
 
 <style>
@@ -192,21 +105,25 @@ function next(option?: number): boolean {
   display: flex;
   flex-direction: row;
 }
-.md-example>div {
+.md-example > div {
   width: 50%;
 }
 .md-output {
   border-left: 1px solid var(--vp-c-brand-dimm);
   margin: 0;
-  display: flex;
-  flex-direction: column;
 }
-.md-output .output-container {
-  overflow: auto;
+.md-output > div {
+  height: 1.5em;
+}
+.md-output > div.output-container {
+  height: calc(100% - 1.5em);
   background-color: var(--vp-c-bg-alt);
   padding: 0;
 }
-.md-output .output-container p {
+.md-output > div.output-container > .story {
+  height: 100%;
+}
+.md-output > div.output-container p {
   margin: 0;
   padding: 0.2em;
 }
@@ -235,16 +152,6 @@ function next(option?: number): boolean {
 }
 .md-output button:hover {
   background-color: var(--vp-c-brand-lighter);
-}
-
-.v-enter-active,
-.v-leave-active {
-  transition: opacity 1s ease;
-}
-
-.v-enter-from,
-.v-leave-to {
-  opacity: 0;
 }
 
 /* mde styles */

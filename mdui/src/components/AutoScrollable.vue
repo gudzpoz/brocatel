@@ -85,23 +85,30 @@ function scrollToBottom() {
   if (!main.value || !container.value || !footer.value) {
     return;
   }
-  const children = [...main.value.children, footer.value];
+  const children = main.value.children;
   if (children.length === 0) {
     return;
   }
-  const lastChild = children[children.length - 1] as HTMLElement;
+  const lastChild = footer.value.innerText.trim() === ''
+    ? children[children.length - 1] as HTMLElement
+    : footer.value;
   if (
     lastChild.offsetTop + lastChild.clientHeight >
     container.value.scrollTop + container.value.clientHeight
   ) {
-    discoScroll(
-      lastChild.offsetTop -
+    const minDestination = lastChild.offsetTop + lastChild.clientHeight - container.value.clientHeight;
+    const randDestination = lastChild.offsetTop -
         container.value.clientHeight *
           (1 -
             (props.autoScrollRatio +
-              Math.random() * props.autoScrollRatioRandom)),
-      props.duration,
-    );
+              Math.random() * props.autoScrollRatioRandom));
+    const destination = Math.max(minDestination, randDestination);
+    if (destination > container.value.scrollTop) {
+      discoScroll(
+        destination,
+        props.duration,
+      );
+    }
   }
 }
 

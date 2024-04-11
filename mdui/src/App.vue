@@ -1,15 +1,16 @@
 <template>
   <div class="story">
-    <StoryMenu class="menu" />
+    <StoryMenu :container="container" class="menu" />
     <StoryTeller :story="story" class="story-teller" />
   </div>
 </template>
 <script setup lang="ts">
 import StoryMenu from './components/StoryMenu.vue';
 import StoryTeller from './components/StoryTeller.vue';
-import { useStory } from './composables/useStory';
+import { useContainer } from './composables/useStory';
 
-const story = useStory();
+const container = useContainer();
+const story = container.ref;
 </script>
 <style scoped>
 .story {

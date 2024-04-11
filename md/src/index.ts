@@ -14,3 +14,8 @@ export {
 } from './spec';
 
 export const mdxForMarkdown = remarkInlineMdx;
+
+export type {
+  MarkdownPoint,
+  MarkdownSourceError,
+} from './types';

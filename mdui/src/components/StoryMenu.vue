@@ -1,24 +1,19 @@
 <template>
   <div>
-    <button @click="restart">Restart</button>
+    <button @click="container.reloadStory()">Restart</button>
     <button @click="qSave">Q.Save</button>
     <button :disabled="!qSaved" @click="qLoad">Q.Load</button>
   </div>
 </template>
 <script setup lang="ts">
-import { nextTick, ref } from 'vue';
-import { BrocatelStory, useStory } from '../composables/useStory';
+import { ref } from 'vue';
+import { BrocatelStory, StoryContainer } from '../composables/useStory';
 
-const story = useStory();
+const props = defineProps<{
+  container: StoryContainer,
+}>();
 
-function restart() {
-  const s = story.value;
-  story.value = new BrocatelStory();
-  s.reload();
-  nextTick(() => {
-    story.value = s;
-  });
-}
+const story = props.container.ref;
 
 const qSaved = ref<{ save: string, story: BrocatelStory } | null>(null);
 function qSave() {
@@ -27,12 +22,8 @@ function qSave() {
 }
 function qLoad() {
   if (qSaved.value && qSaved.value.story === story.value) {
-    const s = story.value;
-    story.value = new BrocatelStory();
-    s.load(qSaved.value.save);
-    nextTick(() => {
-      story.value = s;
-    });
+    story.value.load(qSaved.value.save);
+    props.container.reloadStory()
   } else {
     qSaved.value = null;
   }

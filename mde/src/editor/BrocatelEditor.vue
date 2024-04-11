@@ -31,6 +31,7 @@ import { MilkdownProvider } from '@milkdown/vue';
 import { ProsemirrorAdapterProvider } from '@prosemirror-adapter/vue';
 
 import EditorInner from './EditorInner.vue';
+import type { MarkdownSourceError } from '@brocatel/md';
 
 withDefaults(defineProps<{
   modelValue?: string;
@@ -40,7 +41,7 @@ withDefaults(defineProps<{
   configs?: Config[];
   linkAutoComplete?: boolean;
   plainText?: boolean,
-  diagnostics?: Diagnostic[],
+  diagnostics?: MarkdownSourceError[],
   darkMode?: boolean,
 
   prompt?:(message: string) => string | null;
