@@ -5,13 +5,17 @@ local TablePath = require("mdvm.table_path")
 
 --- @param root table
 local function wrap(root)
-    return brocatel.VM._new({
+    local vm = brocatel.VM._new({
         [""] = {
             version = 1,
             entry = "main",
         },
         main = root,
     }, StackedEnv.new())
+    vm:set_config({
+        detect_too_many_jumps = 4,
+    })
+    return vm
 end
 
 describe("VM", function()
@@ -306,5 +310,21 @@ describe("VM", function()
 
         vm:load(save_end)
         assert.is_nil(vm:next())
+    end)
+
+    it("too many jumps", function ()
+        local vm = wrap({
+            {
+                labels = {
+                    first = { 2 },
+                }
+            },
+            {
+                link = { "first" }, root_node = "main",
+            },
+        })
+        local result, message = pcall(vm.next, vm)
+        assert.falsy(result)
+        assert.is_match("no text yielded after 4 jumps", tostring(message))
     end)
 end)

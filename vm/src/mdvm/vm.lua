@@ -18,8 +18,9 @@ local utils = require("mdvm.utils")
 --- @field code table<string, table> the compiled brocatel scripts
 --- @field env StackedEnv the environment handle
 --- @field savedata SaveData save data
---- @field flags table inner api for data storage, cleaned on each `next` call
+--- @field flags Flags inner api for data storage, cleaned on each `next` call
 --- @field gettext Gettext GNU Gettext config
+--- @field config Config the VM config
 local VM = {}
 VM.__index = VM
 VM.version = 1
@@ -43,6 +44,9 @@ function VM._new(compiled_chunk, env)
         flags = {},
         gettext = {},
         savedata = savedata.init(assert(compiled_chunk[""], "invalidate runtime format")),
+        config = {
+            detect_too_many_jumps = 4096,
+        },
     }
     setmetatable(vm, VM)
     vm:_init(true)
@@ -178,6 +182,24 @@ function VM:set_gettext(gettext, ngettext)
     assert(ngettext)
     self.gettext.gettext = gettext
     self.gettext.ngettext = ngettext
+end
+
+--- @class Config
+---
+--- Runtime VM config.
+---
+--- @field detect_too_many_jumps number|nil whether to throw an error if the VM yields no text after too many jumps
+
+--- Configures the VM.
+---
+--- The supplied config will be merged with the default config.
+---
+--- @param config Config the config
+function VM:set_config(config)
+    self.config = {}
+    for k, v in pairs(config) do
+        self.config[k] = v
+    end
 end
 
 --- Fetches a thread by name.
@@ -324,8 +346,12 @@ function VM:current()
             current.output = output
         end
         output = current.output
+        local jump_limit = self.config.detect_too_many_jumps
         if output then
+            self.flags["jumps"] = 0
             return output
+        elseif jump_limit and self.flags["jumps"] > jump_limit then
+            return error("no text yielded after " .. jump_limit .. " jumps")
         end
     end
 end
@@ -353,6 +379,11 @@ function VM:interpolate(text, values, translate, plural)
     return text
 end
 
+--- @class Flags
+--- @field jumps number|nil
+--- @field empty boolean|nil
+--- @field if-else boolean|nil
+
 --- Returns the current node and goes to the next.
 ---
 --- For normal users, use `VM.next` instead.
@@ -376,7 +407,9 @@ function VM:_fetch_and_next(ip)
         return nil, nil
     end
 
-    self.flags = {}
+    self.flags = {
+        jumps = self.flags["jumps"] or 0,
+    }
 
     local node = assert(ip:get(root))
     local node_type = VM._node_type(node)
@@ -420,6 +453,7 @@ function VM:_fetch_and_next(ip)
         end
         ip:set(found[1])
         ip:step(root, true)
+        self.flags["jumps"] = self.flags["jumps"] + 1
         return nil, true
     elseif node_type == "if-else" then
         local result = node[1]()
@@ -500,7 +534,34 @@ function VM:lookup_label(keys)
     return results[1], results[1]:get(self.code)
 end
 
---- @class InvalidLink
+--- Returns the debug information of the current IP or the supplied pointer.
+---
+--- @param ip TablePath|nil the pointer (defaults to the current IP)
+--- @return InvalidNode info the current node info
+function VM:ip_debug_info(ip)
+    if not ip then
+        ip = assert(self:_get_coroutine()).ip
+    end
+    local root = assert(self:_ensure_root(ip))
+    local parent = assert(ip:get(root, 1))
+    local node = assert(ip:get(root))
+    local debug_info = parent[1] and parent[1].debug or {}
+    local position = debug_info[ip[#ip]]
+    if type(position) ~= "nil" then
+        local i = ip[#ip]
+        while position == "" do
+            i = i - 1
+            position = debug_info[i]
+        end
+    end
+    return {
+        node = node,
+        root = ip[1],
+        source = position,
+    }
+end
+
+--- @class InvalidNode
 --- @field node Node the invalid link node
 --- @field root string the root name
 --- @field source string|nil the source position
@@ -510,7 +571,7 @@ end
 --- The function is mainly called by the compiler to detect invalid links.
 --- The users need not to check link validity themselves.
 ---
---- @return InvalidLink[] incorrect incorrect link nodes
+--- @return InvalidNode[] incorrect incorrect link nodes
 function VM:validate_links()
     local incorrect = {} --- @type { node: Node, root: string, source: string|nil }[]
     for root_name, _ in pairs(self.code) do
@@ -530,27 +591,13 @@ function VM:validate_links()
                     elseif node.args then
                         path:resolve("args", 0)
                     elseif node.link then
-                        local parent = assert(path:get(self.code, 1))
-                        local debug_info = parent[1] and parent[1].debug or {}
                         local new_root_name = node.root
-                        if new_root_name then
-                            assert(self:_ensure_root(new_root_name))
+                        local found = {}
+                        if not new_root_name or self:_ensure_root(new_root_name) then
+                            found = lookup.find_by_labels(self.code, new_root_name or path, node.link)
                         end
-                        local found = lookup.find_by_labels(self.code, new_root_name or path, node.link)
                         if #found ~= 1 then
-                            local position = debug_info[path[#path]]
-                            if type(position) ~= "nil" then
-                                local i = path[#path]
-                                while position == "" do
-                                    i = i - 1
-                                    position = debug_info[i]
-                                end
-                            end
-                            incorrect[#incorrect + 1] = {
-                                node = node,
-                                root = root_name,
-                                source = position,
-                            }
+                            incorrect[#incorrect + 1] = self:ip_debug_info(path)
                         end
                     end
                 end
