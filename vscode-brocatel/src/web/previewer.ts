@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Utils as path } from 'vscode-uri';
-import innerHtml from '@brocatel/mdui/dist/index.html';
+import innerHtml from '@brocatel/mdui/out/index.html';
 
 interface Point {
   line: number;

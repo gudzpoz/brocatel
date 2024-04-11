@@ -3,7 +3,7 @@ import { ref } from 'vue';
 
 const text = ref('');
 
-if (!import.meta?.env?.SSR) {
+if (!import.meta.env.SSR) {
   const url = (new URLSearchParams(location.search)).get('url');
   if (url) {
     text.value = `Loading stories from \`${url.replace('`', '&#96;')}\`...`;

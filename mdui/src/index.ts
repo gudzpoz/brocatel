@@ -1,4 +1,5 @@
-import { createApp } from 'vue';
-import App from './App.vue';
+import StoryTellerVue from './components/StoryTeller.vue';
 
-createApp(App).mount('#app');
+export const StoryTeller = StoryTellerVue;
+
+export { useStory } from './composables/useStory';

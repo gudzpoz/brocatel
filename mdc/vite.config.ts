@@ -5,6 +5,8 @@ import replace from '@rollup/plugin-replace';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
+import { dependencies } from './package.json';
+
 export default defineConfig({
   assetsInclude: ['**/*.lua', '**/*.wasm'],
   build: {
@@ -19,7 +21,7 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: ['fs', 'path'],
+      external: ['fs', 'path', ...Object.keys(dependencies)],
     },
     sourcemap: true,
   },

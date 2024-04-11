@@ -2,6 +2,8 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
+import { dependencies } from './package.json';
+
 export default defineConfig({
   build: {
     lib: {
@@ -10,6 +12,9 @@ export default defineConfig({
       fileName: (format) => `brocatel-md.${format}.js`
     },
     sourcemap: true,
+    rollupOptions: {
+      external: Object.keys(dependencies),
+    },
   },
   plugins: [dts()],
 });

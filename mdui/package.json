@@ -3,9 +3,12 @@
   "version": "0.0.1",
   "description": "A front-end for Brocatel",
   "type": "module",
+  "main": "dist/mdui.js",
+  "types": "dist/src/index.d.ts",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build && pnpm build-page",
+    "build-page": "env BUILD_TARGET=page vite build"
   },
   "keywords": [],
   "author": "gudzpoz",
@@ -28,6 +31,7 @@
     "typescript": "^5.4.5",
     "vite": "^5.2.8",
     "vite-node": "^1.4.0",
+    "vite-plugin-dts": "^3.8.1",
     "vite-plugin-singlefile": "^2.0.1",
     "vitest": "^1.4.0",
     "vue-tsc": "^2.0.12"
