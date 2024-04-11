@@ -188,8 +188,13 @@ function loop(arg)
   --
   local label, list, pos = md.destruct(arg)
   local children = {}
+  local count = 0
   for _, item in ipairs(list.children) do
     children[#children + 1] = item.children
+    count = count + #item.children
+  end
+  if count == 0 then
+    return md.paragraph({ md.text('') })
   end
   return md.loop(label, children, pos, list.position)
 end

@@ -21,7 +21,7 @@ export default defineConfig({
       },
     },
     rollupOptions: {
-      external: ['fs', 'path', ...Object.keys(dependencies)],
+      external: ['fs', 'path', ...Object.keys(dependencies).filter((k) => k !== 'wasmoon')],
     },
     sourcemap: true,
   },
