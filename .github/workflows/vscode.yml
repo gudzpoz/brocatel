@@ -2,9 +2,8 @@ name: Build VS Code Extension
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+  tags:
+    - '*'
 
 jobs:
   extension:
@@ -36,14 +35,15 @@ jobs:
           cd vscode-brocatel
           pnpm vscode:prepublish
       - name: Publish to Open VSX Registry
+        if: startsWith(github.ref, 'refs/tags/')
         uses: HaaLeo/publish-vscode-extension@v1
         id: publishToOpenVSX
         with:
           dependencies: false
-          preRelease: true
           pat: ${{ secrets.OVSX_TOKEN }}
           packagePath: ./vscode-brocatel
       - name: Publish to Visual Studio Marketplace
+        if: startsWith(github.ref, 'refs/tags/')
         uses: HaaLeo/publish-vscode-extension@v1
         with:
           dependencies: false
