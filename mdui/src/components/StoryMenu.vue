@@ -1,13 +1,13 @@
 <template>
   <div>
-    <button @click="container.reloadStory()">Restart</button>
+    <button @click="container.reloadStory(true)">Restart</button>
     <button @click="qSave">Q.Save</button>
     <button :disabled="!qSaved" @click="qLoad">Q.Load</button>
   </div>
 </template>
 <script setup lang="ts">
 import { ref } from 'vue';
-import { BrocatelStory, StoryContainer } from '../composables/useStory';
+import { StoryContainer } from '../composables/useStory';
 
 const props = defineProps<{
   container: StoryContainer,
@@ -15,17 +15,18 @@ const props = defineProps<{
 
 const story = props.container.ref;
 
-const qSaved = ref<{ save: string, story: BrocatelStory } | null>(null);
+const qSaved = ref<string | null>(null);
 function qSave() {
-  const save = story.value.save();
-  qSaved.value = save ? { save, story: story.value } : null;
+  qSaved.value = story.value.save();
 }
 function qLoad() {
-  if (qSaved.value && qSaved.value.story === story.value) {
-    story.value.load(qSaved.value.save);
-    props.container.reloadStory()
-  } else {
-    qSaved.value = null;
+  if (qSaved.value) {
+    story.value.load(qSaved.value);
+    if (!story.value.getErr()) {
+      props.container.reloadStory();
+      return;
+    }
   }
+  qSaved.value = null;
 }
 </script>

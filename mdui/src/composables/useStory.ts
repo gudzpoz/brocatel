@@ -88,10 +88,12 @@ export class StoryContainer {
     this.ref.value = newStory;
   }
 
-  reloadStory() {
+  reloadStory(restart?: boolean) {
     const s = this.ref.value;
     this.ref.value = this.newStory();
-    s.reload();
+    if (restart) {
+      s.reload();
+    }
     nextTick(() => {
       this.ref.value = s;
     });
@@ -123,6 +125,10 @@ export class BrocatelStory {
     this.errPosted = false;
   }
 
+  getErr(): Message | null {
+    return this.err;
+  }
+
   async loadStory(storyLua: string, savedata?: string, extern?: any): Promise<void> {
     this.setErr(await this.container.tryCatchLua(
       () => this.story.loadStory(storyLua, savedata, extern),
@@ -136,7 +142,7 @@ export class BrocatelStory {
     this.setErr(this.container.tryCatchLua(() => this.story.reload()));
   }
 
-  next(optionKey?: number): StoryLine | Message | null {
+  private fetch(optionKey?: number | 'current'): StoryLine | Message | null {
     if (this.err && !this.errPosted) {
       this.errPosted = true;
       return this.err;
@@ -146,9 +152,17 @@ export class BrocatelStory {
     }
     let result: StoryLine | null = null;
     this.setErr(this.container.tryCatchLua(() => {
-      result = this.story.next(optionKey);
+      result = optionKey === 'current' ? this.story.current() : this.story.next(optionKey);
     }));
     return result;
+  }
+
+  next(optionKey?: number): StoryLine | Message | null {
+    return this.fetch(optionKey);
+  }
+
+  current(): StoryLine | Message | null {
+    return this.fetch('current');
   }
 
   save(): string | null {

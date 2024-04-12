@@ -214,6 +214,29 @@ Count: {i}
   assert.isNull(runner.next());
 });
 
+test('Save and load at options', async () => {
+  await loadStory(`
+A
+B
+# C
+1. D
+E
+`);
+  assert.equal((runner.next() as TextLine).text, 'A');
+  assert.equal((runner.next() as TextLine).text, 'B');
+  const options = [{
+    key: 2,
+    option: {
+      text: 'D',
+      tags: true as true | Record<string, string>,
+    },
+  }];
+  assert.deepEqual((runner.next() as SelectLine).select, options);
+  runner.load(runner.save());
+  assert.deepEqual((runner.next() as SelectLine).select, options);
+  assert.equal((runner.next(2) as TextLine).text, 'E');
+});
+
 test('Load across stories', async () => {
   await loadStory('1');
   const save1 = runner.save();

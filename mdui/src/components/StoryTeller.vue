@@ -6,7 +6,7 @@
 </template>
 <script setup lang="ts">
 import {
-  SelectLine, TextLine as BrocatelTextLine,
+  SelectLine, TextLine as BrocatelTextLine, StoryLine, debug,
 } from '@brocatel/mdc';
 import { onMounted, ref, watch } from 'vue';
 import TextLines, { Option, TextLine } from './TextLines.vue';
@@ -37,6 +37,10 @@ function handleErr(msg: { message: string }) {
 
 function nextLine(option?: number) {
   const line = props.story.next(option);
+  showNextLine(line);
+}
+
+function showNextLine(line: StoryLine | debug.MarkdownSourceError | null) {
   if (!line) {
     return;
   }
@@ -64,8 +68,7 @@ function nextLine(option?: number) {
 function initStory() {
   lines.value = [];
   options.value = [];
-  props.story.reload();
-  nextLine();
+  showNextLine(props.story.current());
 }
 
 onMounted(() => {

@@ -142,30 +142,38 @@ export class StoryRunner {
 
   load(savedata: string) {
     const L = this.checkL();
-    L.global.set('save', savedata);
-    L.doStringSync('story:load(save)');
+    L.global.set('temp_save', savedata);
+    this.runLua('story:load(temp_save)');
   }
 
   reload() {
-    this.checkL().doStringSync('story = vm.load_vm(s, save, { extern = extern })');
+    this.runLua('story = vm.load_vm(s, save, { extern = extern })');
   }
 
   save(): string {
-    return this.checkL().doStringSync('return story:save()');
+    return this.runLua('return story:save()');
   }
 
   next(optionKey?: number): StoryLine | null {
     const L = this.checkL();
     L.global.set('option', optionKey);
-    const top = L.global.getTop();
-    const result = L.doStringSync('return story:next(option)');
-    L.global.setTop(top);
-    return result;
+    return this.runLua('return story:next(option)');
+  }
+
+  current(): StoryLine | null {
+    return this.runLua('return story:current()');
   }
 
   currentDebugInfo(): InvalidNode {
+    return this.runLua('return story:ip_debug_info()');
+  }
+
+  private runLua(lua: string) {
     const L = this.checkL();
-    return L.doStringSync('return story:ip_debug_info()');
+    const top = L.global.getTop();
+    const result = L.doStringSync(lua);
+    L.global.setTop(top);
+    return result;
   }
 
   close() {
