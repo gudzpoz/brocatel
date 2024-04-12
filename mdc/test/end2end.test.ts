@@ -2,7 +2,6 @@ import { assert, test } from 'vitest';
 import {
   BrocatelCompiler, StoryRunner, type SelectLine, type TextLine,
 } from '../src/index';
-import { point2Position } from '../src/utils';
 
 const compiler = new BrocatelCompiler({
   autoNewLine: true,
@@ -277,68 +276,4 @@ Line 2
 # co {}
 Line 3
 `, [], ['Line 1', 'Line 2', 'Line 3']);
-});
-
-test('Lua validation', async () => {
-  const compiled = await compiler.compileAll('main', async (name) => {
-    if (name.startsWith('main')) {
-      return '# main\n[](other.md#other)';
-    }
-    return '# other\n[](main.md#main)\n\n`nil()`';
-  });
-  assert.lengthOf(compiled.messages, 2);
-  assert.equal(
-    compiled.messages[0].message,
-    'illegal lua snippet: [string "nil()"]:1: unexpected symbol near \'nil\'',
-  );
-  assert.equal(compiled.messages[1].message, 'invalid lua code');
-  compiled.messages.forEach((msg) => {
-    assert.equal(msg.file, 'other.md');
-    assert.equal(point2Position(msg.place)?.start.line, 4);
-  });
-});
-
-test('Link validation', async () => {
-  const compiled = await compiler.compileAll('main', async () => `
-# a
-[](#a)
-[](#b)
-`);
-  assert.lengthOf(compiled.messages, 1);
-  assert.include(compiled.messages[0].message, 'link target not found: #b');
-  assert.equal(point2Position(compiled.messages[0].place)?.start.line, 4);
-});
-
-test('Link destination checks', async () => {
-  const markdown = `
-[](#b)
-# a
-
-- In choices
-  [](#c)
-
-:::do\`type\`
-- In args
-  [](#d)
-
-:::local
-- Nested
-  [](#e)
-- * Nested choices
-    [](#f)
-  * Choice #2
-    [](#g)
-- Nested args
-  :::do\`type\`
-  - [](#h)
-
-[](#a)
-`;
-  const compiled = await compiler.compileAll('main', async () => markdown);
-  const destinations = ['b', 'c', 'd', 'e', 'f', 'g', 'h'];
-  const lines = [2, 6, 10, 14, 16, 18, 21];
-  compiled.messages.forEach((m, i) => {
-    assert.include(m.message, `link target not found: #${destinations[i]}`);
-    assert.equal(m.line, lines[i]);
-  });
 });

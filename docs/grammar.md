@@ -159,6 +159,23 @@ See [arch.md](./arch.md).
     - Correct indentation is needed.
   ~~~
 
+  Alternatively:
+
+  ~~~markdown
+  :::any_macro_name
+
+  ```lua func
+  local new_node = process(arg)
+  return new_node
+  ```
+
+  - Macro specific argument 1
+  - Macro specific argument 2
+  - ...
+  - :::nested_macro
+    - Correct indentation is needed.
+  ~~~
+
 #### Built-In Macros
 
 The `if`, `do`, `local` and `nil` macros are implemented by the JS/TS compiler,

@@ -3,6 +3,7 @@ import { assert, test } from 'vitest';
 import { BrocatelCompiler } from '../src';
 import { getData, getRootData } from '../src/debug';
 import { toMarkdownString } from '../src/expander';
+import { point2Position } from '../src/utils';
 
 const compiler = new BrocatelCompiler({
   autoNewLine: true,
@@ -172,4 +173,80 @@ test('Debug multiple files', async () => {
   const { main, other } = rootData.inputs!;
   assert.equal(main.path, 'main.md');
   assert.equal(other.path, 'other.md');
+});
+
+test('Lua validation', async () => {
+  const compiled = await compiler.compileAll('main', async (name) => {
+    if (name.startsWith('main')) {
+      return '# main\n[](other.md#other)';
+    }
+    return '# other\n[](main.md#main)\n\n`nil()`';
+  });
+  assert.lengthOf(compiled.messages, 2);
+  assert.equal(
+    compiled.messages[0].message,
+    'illegal lua snippet: [string "nil()"]:1: unexpected symbol near \'nil\'',
+  );
+  assert.equal(compiled.messages[1].message, 'invalid lua code');
+  compiled.messages.forEach((msg) => {
+    assert.equal(msg.file, 'other.md');
+    assert.equal(point2Position(msg.place)?.start.line, 4);
+  });
+});
+
+test('Link validation', async () => {
+  const compiled = await compiler.compileAll('main', async () => `
+# a
+[](#a)
+[](#b)
+`);
+  assert.lengthOf(compiled.messages, 1);
+  assert.include(compiled.messages[0].message, 'link target not found: #b');
+  assert.equal(point2Position(compiled.messages[0].place)?.start.line, 4);
+});
+
+test('Link destination checks', async () => {
+  const markdown = `
+[](#b)
+# a
+
+- In choices
+  [](#c)
+
+:::do\`type\`
+- In args
+  [](#d)
+
+:::local
+- Nested
+  [](#e)
+- * Nested choices
+    [](#f)
+  * Choice #2
+    [](#g)
+- Nested args
+  :::do\`type\`
+  - [](#h)
+
+[](#a)
+`;
+  const compiled = await compiler.compileAll('main', async () => markdown);
+  const destinations = ['b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  const lines = [2, 6, 10, 14, 16, 18, 21];
+  compiled.messages.forEach((m, i) => {
+    assert.include(m.message, `link target not found: #${destinations[i]}`);
+    assert.equal(m.line, lines[i]);
+  });
+});
+
+test('Source position preservation after expansion', async () => {
+  const compiled = await compiler.compileAll('main', async () => `
+:::no_such_macro
+
+Not a list
+`);
+  assert.lengthOf(compiled.messages, 1);
+  assert.equal(compiled.messages[0].message, 'expecting a list after the directive block');
+  assert.equal(compiled.messages[0].line, 4);
+  assert.equal(compiled.messages[0].column, 1);
 });

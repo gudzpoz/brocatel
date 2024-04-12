@@ -14,7 +14,7 @@
     "build": "vite build",
     "compile": "vite-node ./src/cli.ts",
     "lint": "eslint \"**/*.ts\"",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest"
   },
   "keywords": [],
   "author": "gudzpoz",
@@ -29,10 +29,12 @@
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-typescript": "^18.0.0",
     "eslint-plugin-import": "^2.29.1",
+    "remark-parse": "^11.0.0",
     "typescript": "^5.4.5",
     "vite": "^5.2.8",
     "vite-node": "^1.4.0",
-    "vite-plugin-dts": "^3.8.1"
+    "vite-plugin-dts": "^3.8.1",
+    "vitest": "^1.4.0"
   },
   "dependencies": {
     "github-slugger": "^2.0.0",

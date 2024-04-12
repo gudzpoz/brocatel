@@ -61,7 +61,8 @@
     "watch-web": "webpack --watch",
     "package-web": "webpack --mode production --devtool hidden-source-map",
     "lint": "eslint src --ext ts",
-    "run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. ."
+    "run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. .",
+    "vsce": "pnpm vsce package"
   },
   "dependencies": {
     "@brocatel/mdc": "workspace:^",
@@ -77,11 +78,12 @@
     "@types/assert": "^1.5.10",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.12.7",
-    "@types/vscode": "^1.88.0",
+    "@types/vscode": "^1.87.0",
     "@types/webpack-env": "^1.18.4",
     "@typescript-eslint/eslint-plugin": "^7.6.0",
     "@typescript-eslint/parser": "^7.6.0",
     "@vscode/test-web": "^0.0.53",
+    "@vscode/vsce": "^2.24.0",
     "assert": "^2.1.0",
     "eslint": "^8.57.0",
     "mocha": "^10.4.0",

@@ -1,5 +1,5 @@
 import {
-  Code, List, Root, RootContent,
+  Code, List, Parent, Root, RootContent,
 } from 'mdast';
 import { ContainerDirective, Directives } from 'mdast-util-directive';
 import { mdxExpressionToMarkdown } from 'mdast-util-mdx-expression';
@@ -84,30 +84,40 @@ class MacroExpander {
     if (isBuiltInMacro(node.name)) {
       return false;
     }
-    if (node.children.length > 2) {
-      this.vfile.message('too many children inside a macro node', node);
+    if (node.children.length > 2 || node.children.length === 0
+      || (node.children.length === 1 && node.children[0].type !== 'list')
+      || (node.children.length === 2 && ((
+          node.children[0].type !== 'containerDirectiveLabel'
+          && node.children[0].type !== 'code'
+        ) || node.children[1].type !== 'list')
+      )
+    ) {
+      this.vfile.message('parser generated invalid directive node', node);
       return false;
     }
-    if (node.children.length === 1) {
-      if (node.children[0].type !== 'list') {
-        this.vfile.message('expecting a list inside the macro node', node);
-        return false;
-      }
-    } else if (node.children[0]?.type !== 'containerDirectiveLabel' || node.children[1]?.type !== 'list') {
-      this.vfile.message('invalid macro node', node);
-      return false;
-    }
-    if (!isIdentifier(node.name.replace(/\./g, ''))) {
-      this.vfile.message('not a lua identifier', node);
-      return false;
-    }
+    const name = isIdentifier(node.name) ? `_G[${JSON.stringify(node.name)}]` : node.name;
+    const definition = node.children[0].type === 'code' ? `
+${name} = function(arg)
+${node.children[0].value}
+end
+` : '';
     try {
+      const { position } = node;
       const generated = this.runLua(node, [
         // TODO: Avoid always rerunning macro definitions.
-        builtInMacros as string,
+        builtInMacros,
         ...this.macros,
-        `return ${node.name}(arg)`,
+        `${definition}\nreturn ${name}(arg)`,
       ], { TO_MARKDOWN: toMarkdownString });
+      const updatePosition = (item: Node) => {
+        if (!item.position) {
+          item.position = position;
+        }
+      };
+      generated.children?.forEach((item: Node) => {
+        updatePosition(item);
+        (item as Parent).children?.forEach(updatePosition);
+      });
       overwrite(node, generated);
     } catch (e) {
       this.vfile.message(e as Error, node);
@@ -180,10 +190,16 @@ class MacroExpander {
       return false;
     }
     const list = shallowCopy(node);
+    const label = directiveLabel({
+      type: 'inlineCode',
+      value: node.ordered ? 'FUNC.S_RECUR' : 'FUNC.S_ONCE',
+      position: node.position,
+    });
+    label.position = node.position;
     const macro: ContainerDirective = {
       type: 'containerDirective',
       name: 'do',
-      children: [directiveLabel(node.ordered ? 'FUNC.S_RECUR' : 'FUNC.S_ONCE'), list],
+      children: [label, list],
     };
     overwrite(node, macro);
     return true;
@@ -225,11 +241,14 @@ class MacroExpander {
         type: 'listItem',
         children: [branch],
       }],
+      position: node.position,
     };
+    const label = directiveLabel(children[0]);
+    label.position = children[0].position;
     const macro: ContainerDirective = {
       type: 'containerDirective',
       name: 'if',
-      children: [directiveLabel(children[0].value), list],
+      children: [label, list],
     };
     overwrite(node, macro);
     return true;

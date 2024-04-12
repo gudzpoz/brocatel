@@ -70,14 +70,14 @@ test('Parsing and generating', () => {
 
   * d`);
 
-  assertWarning(`
-  :::a
+  assertMatch(`
+:::a
 
-  \`\`\`lua func
-  IP:set(arg:resolve(2))
-  \`\`\`
+\`\`\`lua func
+IP:set(arg:resolve(2))
+\`\`\`
 
-  *   b`, 'function directive not implemented yet');
+* b`);
 
   assertMatch(`
 :::loop\`10\`
@@ -98,7 +98,7 @@ test('Parsing and generating', () => {
 test('Parser warnings', () => {
   assertWarning(':::', 'invalid directive line');
   assertWarning(':::a b', 'invalid directive line');
-  assertWarning(':::a', 'container directive without content');
-  assertWarning(':::a *b*', 'unsupported element');
-  assertWarning(':::a `b` c', 'unexpected element');
+  assertWarning(':::a', 'empty directive');
+  assertWarning(':::a *b*', 'invalid directive line');
+  assertWarning(':::a `b` c', 'invalid directive line');
 });

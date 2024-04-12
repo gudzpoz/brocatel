@@ -1,4 +1,5 @@
 import type {
+  BlockContent,
   InlineCode, Paragraph, Parent, PhrasingContent,
   Root, RootContent, Text,
 } from 'mdast';
@@ -105,44 +106,12 @@ function isDirectiveLine(node: RootContent): boolean {
 /**
  * Creates a directive label node.
  */
-export function directiveLabel(value: string | InlineCode): ContainerDirectiveLabel {
-  const code: InlineCode = typeof value === 'string' ? {
-    type: 'inlineCode',
-    value,
-  } : value;
+export function directiveLabel(value: InlineCode): ContainerDirectiveLabel {
   return {
     type: directiveLabelType,
-    children: [code],
+    children: [value],
+    position: value.position,
   };
-}
-
-const simpleDirectiveLineRegex = /^:::(\S+)\s*$/;
-
-function parseDirectiveLine(line: Paragraph, vfile: VFile): ContainerDirective {
-  const directive: ContainerDirective = {
-    type: 'containerDirective',
-    name: '',
-    children: [],
-    position: line.position,
-  };
-  const match = simpleDirectiveLineRegex.exec((line.children[0] as Text).value);
-  if (match) {
-    [, directive.name] = match;
-  } else {
-    vfile.message('invalid directive line', line);
-  }
-  if (line.children.length >= 2) {
-    const condition = line.children[1];
-    if (condition.type === 'inlineCode') {
-      directive.children.push(directiveLabel(condition));
-    } else {
-      vfile.message('unsupported element', condition);
-    }
-    if (line.children.length >= 3) {
-      vfile.message('unexpected element', line.children[2]);
-    }
-  }
-  return directive;
 }
 
 function filterFields(
@@ -167,6 +136,127 @@ export const tagDirectiveFromMarkdown: FromExtension = {
   enter: filterFields(allDirectivesFromMarkdownEnter!, 'directiveText'),
   exit: filterFields(allDirectivesFromMarkdownExit!, 'directiveText'),
 };
+
+const simpleDirectiveLineRegex = /^:::(\S+)\s*$/;
+
+class DirectiveMerger {
+  merged: RootContent[] = [];
+
+  pending: RootContent[] = [];
+
+  inDirective = false;
+
+  vfile: VFile;
+
+  constructor(vfile: VFile) {
+    this.vfile = vfile;
+  }
+
+  restore() {
+    this.merged.push(...this.pending.slice(1));
+  }
+
+  commit() {
+    const containerDirective = this.pending[0] as ContainerDirective;
+    containerDirective.children.push(...this.pending.slice(2) as BlockContent[]);
+    this.merged.push(containerDirective);
+  }
+
+  submit() {
+    this.inDirective = false;
+    const container = this.pending[0] as ContainerDirective;
+    const codeOrList = this.pending[2];
+    const listWhenCode = this.pending[3];
+    if (!codeOrList) {
+      this.vfile.message('empty directive', this.pending[1]);
+      this.restore();
+      return;
+    }
+    if (!listWhenCode) {
+      const list = codeOrList;
+      if (list.type !== 'list') {
+        this.vfile.message('expecting a list after the directive block', list);
+        this.restore();
+        return;
+      }
+      this.commit();
+      return;
+    }
+    const code = codeOrList;
+    const list = listWhenCode;
+    if (code.type !== 'code' || code.lang !== 'lua' || code.meta !== 'func') {
+      this.vfile.message('expecting a code block of lua func type after the directive block', code);
+      this.restore();
+      return;
+    }
+    if (container.children.length > 0) {
+      this.vfile.message('a labeled directive should not contain a lua func code block', container);
+      this.restore();
+      return;
+    }
+    if (list.type !== 'list') {
+      this.vfile.message('expecting a list after the code block', list);
+      this.restore();
+      return;
+    }
+    this.commit();
+  }
+
+  process(node: RootContent) {
+    if (this.inDirective) {
+      this.pending.push(node);
+      if (this.pending.length >= 4) {
+        this.submit();
+        return;
+      }
+      switch (node.type) {
+        case 'code':
+          break;
+        case 'list':
+        default:
+          this.submit();
+          break;
+      }
+    } else if (isDirectiveLine(node)) {
+      const directive = this.parseDirectiveLine(node as Paragraph);
+      if (!directive) {
+        this.merged.push(node);
+        return;
+      }
+      this.pending = [directive, node];
+      this.inDirective = true;
+    } else {
+      this.merged.push(node);
+    }
+  }
+
+  end() {
+    if (this.inDirective) {
+      this.submit();
+    }
+  }
+
+  parseDirectiveLine(line: Paragraph): ContainerDirective | null {
+    const directive: ContainerDirective = {
+      type: 'containerDirective',
+      name: '',
+      children: [],
+      position: line.position,
+    };
+    const match = simpleDirectiveLineRegex.exec((line.children[0] as Text).value);
+    if (!match || line.children.length > 2
+      || (line.children.length === 2 && line.children[1].type !== 'inlineCode')) {
+      this.vfile.message('invalid directive line', line);
+      return null;
+    }
+    [, directive.name] = match;
+    const condition = line.children[1];
+    if (condition) {
+      directive.children.push(directiveLabel(condition as InlineCode));
+    }
+    return directive;
+  }
+}
 
 /**
  * A `remark` plugins that installs the following extensions:
@@ -199,43 +289,12 @@ export const directiveForMarkdown: Plugin<Root[], Root> = function () {
       const container = node as Parent;
       const { children } = container;
       if (children && children.some(isDirectiveLine)) {
-        const merged: RootContent[] = [];
-        let inDirective = false;
+        const merger = new DirectiveMerger(vfile);
         children.forEach((child) => {
-          if (inDirective) {
-            const directive = merged[merged.length - 1] as ContainerDirective;
-            switch (child.type) {
-              case 'list':
-                directive.children.push(child);
-                inDirective = false;
-                break;
-              case 'code':
-                if (child.lang === 'lua' && child.meta === 'func' && directive.children.length === 0) {
-                  vfile.message('function directive not implemented yet', children[children.length - 1]);
-                }
-                break;
-              default:
-                vfile.message('expecting a list after the container directive label', children[children.length - 1]);
-                merged.push(child);
-                inDirective = false;
-                break;
-            }
-          } else if (isDirectiveLine(child)) {
-            merged.push(parseDirectiveLine(child as Paragraph, vfile));
-            inDirective = true;
-          } else {
-            merged.push(child);
-          }
+          merger.process(child);
         });
-        if (inDirective) {
-          vfile.message('container directive without content', children[children.length - 1]);
-        }
-        merged.forEach((e) => {
-          if (e.type === 'containerDirective' && e.children.length === 0) {
-            e.children.push({ type: 'list', children: [{ type: 'listItem', children: [{ type: 'paragraph', children: [{ type: 'text', value: '' }] }] }] });
-          }
-        });
-        container.children = merged;
+        merger.end();
+        container.children = merger.merged;
       }
     });
   };
