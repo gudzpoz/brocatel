@@ -3,8 +3,7 @@
     <AutoScrollable>
       <template #default>
         <TransitionGroup name="line" v-if="lines.length > 0">
-          <div v-for="line in lines" :key="line.html" class="line">
-            <div v-if="line.speakerHtml" v-html="line.speakerHtml"></div>
+          <div v-for="line in lines" :key="line.html" :style="line.style" class="line">
             <div v-if="line.html" v-html="line.html"></div>
           </div>
         </TransitionGroup>
@@ -20,6 +19,7 @@
                 @click.prevent="selectOption(option.key)"
                 href="javascript:void(0)"
                 v-html="option.html"
+                :style="option.style"
               />
             </li>
           </ul>
@@ -29,17 +29,18 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed } from 'vue';
+import { CSSProperties, computed } from 'vue';
 import AutoScrollable from './AutoScrollable.vue';
 import autoRef from '../utils/autoRef';
 
 export interface TextLine {
   html: string;
-  speakerHtml: string;
+  style?: CSSProperties;
 }
 export interface Option {
   html: string;
   key: number;
+  style?: CSSProperties;
 }
 
 const props = withDefaults(

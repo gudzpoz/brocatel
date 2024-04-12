@@ -32,7 +32,6 @@ function handleErr(msg: { message: string }) {
   options.value = [];
   lines.value.push({
     html: `<pre><code style="color: red">${msg.message}</code></pre>`,
-    speakerHtml: '',
   });
 }
 
@@ -50,13 +49,14 @@ function nextLine(option?: number) {
     options.value = select.select.map((o) => ({
       html: markdownToHtml(o.option.text),
       key: o.key,
+      style: typeof o.option.tags === 'object' ? o.option.tags : undefined,
     }));
     return;
   }
   const text = line as BrocatelTextLine;
   lines.value.push({
     html: markdownToHtml(text.text),
-    speakerHtml: '',
+    style: typeof text.tags === 'object' ? text.tags : undefined,
   });
   setTimeout(nextLine, props.autoNextLineDelay * 1000);
 }
