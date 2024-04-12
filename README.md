@@ -1,6 +1,12 @@
 # Brocatel
 
+[![NPM Version](https://img.shields.io/npm/v/%40brocatel%2Fmdc)](https://www.npmjs.com/package/@brocatel/mdc)
+[![LuaRocks](https://img.shields.io/luarocks/v/gudzpoz/brocatel)](https://luarocks.org/modules/gudzpoz/brocatel)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/gudzpoz/brocatel/docs.yml?label=Documentation)](https://gudzpoz.github.io/brocatel/)
+
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/gudzpoz/brocatel/vscode.yml?label=VS+Code+Extension)
+[![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/gudzpoz.vscode-brocatel)](https://marketplace.visualstudio.com/items?itemName=gudzpoz.vscode-brocatel)
+[![Open VSX Version](https://img.shields.io/open-vsx/v/gudzpoz/vscode-brocatel)](https://open-vsx.org/extension/gudzpoz/vscode-brocatel)
 
 (By the way, you can also [run this README file interactively with Brocatel](https://gudzpoz.github.io/brocatel/playground.html?url=https://cdn.jsdelivr.net/gh/gudzpoz/brocatel@main/README.md).)
 

@@ -1,0 +1,58 @@
+name: Publish to NPM and LuaRocks
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: Publish
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - run: |
+          rm -f ~/.npmrc
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8.5.0
+          run_install: false
+      - name: Setup PNPM Workspace
+        run: |
+          pnpm install
+      - name: Build Brocatel
+        run: |
+          pnpm build
+      - name: Test Brocatel
+        run: |
+          pnpm test
+      - name: Bundle Brocatel VM Runtime
+        run: |
+          pnpm bundle
+      - name: Install Lua Dependencies
+        run: |
+          sudo apt update
+          sudo apt install luarocks lua5.1 lua5.2 lua5.3 lua5.4 luajit lua-busted lua-check
+      - name: Publish Brocatel VM Runtime to LuaRocks
+        env:
+          ROCKS_TOKEN: ${{ secrets.ROCKS_TOKEN }}
+        run: |
+          cd vm
+          make clean
+          make busted-lua5.1 busted-lua5.2 busted-lua5.3 busted-luajit
+          make pack
+          luarocks upload --api-key="${ROCKS_TOKEN}" brocatel-*.rockspec
+      - name: Publish Brocatel Libraries to NPM
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm config set //registry.npmjs.org/:_authToken="${NODE_AUTH_TOKEN}"
+          pnpm run publish --no-git-checks

@@ -5,6 +5,8 @@ node_modules/
 brocatel.lua
 !src/brocatel.lua
 brocatel-*.rockspec
+*.rock
+*.rock.asc
 
 # Python & Sphinx
 __pycache__

@@ -8,7 +8,8 @@
   },
   "displayName": "Brocatel Dev Tools",
   "description": "Run and test Brocatel stories in VS Code",
-  "version": "0.0.2",
+  "icon": "./assets/favicon.png",
+  "version": "0.0.4",
   "engines": {
     "vscode": "^1.87.0",
     "node": ">=16"

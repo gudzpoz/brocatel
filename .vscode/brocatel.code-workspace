@@ -38,6 +38,7 @@
 		"Lua.diagnostics.ignoredFiles": "Disable",
 		"Lua.workspace.ignoreDir": [
 			".vscode",
+			"dist",
 			"node_modules"
 		],
 	}

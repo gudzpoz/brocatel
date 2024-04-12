@@ -1,8 +1,8 @@
 rockspec_format = "3.0"
 package = "brocatel"
-version = "0.3.4-1"
+version = "0.3.5-1"
 source = {
-   url = "git+https://github.com/gudzpoz/brocatel.git",
+   url = "file:///tmp/brocatel/brocatel-0.3.5-1.tar.gz",
 }
 description = {
    summary = "A VM that runs compiled brocatel scripts.",
@@ -14,20 +14,23 @@ description = {
 }
 build = {
    type = "builtin",
-   install= {
-      lua = {
-         brocatel = "src/brocatel.lua",
-         ["mdvm.env_api"] = "src/mdvm/env_api.lua",
-         ["mdvm.history"] = "src/mdvm/history.lua",
-         ["mdvm.lookup"] = "src/mdvm/lookup.lua",
-         ["mdvm.savedata"] = "src/mdvm/savedata.lua",
-         ["mdvm.stacked_env"] = "src/mdvm/stacked_env.lua",
-         ["mdvm.table_path"] = "src/mdvm/table_path.lua",
-         ["mdvm.utils"] = "src/mdvm/utils.lua",
-         ["mdvm.vm"] = "src/mdvm/vm.lua",
-      },
+   modules = {
+      brocatel = "src/brocatel.lua",
+      ["mdvm.env_api"] = "src/mdvm/env_api.lua",
+      ["mdvm.history"] = "src/mdvm/history.lua",
+      ["mdvm.lookup"] = "src/mdvm/lookup.lua",
+      ["mdvm.savedata"] = "src/mdvm/savedata.lua",
+      ["mdvm.stacked_env"] = "src/mdvm/stacked_env.lua",
+      ["mdvm.table_path"] = "src/mdvm/table_path.lua",
+      ["mdvm.utils"] = "src/mdvm/utils.lua",
+      ["mdvm.vm"] = "src/mdvm/vm.lua",
+   },
+   install = {
       bin = {
          brocatel = "src/cli.lua",
       },
+   },
+   copy_directories = {
+      "doc",
    },
 }

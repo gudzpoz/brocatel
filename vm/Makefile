@@ -28,10 +28,22 @@ rocks: $(SRC) brocatel.rockspec
 	cp brocatel.rockspec brocatel-${VERSION}.rockspec
 	luarocks --local make brocatel-${VERSION}.rockspec
 
+pack: rocks
+	mkdir -p dist/brocatel-${VERSION}
+	mkdir -p /tmp/brocatel
+	rm -rf dist/brocatel-${VERSION}/*
+	cp -r doc dist/brocatel-${VERSION}/
+	cp -r src dist/brocatel-${VERSION}/
+	rm -f /tmp/brocatel/brocatel-${VERSION}.tar.gz
+	cd dist && tar -cvzf /tmp/brocatel/brocatel-${VERSION}.tar.gz brocatel-${VERSION} && cd ..
+
 doc: $(SRC) $(DOCS)
 	mv src/brocatel.lua src/brocatel.lua.bak
 	sed -e 's/@module "brocatel"/@module brocatel/' src/brocatel.lua.bak > src/brocatel.lua
 	sphinx-build doc/ public/
 	mv src/brocatel.lua.bak src/brocatel.lua
 
-.PHONY: doc rocks luacheck busted test bundle build all
+clean:
+	rm -rf brocatel-*.rock brocatel-*.rock.asc brocatel-*.rockspec dist
+
+.PHONY: doc rocks luacheck busted test bundle build all pack clean
