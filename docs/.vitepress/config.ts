@@ -26,6 +26,7 @@ export default defineConfig({
       {
         text: 'Getting Started',
         items: [
+          { text: 'Introduction', link: '/intro' },
           { text: 'The Tutorial', link: '/tutorial' },
           { text: 'Cloak of Darkness', link: '/cloak' },
         ],

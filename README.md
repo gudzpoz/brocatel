@@ -79,7 +79,9 @@ By leveraging the simple syntax of **Markdown** and the power of **Lua**, Brocat
 
 2.  I want to use Brocatel in my own project.
 
-    A [VS Code](https://code.visualstudio.com/) extension is on the way to facilitate development and debugging. Before then, if you want to use Brocatel in real games, you might need to use a bit of CLI, i.e., clone this project and `pnpm install && pnpm build`. You will need to use the compiler under the `mdc/` directory and bundle the runtime under the `vm/` directory with your game. Documentation is coming soon.
+    A [Brocatel VS Code extension](https://marketplace.visualstudio.com/items?itemName=gudzpoz.vscode-brocatel) extension has been published both to the VS Marketplace and the Open VSX Registry. You may use it to aid your story writing by getting syntax error highlights and instant previews.
+
+    The extension will probably support compiling, debugging and exporting Brocatel stories very soon. Before then, if you want to use Brocatel in real games, you will need to use a bit of CLI, i.e., use `npx --package @brocatel/mdc@0.3.5 -- brocatelc YOUR_MARKDOWN_FILE.md` to compile your files, which should generate a `.lua` file (the story) and a `.pot` file (for translators). To actually get the story out of the `.lua` file, you will need to use the [`brocatel`](https://luarocks.org/modules/gudzpoz/brocatel) Lua library, whose API is available at [https://gudzpoz.github.io/brocatel/api/](https://gudzpoz.github.io/brocatel/api/).
 
 <details><summary>Navigation</summary>
 

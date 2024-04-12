@@ -70,6 +70,7 @@ Markdown compiler implementation:
 
 - [ ] Save & load.
   - [X] API.
+  - [ ] Examples? Or detailed Lua documentation.
 - [ ] Fast-forward (skipping only texts that users have read).
   - [ ] Instead, we should probably export read counts along with the lines
     to let the user / the outer game engine decide whether to skip lines
@@ -89,6 +90,7 @@ Multi-thread (not *those* threads) support:
   - [X] Tail call support: jump to elsewhere, popping up a stack frame.
   - [ ] Compiler error: forbid jumping from inside of a function.
 - [ ] Coroutine support.
+  - What about structured concurrency?
 
 Some clarifications:
 - With **threads**, you may build games (with *lots* of tweaks, of course) like
