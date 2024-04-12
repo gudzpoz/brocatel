@@ -338,7 +338,6 @@ class AstTransformer {
 
   parseCodeBlock(code: Code): LuaCode | LuaText {
     if (code.lang !== 'lua') {
-      this.vfile.message('unsupported code block type');
       return asIs(code);
     }
     let snippet;
@@ -352,8 +351,11 @@ class AstTransformer {
       snippet = '';
     } else if (code.meta === 'macro') {
       snippet = '';
-    } else {
+    } else if (!code.meta) {
       snippet = code.value;
+    } else {
+      this.vfile.message(`unsupported lua code block type: ${code.meta}`, code);
+      return asIs(code);
     }
     return {
       type: 'func',

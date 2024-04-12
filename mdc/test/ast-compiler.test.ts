@@ -198,7 +198,8 @@ test('Lists', async () => {
 });
 
 test('Code blocks', async () => {
-  assertThrows(() => assertCompile('```js\nconsole\n```\n'), 'unsupported code block type');
+  assertCompile('```js\nconsole\n```\n');
+  assertThrows(() => assertCompile('```lua what\na = 1\n```\n'), 'unsupported lua code block type: what');
   assertThrows(() => assertCompile('```lua\n(\n```\n'), 'unexpected symbol near <eof>');
   assert.equal(
     await assertCompile('```lua\nprint()\n```\n'),

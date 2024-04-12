@@ -4,6 +4,9 @@
   "description": "Markdown compiler for brocatel scripts.",
   "type": "module",
   "main": "dist/index.es.js",
+  "bin": {
+    "brocatelc": "bin/cli.js"
+  },
   "exports": {
     "import": "./dist/index.es.js",
     "require": "./dist/index.cjs",
