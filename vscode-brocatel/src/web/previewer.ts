@@ -49,6 +49,7 @@ export default class BrocatelPreviewer {
       },
     );
     this.panel.onDidDispose(() => {
+      this.annotateEditor([]);
       this.onDisposed(this);
     });
     this.panel.webview.onDidReceiveMessage(async (message) => {

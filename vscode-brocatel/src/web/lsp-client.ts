@@ -12,7 +12,9 @@ const serverJsBlob = new Blob([serverJs], { type: 'text/javascript' });
 export default async function newClient() {
   const worker = new Worker(URL.createObjectURL(serverJsBlob), { type: 'classic' });
   const clientOptions: LanguageClientOptions = {
-    documentSelector: [{ scheme: 'file', language: 'markdown' }],
+    documentSelector: [{ language: 'markdown' }],
+    synchronize: {},
+    initializationOptions: {},
     markdown: {
       isTrusted: true,
       supportHtml: true,
