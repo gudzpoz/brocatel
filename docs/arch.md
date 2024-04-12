@@ -62,11 +62,15 @@ A _table_ that contains the basic metadata about the file.
 ```lua
 StoryFileMetadata = {
   -- The story file format version.
-  format = 1,
+  version = 1,
   -- The [IFID](https://www.ifwiki.org/IFID).
-  ifid = "4fd35a71-71ef-5a55-a9d9-aa75c889a6d0",
+  IFID = "4fd35a71-71ef-5a55-a9d9-aa75c889a6d0",
   -- The name of the story entry point node.
-  entrance = rootNodeName1,
+  entry = rootNodeName1,
+  -- A checksum (internally generated with SHA-256).
+  -- This serves as a unique identifier to a story so as to, for example,
+  -- avoid loading incompatible savedata.
+  checksum = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 }
 ```
 
@@ -351,6 +355,7 @@ and load it correctly.
 
 ```lua
 SaveData = {
+    checksum = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     current_thread = "threadName1",
     threads = {
         ["threadName1"] = {

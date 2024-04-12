@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "@brocatel/md": "workspace:^",
+    "js-sha256": "^0.11.0",
     "mdast-util-directive": "^3.0.0",
     "mdast-util-mdx-expression": "^2.0.0",
     "mdast-util-to-markdown": "^2.1.0",

@@ -15,7 +15,7 @@ local utils = require("mdvm.utils")
 --- * Supplying a gettext implementation with :any:`brocatel.VM.set_gettext`
 ---
 --- @class brocatel.VM
---- @field code table<string, table> the compiled brocatel scripts
+--- @field code Code the compiled brocatel scripts
 --- @field env StackedEnv the environment handle
 --- @field savedata SaveData save data
 --- @field flags Flags inner api for data storage, cleaned on each `next` call
@@ -26,15 +26,17 @@ VM.__index = VM
 VM.version = 1
 VM.set_up_env_api = require("mdvm.env_api")
 
+--- @alias Code table<string, StoryMetadata|Node>
+
 --- Creates a VM from compiled brocatel scripts, in brocatel runtime format.
 ---
 --- The compiled chunk is expected to have been loaded within the stacked environment.
 ---
---- @param compiled_chunk table<string, table> the loaded chunk
+--- @param compiled_chunk Code the loaded chunk
 --- @param env StackedEnv the environment used to load the chunk
 --- @return brocatel.VM vm the created VM
 function VM._new(compiled_chunk, env)
-    local meta = compiled_chunk[""]
+    local meta = compiled_chunk[""] --- @cast meta -Node
     assert(meta, "the compiled chunk must contain a meta node")
     assert(meta.entry and meta.version, "invalid meta node for the compiled chunk")
     --- @type brocatel.VM
@@ -43,7 +45,7 @@ function VM._new(compiled_chunk, env)
         env = env,
         flags = {},
         gettext = {},
-        savedata = savedata.init(assert(compiled_chunk[""], "invalidate runtime format")),
+        savedata = savedata.init(meta),
         config = {
             detect_too_many_jumps = 4096,
         },
@@ -380,9 +382,9 @@ function VM:interpolate(text, values, translate, plural)
 end
 
 --- @class Flags
---- @field jumps number|nil
---- @field empty boolean|nil
---- @field if-else boolean|nil
+--- @field jumps number|nil consecutive jump counts without any content yielded
+--- @field empty boolean|nil the result from the last if-else branch node
+--- @field if-else boolean|nil the result from the last if-else branch node
 
 --- Returns the current node and goes to the next.
 ---
@@ -636,7 +638,11 @@ end
 ---
 --- @param state string the VM state serialized to a string
 function VM:load(state)
-    self.savedata = savedata.load(state)
+    local loaded = savedata.load(state)
+    if loaded.checksum ~= self.code[""].checksum then
+        return error("cannot use savedata across different stories")
+    end
+    self.savedata = loaded
     self:_init(false)
 end
 

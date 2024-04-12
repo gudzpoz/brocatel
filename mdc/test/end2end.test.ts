@@ -214,6 +214,15 @@ Count: {i}
   assert.isNull(runner.next());
 });
 
+test('Load across stories', async () => {
+  await loadStory('1');
+  const save1 = runner.save();
+  await loadStory('1');
+  runner.load(save1);
+  await loadStory('2')
+  assert.throw(() => runner.load(save1), 'cannot use savedata across different stories');
+});
+
 test('IFID', async () => {
   const compiled = await assertOutput(`---
 IFID: d0adf5d6-ae96-497c-9616-ee7e8f0a83f3
@@ -221,7 +230,8 @@ IFID: d0adf5d6-ae96-497c-9616-ee7e8f0a83f3
 
 Hello`, [], ['Hello']);
   assert.equal(compiled, `_={}
-return {[""]={IFID={"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F3//"},
+return {[""]={checksum="cfe5ec9d8b1868821b190d4a3acccf2e08070ac2a78a416b938c6d74aaf50630",
+IFID={"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F3//"},
 version=1,
 entry="main"},
 main={{debug={"1:1","5:1"}},
@@ -236,7 +246,8 @@ IFID:
 
 Hello`, [], ['Hello']);
   assert.equal(multiple, `_={}
-return {[""]={IFID={"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F3//",
+return {[""]={checksum="defc06d16cc5a9cc2864c7bde796d057628c8a85b38466025ea459e0aef842a2",
+IFID={"UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F3//",
 "UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F4//",
 "UUID://D0ADF5D6-AE96-497C-9616-EE7E8F0A83F5//"},
 version=1,

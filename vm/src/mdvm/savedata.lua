@@ -45,6 +45,7 @@ local TablePath = require("mdvm.table_path")
 --- @field output Output|nil last output of the current `VM.next` call
 
 --- @class SaveData
+--- @field checksum string the story checksum serving as a identifier
 --- @field version number the version of the savedata format
 --- @field current_thread string the name of the current thread
 --- @field threads table<string, Thread> the threads of the game
@@ -52,14 +53,21 @@ local TablePath = require("mdvm.table_path")
 --- @field globals table<string, any> the global variables of the game
 --- @field current IOCache the current IO cache of the game
 
+--- @class StoryMetadata
+--- @field checksum string a checksum to the story, serving as a identifier
+--- @field entry string the story entry root node name
+--- @field version number the version of the savedata format
+--- @field IFID string[]|string|nil IFIDs
+
 --- Initializes a savedata table from metadata.
 ---
---- @param meta table
+--- @param meta StoryMetadata
 --- @return SaveData
 function savedata.init(meta)
     local ip = TablePath.from({ meta.entry })
     --- @type SaveData
     return {
+        checksum = meta.checksum,
         version = meta.version,
         current_thread = "",
         current = {
@@ -203,7 +211,7 @@ end
 --- Loads a table.
 ---
 --- @param s string
---- @return table loaded
+--- @return SaveData loaded
 function savedata.load(s)
     return savedata.load_with_env({}, s)()
 end
