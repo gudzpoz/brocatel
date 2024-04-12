@@ -616,6 +616,9 @@ importers:
       mocha:
         specifier: ^10.4.0
         version: 10.4.0
+      ovsx:
+        specifier: ^0.9.0
+        version: 0.9.0
       process:
         specifier: ^0.11.10
         version: 0.11.10
@@ -3191,6 +3194,10 @@ packages:
     engines: {node: '>=6.0'}
     dev: true
 
+  /ci-info@2.0.0:
+    resolution: {integrity: sha512-5tK7EtrZ0N+OLFMthtqOj4fI2Jeb88C4CAZPu25LDVUgXJ0A3Js4PMGqrn0JU1W0Mh1/Z8wZzYPxqUrXeBboCQ==}
+    dev: true
+
   /cliui@7.0.4:
     resolution: {integrity: sha512-OcRE68cOsVMXp1Yvonl/fzkQOyjLSu/8bhPDfQt0e0/Eb283TKP20Fs2MqoPsr9SwA595rRCA+QMzYc9nBP+JQ==}
     dependencies:
@@ -4165,6 +4172,16 @@ packages:
       tabbable: 6.2.0
     dev: true
 
+  /follow-redirects@1.15.6:
+    resolution: {integrity: sha512-wWN62YITEaOpSK584EZXJafH1AGpO8RVgElfkuXbTOrPX4fIfOyEpW/CsiNd8JdYrAoOvafRTOEnvsO++qCqFA==}
+    engines: {node: '>=4.0'}
+    peerDependencies:
+      debug: '*'
+    peerDependenciesMeta:
+      debug:
+        optional: true
+    dev: true
+
   /for-each@0.3.3:
     resolution: {integrity: sha512-jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==}
     dependencies:
@@ -4721,6 +4738,13 @@ packages:
   /is-callable@1.2.7:
     resolution: {integrity: sha512-1BC0BVFhS/p0qtw6enp8e+8OD0UrK0oFLztSjNzhcKA3WDuJxxAPXzPuPtKkjEY9UUoEWlX/8fgKeu2S8i9JTA==}
     engines: {node: '>= 0.4'}
+    dev: true
+
+  /is-ci@2.0.0:
+    resolution: {integrity: sha512-YfJT7rkpQB0updsdHLGWrvhBJfcfzNNawYDNIyQXJz0IViGf75O8EBPKSdvw2rF+LGCsX4FZ8tcr3b19LcZq4w==}
+    hasBin: true
+    dependencies:
+      ci-info: 2.0.0
     dev: true
 
   /is-core-module@2.13.1:
@@ -5895,6 +5919,22 @@ packages:
   /orderedmap@2.1.1:
     resolution: {integrity: sha512-TvAWxi0nDe1j/rtMcWcIj94+Ffe6n7zhow33h40SKxmsmozs6dz/e+EajymfoFcHd7sxNn8yHM8839uixMOV6g==}
     dev: false
+
+  /ovsx@0.9.0:
+    resolution: {integrity: sha512-4dWT/lU/WaLWy0iSL4yOMDZZEWEjESqDxrcqxHpOzJoq40DimogsIuHi9bIAAwBYYn2e9CJcf8gDIblEPpQLKA==}
+    engines: {node: '>= 18'}
+    hasBin: true
+    dependencies:
+      '@vscode/vsce': 2.24.0
+      commander: 6.2.1
+      follow-redirects: 1.15.6
+      is-ci: 2.0.0
+      leven: 3.1.0
+      semver: 7.6.0
+      tmp: 0.2.3
+    transitivePeerDependencies:
+      - debug
+    dev: true
 
   /p-limit@2.3.0:
     resolution: {integrity: sha512-//88mFWSJx8lxCzwdAABTJL2MyWB12+eIY7MDL2SqLmAkeKU9qxRvWuSyTjm3FUmpBEMuFfckAIqEaVGUDxb6w==}

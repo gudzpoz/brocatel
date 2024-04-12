@@ -29,6 +29,9 @@ jobs:
       - name: Build Brocatel
         run: |
           pnpm build
+      - name: Test Brocatel
+        run: |
+          pnpm test
       - name: Bundle Brocatel VM Runtime
         run: |
           pnpm bundle

@@ -1,0 +1,54 @@
+name: Build VS Code Extension
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  extension:
+    runs-on: ubuntu-20.04
+    environment: Publish
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8.5.0
+          run_install: false
+      - name: Setup PNPM Workspace
+        run: |
+          pnpm install
+      - name: Build Brocatel
+        run: |
+          pnpm build
+      - name: Test Brocatel
+        run: |
+          pnpm test
+      - name: Bundle Brocatel VM Runtime
+        run: |
+          pnpm bundle
+      - name: Build VS Code Extension
+        run: |
+          cd vscode-brocatel
+          pnpm vscode:prepublish
+      - name: Publish to Open VSX Registry
+        uses: HaaLeo/publish-vscode-extension@v1
+        id: publishToOpenVSX
+        with:
+          dependencies: false
+          preRelease: true
+          pat: ${{ secrets.OVSX_TOKEN }}
+          packagePath: ./vscode-brocatel
+      - name: Publish to Visual Studio Marketplace
+        uses: HaaLeo/publish-vscode-extension@v1
+        with:
+          dependencies: false
+          preRelease: true
+          pat: ${{ secrets.VSCE_TOKEN }}
+          packagePath: ./vscode-brocatel
+          extensionFile: ${{ steps.publishToOpenVSX.outputs.vsixPath }}
+          registryUrl: https://marketplace.visualstudio.com

@@ -1,3 +1,5 @@
+certs/
 dist/
 out/
 .vscode-test-web/
+*.vsix

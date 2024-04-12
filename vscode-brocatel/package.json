@@ -1,9 +1,14 @@
 {
   "name": "vscode-brocatel",
   "publisher": "gudzpoz",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gudzpoz/brocatel",
+    "directory": "vscode-brocatel"
+  },
   "displayName": "Brocatel Dev Tools",
   "description": "Run and test Brocatel stories in VS Code",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.87.0",
     "node": ">=16"
@@ -19,9 +24,21 @@
     "commands": [
       {
         "command": "vscode-brocatel.preview",
-        "title": "Brocatel: Preview Story"
+        "title": "Brocatel: Preview Story",
+        "category": "Brocatel",
+        "enablement": "editorLangId == 'markdown'",
+        "icon": "$(debug-alt)"
       }
     ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "vscode-brocatel.preview",
+          "group": "navigation",
+          "when": "editorLangId == 'markdown'"
+        }
+      ]
+    },
     "configuration": {
       "type": "object",
       "title": "Brocatel Dev Tools",
@@ -62,7 +79,9 @@
     "package-web": "webpack --mode production --devtool hidden-source-map",
     "lint": "eslint src --ext ts",
     "run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. .",
-    "vsce": "pnpm vsce package"
+    "vsce": "pnpm exec vsce package --no-dependencies",
+    "vscode:publish": "pnpm exec vsce publish --no-dependencies",
+    "ovsx:publish": "pnpm exec ovsx publish --no-dependencies"
   },
   "dependencies": {
     "@brocatel/mdc": "workspace:^",
@@ -87,6 +106,7 @@
     "assert": "^2.1.0",
     "eslint": "^8.57.0",
     "mocha": "^10.4.0",
+    "ovsx": "^0.9.0",
     "process": "^0.11.10",
     "ts-loader": "^9.5.1",
     "typescript": "^5.4.5",
