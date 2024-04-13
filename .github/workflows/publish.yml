@@ -2,8 +2,9 @@ name: Publish to NPM and LuaRocks
 
 on:
   workflow_dispatch:
-  tags:
-    - '*'
+  push:
+    tags:
+      - '*'
 
 jobs:
   publish:

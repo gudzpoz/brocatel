@@ -2,8 +2,9 @@ name: Build VS Code Extension
 
 on:
   workflow_dispatch:
-  tags:
-    - '*'
+  push:
+    tags:
+      - '*'
 
 jobs:
   extension:
