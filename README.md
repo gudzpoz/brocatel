@@ -1,12 +1,21 @@
+---
+brocatel: true
+---
+
 # Brocatel
 
 [![NPM Version](https://img.shields.io/npm/v/%40brocatel%2Fmdc)](https://www.npmjs.com/package/@brocatel/mdc)
 [![LuaRocks](https://img.shields.io/luarocks/v/gudzpoz/brocatel)](https://luarocks.org/modules/gudzpoz/brocatel)
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/gudzpoz/brocatel/docs.yml?label=Documentation)](https://gudzpoz.github.io/brocatel/)
+[![GitHub License](https://img.shields.io/github/license/gudzpoz/brocatel)](https://github.com/gudzpoz/brocatel/blob/main/LICENSE.txt)
 
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/gudzpoz/brocatel/vscode.yml?label=VS+Code+Extension)
 [![Visual Studio Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/gudzpoz.vscode-brocatel)](https://marketplace.visualstudio.com/items?itemName=gudzpoz.vscode-brocatel)
 [![Open VSX Version](https://img.shields.io/open-vsx/v/gudzpoz/vscode-brocatel)](https://open-vsx.org/extension/gudzpoz/vscode-brocatel)
+
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/gudzpoz/brocatel/docs.yml?label=Docs&style=for-the-badge&logo=vitepress&logoColor=white)](https://gudzpoz.github.io/brocatel/)
+[![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/gudzpoz/brocatel?style=for-the-badge&logo=github&color=green)](https://github.com/gudzpoz/brocatel/issues)
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Fgithub.com%2Fgudzpoz%2Fbrocatel%2Fwiki&up_color=orange&style=for-the-badge&logo=github&label=wiki)](https://github.com/gudzpoz/brocatel/wiki)
+[![Revolt](https://img.shields.io/revolt/invite/P66DcpnQ?style=for-the-badge&logo=revoltdotchat&logoColor=%23fff&label=Revolt.chat&labelColor=%23ff4655&color=white)](https://rvlt.gg/P66DcpnQ)
 
 (By the way, you can also [run this README file interactively with Brocatel](https://gudzpoz.github.io/brocatel/playground.html?url=https://cdn.jsdelivr.net/gh/gudzpoz/brocatel@main/README.md).)
 

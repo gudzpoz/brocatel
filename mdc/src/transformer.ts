@@ -1,5 +1,5 @@
 import type {
-  Code, Content, Heading, Link, Paragraph, Root,
+  Code, Heading, Link, Paragraph, Root, RootContent,
 } from 'mdast';
 import type { ContainerDirective } from 'mdast-util-directive';
 import type { MdxTextExpression } from 'mdast-util-mdx-expression';
@@ -78,7 +78,7 @@ class AstTransformer {
     return transformed;
   }
 
-  checkLua(snippet: string, expression: boolean, node: Content): string {
+  checkLua(snippet: string, expression: boolean, node: RootContent): string {
     const error = this.validateLua(expression ? `return(${snippet})` : snippet);
     if (error) {
       this.vfile.message(`illegal lua snippet: ${error.message}`, node);

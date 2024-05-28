@@ -105,6 +105,17 @@ function packBundle(
   return [bundle, gettextData, checksumPlaceholder];
 }
 
+export function markdownExpander(): Processor<Root, Node, Node> {
+  return unified()
+      .use(remarkParse)
+      .use(remarkJoinCJKLines)
+      .use(remarkFrontmatter, ['yaml'])
+      .use(remapLineNumbers)
+      .use(directiveForMarkdown)
+      .use(mdxForMarkdown)
+      .use(expandMacro);
+}
+
 export async function validate(vfile: VFile) {
   const data = debugging.getRootData(vfile);
   const { inputs } = data;
@@ -155,14 +166,7 @@ export class BrocatelCompiler {
       debug: true,
       ...config,
     };
-    this.remark = unified()
-      .use(remarkParse)
-      .use(remarkJoinCJKLines)
-      .use(remarkFrontmatter, ['yaml'])
-      .use(remapLineNumbers)
-      .use(directiveForMarkdown)
-      .use(mdxForMarkdown)
-      .use(expandMacro)
+    this.remark = markdownExpander()
       .use(transformAst)
       .use(astCompiler);
   }
@@ -245,12 +249,7 @@ export class BrocatelCompiler {
     return target;
   }
 
-  /**
-   * Compiles one Markdown file.
-   *
-   * @param content Markdown
-   */
-  async compile(content: string, filename?: string): Promise<VFile> {
+  preprocess(content: string, filename?: string) {
     const preprocessed = content.replace(/\r\n/g, '\n');
     let vfile: VFile | null = null;
     if (this.config.autoNewLine) {
@@ -282,6 +281,16 @@ export class BrocatelCompiler {
     if (this.config.debug) {
       debugging.getData(vfile).debug = true;
     }
+    return vfile;
+  }
+
+  /**
+   * Compiles one Markdown file.
+   *
+   * @param content Markdown
+   */
+  async compile(content: string, filename?: string): Promise<VFile> {
+    const vfile = this.preprocess(content, filename);
     return this.remark.process(vfile);
   }
 

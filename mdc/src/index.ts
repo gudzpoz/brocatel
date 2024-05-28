@@ -47,3 +47,9 @@ export namespace debug {
   export type StoryLink = debugging.StoryLink;
   export type VFile = debugging.VirtualFile;
 }
+
+import * as utilPinpoint from './unist-util-pinpoint';
+export namespace util {
+  export const pinpoint = utilPinpoint.pinpoint;
+  export type Point = utilPinpoint.Point;
+}

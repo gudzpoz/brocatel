@@ -1,5 +1,3 @@
-import debounce from 'debounce';
-import { Parent, Root, RootContent } from 'mdast';
 import {
   createConnection,
   TextDocuments,
@@ -12,11 +10,12 @@ import {
   DidChangeConfigurationNotification,
   BrowserMessageReader,
   BrowserMessageWriter,
+  CompletionItem,
 } from 'vscode-languageserver/browser';
 import { Position, TextDocument } from 'vscode-languageserver-textdocument';
 import { URI, Utils as path } from 'vscode-uri';
 
-import { BrocatelCompiler, debug } from '@brocatel/mdc';
+import { BrocatelCompiler, debug, util } from '@brocatel/mdc';
 
 interface Settings {
   lintAllMarkdownFiles: boolean;
@@ -47,9 +46,13 @@ connection.onInitialize(({ capabilities }) => {
   const result: InitializeResult = {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Incremental,
-      definitionProvider: true,
+      definitionProvider: false,
       completionProvider: {
-        resolveProvider: true,
+        triggerCharacters: [
+          '#', // Markdown chars
+          '.', ':', '`', // Lua chars
+        ],
+        resolveProvider: false,
       },
     },
   };
@@ -224,7 +227,7 @@ async function isBrocatelDocument(document: TextDocument) {
   return false;
 }
 
-const validateBrocatelDocument = debounce(async (document: TextDocument) => {
+async function validateBrocatelDocument(document: TextDocument) {
   const tracked = trackedContents.get(norm(document.uri));
   if (!tracked) {
     return;
@@ -236,11 +239,37 @@ const validateBrocatelDocument = debounce(async (document: TextDocument) => {
   const compiled = await compileDocument(document);
   tracked.compiled = compiled;
   tracked.files = await sendDiagnostics(tracked);
-}, 1000);
+}
+const validatingDocuments = new Map<string, number>();
+const validationListeners: (() => void)[] = [];
+async function validateDocument(document: TextDocument) {
+  let concurrency = validatingDocuments.get(document.uri) ?? 0;
+  validatingDocuments.set(document.uri, concurrency + 1);
+  await validateBrocatelDocument(document);
+  concurrency = validatingDocuments.get(document.uri) ?? 0;
+  if (concurrency > 1) {
+    validatingDocuments.set(document.uri, concurrency - 1);
+  } else {
+    validatingDocuments.delete(document.uri);
+    if (validatingDocuments.size === 0) {
+      validationListeners.forEach((listener) => listener());
+      validationListeners.length = 0;
+    }
+  }
+}
+async function afterAllValidated() {
+  if (validatingDocuments.size === 0) {
+    return Promise.resolve();
+  }
+  const promise = new Promise<void>((resolve) => {
+    validationListeners.push(resolve);
+  });
+  return promise;
+}
 
 documents.onDidOpen(async ({ document }) => {
   trackedContents.set(norm(document.uri), { document, files: [] });
-  await validateBrocatelDocument(document);
+  await validateDocument(document);
 });
 documents.onDidClose(({ document }) => {
   trackedContents.delete(norm(document.uri));
@@ -252,72 +281,8 @@ documents.onDidChangeContent(async (change) => {
     return;
   }
   tracked.document = document;
-  await validateBrocatelDocument(change.document);
+  await validateDocument(change.document);
 });
-
-interface Point {
-  line: number;
-  column: number;
-}
-
-function comparePoints(a: Point, b: Point) {
-  return a.line - b.line || a.column - b.column;
-}
-
-function findNodeByPoint(root: Root, point: Point) {
-  const candidates: (RootContent | Root)[] = [root];
-  while (candidates.length > 0) {
-    const candidate = candidates.pop()!;
-    if (!(candidate as any).children) {
-      if (candidate.position) {
-        // Auto-completable node should have a position
-        if (comparePoints(point, candidate.position.start) > 0
-          && comparePoints(point, candidate.position.end) < 0
-        ) {
-          return candidate;
-        }
-      }
-      // eslint-disable-next-line no-continue
-      continue;
-    }
-    const { children } = candidate as Parent;
-    // Bisect by position
-    let left = 0;
-    let right = children.length;
-    while (right - left > 1) {
-      const center = Math.floor((left + right) / 2);
-      // Find a child around mid whose position is defined
-      let mid = center;
-      while (left < mid && !children[mid].position) {
-        mid -= 1;
-      }
-      if (mid === left) {
-        // The other direction
-        mid = center + 1;
-        while (mid < right - 1 && !children[mid].position) {
-          mid += 1;
-        }
-        if (mid === right - 1) {
-          // All, undefined, are, candidates.
-          break;
-        }
-      }
-      const child = children[mid];
-      const position = child.position!;
-      const cmp = comparePoints(point, position.start);
-      // mid is in (left, right - 1), narrowing the range
-      if (cmp < 0) {
-        right = mid;
-      } else if (cmp > 0) {
-        left = mid + 1;
-      } else {
-        left = mid;
-      }
-    }
-    candidates.push(...children.slice(left, right));
-  }
-  return null;
-}
 
 function headingsToAnchor(heading: debug.LuaHeadingTree, prefix: string = ''): string[] {
   const headings = Object.entries(heading.children).flatMap(([name, h]) => {
@@ -328,7 +293,8 @@ function headingsToAnchor(heading: debug.LuaHeadingTree, prefix: string = ''): s
   return headings;
 }
 
-connection.onCompletion((param: TextDocumentPositionParams) => {
+connection.onCompletion(async (param: TextDocumentPositionParams) => {
+  await afterAllValidated();
   const document = trackedContents.get(norm(param.textDocument.uri));
   if (!document) {
     return [];
@@ -347,15 +313,26 @@ connection.onCompletion((param: TextDocumentPositionParams) => {
   if (input) {
     const data = debug.getData(input);
     if (data.markdown) {
-      const node = findNodeByPoint(data.markdown, point);
+      const node = util.pinpoint(data.markdown, point);
       switch (node?.type) {
         case 'link': {
           if (node.url.startsWith('#')) {
             if (data.headings) {
-              return headingsToAnchor(data.headings).map((anchor) => ({
+              const range = {
+                start: {
+                  line: param.position.line,
+                  character: param.position.character - node.url.length,
+                },
+                end: param.position,
+              };
+              return headingsToAnchor(data.headings, '#').map((anchor) => ({
                 label: anchor,
                 kind: CompletionItemKind.Reference,
-              }));
+                textEdit: {
+                  range,
+                  newText: anchor,
+                },
+              } as CompletionItem));
             }
           }
           break;

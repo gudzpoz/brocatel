@@ -1,11 +1,12 @@
 import {
-  BlockContent, Content, ListContent, Parent as MdAstParent,
+  BlockContent, ListContent, Parent as MdAstParent,
+  RootContent,
 } from 'mdast';
 import { ContainerDirective } from 'mdast-util-directive';
 import { Root } from 'remark-parse/lib';
 import { Data, Parent, Node } from 'unist';
 
-export type MarkdownNode = BlockContent | Content | ListContent | ContainerDirective | Root;
+export type MarkdownNode = BlockContent | RootContent | ListContent | ContainerDirective | Root;
 export type MarkdownParent = MarkdownNode & MdAstParent | ContainerDirective | ListContent;
 
 export type PathSegment = number | string;
