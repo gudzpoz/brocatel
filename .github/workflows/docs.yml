@@ -51,6 +51,7 @@ jobs:
         run: |
           cd docs
           pnpm docs:build
+          touch .vitepress/dist/.nojekyll
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
