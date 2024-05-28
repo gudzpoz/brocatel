@@ -49,6 +49,7 @@ export function toLink(link: LuaLink): StoryLink {
 
 export interface CompilationData {
   debug: boolean;
+  splitParagraphs?: boolean;
 
   IFID?: string[];
   codeSnippets?: CodeSnippet[];
@@ -56,7 +57,6 @@ export interface CompilationData {
   gettext?: LuaGettextData;
   globalLua?: SourceNode[];
   headings?: LuaHeadingTree;
-  lineMapping?: LineMapping;
   links?: StoryLink[];
   markdown?: Root;
   sourceMap?: SourceNode;

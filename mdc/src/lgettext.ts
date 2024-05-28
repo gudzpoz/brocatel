@@ -1,5 +1,5 @@
 import { VFile } from 'vfile';
-import { visitParents } from 'unist-util-visit-parents';
+import { visit } from 'unist-util-visit';
 
 import {
   LuaArray, LuaText,
@@ -12,7 +12,7 @@ export interface LuaGettextData {
 
 export function collectGettextData(root: LuaArray, source: VFile): LuaGettextData {
   const texts: LuaText[] = [];
-  visitParents(root, 'text', (node) => {
+  visit(root, 'text', (node) => {
     texts.push(node as LuaText);
   });
   return {

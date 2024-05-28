@@ -15,7 +15,7 @@ import astCompiler from './ast-compiler';
 import * as debugging from './debug';
 import expandMacro from './expander';
 import { LuaGettextData, compileGettextData } from './lgettext';
-import remapLineNumbers from './line-remap';
+import remarkSplitParagraphs from './split-paragraphs';
 import { InvalidNode, StoryRunner } from './lua';
 import LuaTableGenerator from './lua-table';
 import transformAst from './transformer';
@@ -28,9 +28,15 @@ const VERSION = 1;
  */
 export interface CompilerConfig {
   /**
-   * Requiring correct Markdown paragraphs.
+   * Whether to treat two consecutive lines as two paragraphs.
    *
    * AutoNewLine adds line breaks, allowing the Markdown file to be more compact.
+   * When enabled, the following produces two paragraphs:
+   *
+   * ```markdown
+   * Paragraph 1 Sentence 1.
+   * Paragraph 2 Sentence 2.
+   * ```
    *
    * Default: `true`.
    */
@@ -110,7 +116,7 @@ export function markdownExpander(): Processor<Root, Node, Node> {
       .use(remarkParse)
       .use(remarkJoinCJKLines)
       .use(remarkFrontmatter, ['yaml'])
-      .use(remapLineNumbers)
+      .use(remarkSplitParagraphs)
       .use(directiveForMarkdown)
       .use(mdxForMarkdown)
       .use(expandMacro);
@@ -250,37 +256,11 @@ export class BrocatelCompiler {
   }
 
   preprocess(content: string, filename?: string) {
-    const preprocessed = content.replace(/\r\n/g, '\n');
-    let vfile: VFile | null = null;
-    if (this.config.autoNewLine) {
-      const originalLineNumbers: number[] = [];
-      const newLineNumbers: number[] = [];
-      const lines = preprocessed.split('\n');
-      const newLines: string[] = [];
-      const empty = /^\s+$/;
-      for (let i = 0; i < lines.length; i += 1) {
-        const line = lines[i];
-        originalLineNumbers.push(i);
-        newLineNumbers.push(newLines.length);
-        newLines.push(line);
-        if (!empty.test(line)) {
-          if (i + 1 >= lines.length || !empty.test(lines[i + 1])) {
-            newLines.push('');
-          }
-        }
-      }
-      vfile = new VFile(newLines.join('\n'));
-      vfile.path = filename ?? '<unknown>';
-      debugging.getData(vfile).lineMapping = {
-        original: originalLineNumbers,
-        newLines: newLineNumbers,
-      };
-    } else {
-      vfile = new VFile(preprocessed);
-    }
-    if (this.config.debug) {
-      debugging.getData(vfile).debug = true;
-    }
+    const vfile = new VFile(content);
+    vfile.path = filename ?? '<unknown>';
+    const config = debugging.getData(vfile);
+    config.debug = !!this.config.debug;
+    config.splitParagraphs = this.config.autoNewLine;
     return vfile;
   }
 

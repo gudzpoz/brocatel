@@ -56,6 +56,7 @@
     "remark-parse": "^11.0.0",
     "source-map-js": "^1.2.0",
     "unified": "^11.0.4",
+    "unist-util-visit": "^5.0.0",
     "unist-util-visit-parents": "^6.0.1",
     "vfile": "^6.0.1",
     "wasmoon": "1.15.1",

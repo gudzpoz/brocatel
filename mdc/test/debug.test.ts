@@ -45,7 +45,7 @@ a = 2
   assert.notOk(data.IFID);
   const {
     debug, codeSnippets, dependencies, gettext, globalLua,
-    headings, lineMapping, links, markdown, sourceMap,
+    headings, links, markdown, sourceMap,
   } = data;
   assert.isTrue(debug);
 
@@ -57,26 +57,26 @@ a = 2
   assert.deepEqual(codeSnippets[0], {
     expression: false,
     position: {
-      start: { line: 7, column: 1, offset: 0 },
-      end: { line: 10, column: 4, offset: 0 },
+      start: { line: 7, column: 1, offset: 61 },
+      end: { line: 10, column: 4, offset: 99 },
     },
-    value: '\nprint("Hello world!")\n\na = 1\n',
+    value: 'print("Hello world!")\na = 1',
   });
   assert.deepEqual(codeSnippets[1], {
     expression: true,
     position: {
-      start: { line: 12, column: 1, offset: 0 },
-      end: { line: 12, column: 22, offset: 0 },
+      start: { line: 12, column: 1, offset: 101 },
+      end: { line: 12, column: 22, offset: 122 },
     },
     value: 'a == 1',
   });
   assert.deepEqual(codeSnippets[2], {
     expression: false,
     position: {
-      start: { line: 14, column: 1, offset: 0 },
-      end: { line: 16, column: 4, offset: 0 },
+      start: { line: 14, column: 1, offset: 124 },
+      end: { line: 16, column: 4, offset: 147 },
     },
-    value: '\na = 2\n',
+    value: 'a = 2',
   });
 
   assert.equal(dependencies!.size, 0);
@@ -91,26 +91,23 @@ a = 2
   }
   assert.deepEqual(headings.position, {
     start: { line: 1, column: 1, offset: 0 },
-    end: { line: 17, column: 1, offset: 0 },
+    end: { line: 17, column: 1, offset: 148 },
   });
   assert.lengthOf(Object.keys(headings.children), 1);
   const { hello } = headings.children;
   assert.ok(hello);
   assert.deepEqual(hello.position, {
-    start: { line: 2, column: 1, offset: 0 },
-    end: { line: 2, column: 8, offset: 0 },
+    start: { line: 2, column: 1, offset: 1 },
+    end: { line: 2, column: 8, offset: 8 },
   });
   assert.lengthOf(Object.keys(hello.children), 1);
   const { subheading } = hello.children;
   assert.ok(subheading);
   assert.deepEqual(subheading.position, {
-    start: { line: 4, column: 1, offset: 0 },
-    end: { line: 4, column: 14, offset: 0 },
+    start: { line: 4, column: 1, offset: 24 },
+    end: { line: 4, column: 14, offset: 37 },
   });
   assert.lengthOf(Object.keys(subheading.children), 0);
-
-  assert.equal(lineMapping!.original.length, 17);
-  assert.equal(lineMapping!.newLines.length, 17);
 
   assert.ok(links);
   if (!links) {
@@ -119,8 +116,8 @@ a = 2
   assert.lengthOf(links, 1);
   assert.deepEqual(links[0], {
     position: {
-      start: { line: 3, column: 1, offset: 0 },
-      end: { line: 3, column: 15, offset: 0 },
+      start: { line: 3, column: 1, offset: 9 },
+      end: { line: 3, column: 15, offset: 23 },
     },
     labels: ['hello'],
     type: 'link',
@@ -136,11 +133,8 @@ a = 2
 This is a subheading.
 
 \`\`\`lua
-
 print("Hello world!")
-
 a = 1
-
 \`\`\`
 
 :::if\`a == 1\`
@@ -148,9 +142,7 @@ a = 1
 * Conditional.
 
 \`\`\`lua global
-
 a = 2
-
 \`\`\``);
 
   assert.ok(sourceMap);
@@ -186,6 +178,7 @@ test('Lua validation', async () => {
   assert.equal(
     compiled.messages[0].message,
     'illegal lua snippet: [string "nil()"]:1: unexpected symbol near \'nil\'',
+    compiled.messages.map((msg) => msg.message).join(','),
   );
   assert.equal(compiled.messages[1].message, 'invalid lua code');
   compiled.messages.forEach((msg) => {

@@ -159,6 +159,7 @@ test('Switch macro', async () => {
   2
 - \`true\`
   end
+
 \`i = i + 1\`
 \`i < 4\` [](#start)
 `, [], ['0', '1', '2', 'end']);
@@ -194,11 +195,13 @@ test('Save and load', async () => {
 - \`i = i + 1\`
 - :::if \`i > 5\`
   - \`END(spin1)\`
+
 Count: {i}
 :::loop \`spin2\`
 - \`i = i + 1\`
 - :::if \`i > 10\`
   - \`END(spin2)\`
+
 Count: {i}
 `);
   const saveStart = runner.save();
@@ -306,6 +309,7 @@ test('Coroutine calls', async () => {
   await assertOutput(`
 Line 1
 > [](#co)
+
 Line 2
 # co {}
 Line 3

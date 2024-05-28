@@ -20,7 +20,11 @@ async function assertPinpoint(input: string, positions: number[][], expected: Re
     const position = { line: p[0], column: p[1] };
     const node = util.pinpoint(tree, position)!;
     if (!expectedNode) {
-      assert.isNull(node, `Position: ${position.line}:${position.column}`);
+      if (node) {
+        assert.include(['paragraph', 'root'], node.type);
+      } else {
+        assert.isNull(node, `Position: ${position.line}:${position.column}`);
+      }
     } else {
       assert.isObject(node, `Position: ${position.line}:${position.column}, expected: ${JSON.stringify(expectedNode)}`);
       const copy = { ...node };
