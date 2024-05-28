@@ -293,6 +293,17 @@ function headingsToAnchor(heading: debug.LuaHeadingTree, prefix: string = ''): s
   return headings;
 }
 
+function interceptCompletion(): CompletionItem[] {
+  return [{
+    label: '_',
+    kind: CompletionItemKind.Text,
+    command: {
+      title: '',
+      command: 'intercept',
+    },
+  }];
+}
+
 connection.onCompletion(async (param: TextDocumentPositionParams) => {
   await afterAllValidated();
   const document = trackedContents.get(norm(param.textDocument.uri));
@@ -337,6 +348,10 @@ connection.onCompletion(async (param: TextDocumentPositionParams) => {
           }
           break;
         }
+        case 'mdxTextExpression' as 'code':
+        case 'code':
+        case 'inlineCode':
+          return interceptCompletion();
         default: {
           break;
         }
