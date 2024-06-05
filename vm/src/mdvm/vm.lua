@@ -60,8 +60,9 @@ function VM:_set_up_listener(co)
     co.ip:set_listener(function(old, new)
         assert(self:_ensure_root(new), "invalid ip assigned")
         local current_co = assert(self:_get_coroutine())
-        history.record_simple(self.savedata.stats, self.code, current_co.prev_ip, old)
+        history.record_move(self.savedata.stats, self.code, current_co.prev_ip, old)
         current_co.prev_ip = old:copy()
+        self.flags.redirected = true
     end)
 end
 
@@ -151,10 +152,10 @@ function VM:eval_with_env(env, ip, env_keys)
     env_keys = env_keys or utils.get_keys(env)
     self.env:push(env_keys, env)
     while true do
-        local line, tags = self:_fetch_and_next(ip)
+        local line, tags, visited = self:_fetch_and_next(ip)
         if line or not tags or self.flags["if-else"] == false or self.flags["empty"] then
             self.env:pop()
-            return line, tags
+            return line, tags, visited
         end
     end
 end
@@ -339,12 +340,12 @@ function VM:current()
     end
 
     while true do
-        local line, tags = self:_fetch_and_next()
+        local line, tags, visited = self:_fetch_and_next()
         if not tags then
             return nil
         end
         if line then
-            output = { text = line, tags = tags }
+            output = { text = line, tags = tags, visited = visited or false }
             current.output = output
         end
         output = current.output
@@ -385,6 +386,17 @@ end
 --- @field jumps number|nil consecutive jump counts without any content yielded
 --- @field empty boolean|nil the result from the last if-else branch node
 --- @field if-else boolean|nil the result from the last if-else branch node
+--- @field redirected boolean|nil whether the story flow was programmatically redirected
+
+--- Update history info on a node.
+---
+--- @param should_track boolean
+--- @param ip TablePath|false|nil
+function VM:_track(should_track, ip)
+    if should_track and ip then
+        history.record_simple(self.savedata.stats, self.code, ip)
+    end
+end
 
 --- Returns the current node and goes to the next.
 ---
@@ -399,7 +411,9 @@ end
 --- @param ip TablePath|nil the pointer
 --- @return string|nil result
 --- @return table<string, string>|boolean|nil tags `nil` if reaches the end
+--- @return boolean|nil visited `true` if the text has been read
 function VM:_fetch_and_next(ip)
+    local should_track = not ip
     ip = ip or assert(self:_get_coroutine()).ip
     local root = assert(self:_ensure_root(ip))
     if ip:is_done() then
@@ -417,10 +431,12 @@ function VM:_fetch_and_next(ip)
     local node_type = VM._node_type(node)
 
     if node_type == "text" and type(node) == "string" then
+        local visited_count = history.get_recorded_count(self.savedata.stats, ip)
+        local text = self:translate(node)
+        self:_track(should_track, ip)
         ip:step(root)
-        return self:translate(node), true
+        return text, true, visited_count > 0
     elseif node_type == "tagged_text" then
-        ip:step(root)
         local formatted = self:interpolate(node.text, node.values, true, node.plural)
         local tags = {} --- @type table<string, string>
         for k, v in pairs(type(node.tags) == "table" and node.tags or {}) do
@@ -430,6 +446,8 @@ function VM:_fetch_and_next(ip)
                 tags[k] = tostring(v)
             end
         end
+        self:_track(should_track, ip)
+        ip:step(root)
         return formatted, tags or true
     elseif node_type == "link" then
         local new_root_name = node.root
@@ -438,6 +456,7 @@ function VM:_fetch_and_next(ip)
         end
         local found = lookup.find_by_labels(root, new_root_name or ip, node.link)
         assert(#found == 1, "not found / found too many: " .. tostring(#found))
+        self:_track(should_track, ip)
         if node.params then
             local is_array, target = found[1]:is_array(root)
             if is_array and target and target[1].routine then
@@ -459,15 +478,22 @@ function VM:_fetch_and_next(ip)
         return nil, true
     elseif node_type == "if-else" then
         local result = node[1]()
-        local _
-        _, self.flags["empty"] = ip:resolve(result and 2 or 3):step(root, true)
+        local tracked = should_track and ip:copy()
         self.flags["if-else"] = result and true or false
+        self:_track(should_track, tracked)
+        if not self.flags.redirected then
+            local _
+            _, self.flags["empty"] = ip:resolve(result and 2 or 3):step(root, true)
+        end
         return nil, true
     elseif node_type == "func" then
         local args = ip:copy():resolve("args")
-        ip:step(root)
+        local tracked = should_track and ip:copy()
         node.func(args)
-        if not ip:is_done() then
+        self:_track(should_track, tracked)
+        if not self.flags.redirected then
+            ip:step(root)
+        elseif not ip:is_done() then
             ip:step(assert(self:_ensure_root(ip)), true)
         end
         return nil, true

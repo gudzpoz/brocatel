@@ -187,18 +187,31 @@ describe("TablePath", function()
             path:set_listener(function(old, new)
                 history[#history + 1] = { old:copy(), new }
             end)
-            path:set({ "s" }):resolve(1):resolve(nil)
+
+            path:set({ "s" })
+            assert.equal(1, #history)
+            assert.same({ { "r" }, { "s" } }, history[1])
+
+            path:resolve(1)
+            assert.equal(2, #history)
+            assert.same({ { "s" }, { "s", 1 } }, history[2])
+
+            path:resolve(nil)
+            assert.equal(3, #history)
+            assert.same({ { "s", 1 }, { "s" } }, history[3])
+
             path:step({ s = { {}, 1 } }, true)
+            assert.equal(5, #history)
+            assert.same({ { "s" }, { "s" } }, history[4])
+            assert.same({ { "s" }, { "s", 2 } }, history[5])
+
             path:step({ s = { {}, 1 } }, true)
+            assert.equal(6, #history)
+            assert.same({ { "s", 2 }, { "s", 2 } }, history[6])
+
             path:step({ s = { {}, 1 } })
-            assert.same({
-                { { "r" }, { "s" } },
-                { { "s" }, { "s", 1 } },
-                { { "s", 1 }, { "s" } },
-                { { "s" }, { "s", 2 } },
-                { { "s", 2 }, { "s", 2 } },
-                { { "s", 2 }, { "s" } },
-            }, history)
+            assert.equal(7, #history)
+            assert.same({ { "s", 2 }, { "s" } }, history[7])
         end)
     end)
 end)

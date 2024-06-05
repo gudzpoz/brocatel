@@ -101,9 +101,9 @@ export async function luaRunner(): Promise<LuaRunner> {
   return f;
 }
 
-export type TextLine = { text: string, tags: true | Record<string, string> };
+export type TextLine = { text: string, tags: true | Record<string, string>, visited: boolean };
 
-export type SelectLine = { select: { key: number, option: TextLine }[] };
+export type SelectLine = { select: { key: number, option: TextLine }[], visited: boolean };
 
 export type StoryLine = TextLine | SelectLine;
 

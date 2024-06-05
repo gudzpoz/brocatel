@@ -20,10 +20,11 @@
 --- @class StackedEnv
 --- @field lua table the Lua environment
 --- @field global table the global scope
---- @field label fun(table):table label lookup function
+--- @field label fun(table):(table|nil) label lookup function
 --- @field stack table<number, table> some normal scopes that pose no requirements
 --- @field env table the environment to be used
 --- @field api table<string, boolean> keys that forbid overriding
+--- @field getter table<string, boolean> keys in Lua environment to be treated as getters
 --- @field init boolean whether in initialing state
 local StackedEnv = {}
 StackedEnv.__index = StackedEnv
@@ -32,12 +33,14 @@ StackedEnv.__index = StackedEnv
 ---
 --- @return StackedEnv
 function StackedEnv.new()
+    --- @type StackedEnv
     local stacked = {
         lua = {},
         global = {},
-        label = nil,
+        label = function() end,
         stack = {},
         env = {},
+        getter = {},
         api = { ROOT = true },
         init = true,
     }
@@ -194,12 +197,24 @@ function StackedEnv:get(key)
         return value
     end
     -- Lua.
-    return self.lua[key]
+    value = self.lua[key]
+    if self.getter[key] then
+        return value()
+    end
+    return value
 end
 
-function StackedEnv:set_api(key, value)
+--- Sets a value in the Lua scope.
+---
+--- @param key string
+--- @param value any
+--- @param getter boolean|nil
+function StackedEnv:set_api(key, value, getter)
     self.lua[key] = value
     self.api[key] = true
+    if getter then
+        self.getter[key] = true
+    end
 end
 
 function StackedEnv:set(key, value)

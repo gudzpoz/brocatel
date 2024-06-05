@@ -71,10 +71,9 @@ Markdown compiler implementation:
 - [ ] Save & load.
   - [X] API.
   - [ ] Examples? Or detailed Lua documentation.
-- [ ] Fast-forward (skipping only texts that users have read).
-  - [ ] Instead, we should probably export read counts along with the lines
-    to let the user / the outer game engine decide whether to skip lines
-    (or even display some relevant text / highlighting).
+- [X] Export read counts along with the lines to let the user
+  / the outer game engine decide whether to skip lines
+  (or even display some relevant text / highlighting).
 - [ ] Complete porting The Intercept, which is a little bit lengthy.
 
 ### `v0.4.0`
@@ -112,7 +111,7 @@ Documentation, tutorials, etc.
 - [ ] Follow suit: [Tutorial for Ink](https://www.inklestudios.com/ink/web-tutorial/) (better still if interactive).
 - [ ] IDE implementation (or probably just a VS Code plugin with language server protocol implementation).
   - [X] Simplistic LSP implementation detecting compilation errors.
-  - [ ] Using Lua LSP for Lua checking & completion.
+  - [X] Using Lua LSP for Lua checking & completion.
   - [X] Executing stories right from VS Code.
     - [X] Highlighting runtime errors in the Markdown source code.
   - [ ] Simplistic debugging interface by implementing the Debug Adapter Protocol.

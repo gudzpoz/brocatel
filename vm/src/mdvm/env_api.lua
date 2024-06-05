@@ -6,11 +6,12 @@ local utils   = require("mdvm.utils")
 ---@param self brocatel.VM
 return function (self)
     local env = self.env
-    local ip = assert(self:_get_coroutine()).ip
     local lua = env:get_lua_env()
-    lua.IP = ip
     lua.VM = self
-
+    local function get_ip()
+        return assert(self:_get_coroutine()).ip
+    end
+    env:set_api("IP", get_ip, true)
     env:set_api("GET", function(path, key)
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
         return history.get(self.savedata.stats, path, key)
@@ -27,7 +28,7 @@ return function (self)
     end)
 
     env:set_api("END", function(path)
-        local IP = assert(env:get("IP"))
+        local ip = get_ip()
         -- For calls like `END()` or `END(true)`
         if not path or type(path) == "boolean" then
             -- Tries to return to the calling subroutine.
@@ -35,16 +36,16 @@ return function (self)
                 return
             end
             -- Otherwise (or when `END(true)` is called), terminates the story execution.
-            IP:set(TablePath.from({ IP[1] }))
+            ip:set(TablePath.from({ ip[1] }))
             return
         end
         -- For calls like `END({ "label", "path_name" })`, it breaks that array (which is probably a loop or something).
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
-        assert(path:is_parent_to(IP))
+        assert(path:is_parent_to(ip))
         local root = assert(self:_ensure_root(path))
         path = path:copy()
         path:step(root)
-        IP:set(path)
+        ip:set(path)
     end)
 
     env:set_api("EVAL", function(path, extra_env)
@@ -56,7 +57,7 @@ return function (self)
     --- @param path table|TablePath
     local function visits(path)
         path = self.env.is_label(path) and assert(self:lookup_label(path)) or path
-        return history.get(self.savedata.stats, path, "I") or 0
+        return history.get_recorded_count(self.savedata.stats, path)
     end
     env:set_api("VISITS", visits)
     env:set_api("VISITED", function(path) return visits(path) > 0 end)
@@ -67,8 +68,9 @@ return function (self)
         local current = self.savedata.current
         local counts = history.get(self.savedata.stats, args, "S") or {}
         local root = assert(self:_ensure_root(args))
+        local ip = get_ip()
         if current.input then
-            env:get("IP"):set(args:copy():resolve(current.input, 3))
+            ip:set(args:copy():resolve(current.input, 3))
             local count = counts[current.input] or 0
             count = count + 1
             counts[current.input] = count
@@ -77,7 +79,7 @@ return function (self)
             return
         end
 
-        env:get("IP"):set(args:copy():resolve(nil))
+        ip:set(args:copy():resolve(nil))
         recur = recur or 0
         assert(recur == true or recur >= 0)
         local selectables = {} --- @type Selectable[]
@@ -106,10 +108,16 @@ return function (self)
                     end
                 })
             end
-            local line, tags = self:eval_with_env(local_env, args:copy():resolve(i), utils.get_keys(inner))
+            local path = args:copy():resolve(i)
+            local line, tags = self:eval_with_env(
+                local_env,
+                path,
+                utils.get_keys(inner)
+            )
             if line and should_recur and tags then
+                local visited = counts[i] and counts[i] > 0 or false
                 selectables[#selectables + 1] = {
-                    option = { text = line, tags = tags },
+                    option = { text = line, tags = tags, visited = visited },
                     key = i,
                 }
             end
@@ -118,7 +126,12 @@ return function (self)
             ip:step(root)
             return nil, true
         end
-        current.output = { select = selectables, tags = true }
+        self.flags.redirected = true -- Stop _fetch_and_next from incrementing ip
+        current.output = {
+            select = selectables,
+            tags = true,
+            visited = history.get_recorded_count(self.savedata.stats, args:copy():resolve(nil)) > 0,
+        }
     end
     env:set_api("FUNC", {
         SELECT = user_select,

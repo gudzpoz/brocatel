@@ -3,6 +3,8 @@ local utils = require("spec.test_utils")
 local StackedEnv = require("mdvm.stacked_env")
 local TablePath = require("mdvm.table_path")
 
+assert:set_parameter("TableFormatLevel", -1)
+
 --- @param root table
 local function wrap(root)
     local vm = brocatel.VM._new({
@@ -127,8 +129,8 @@ describe("VM", function()
                         local get = assert(vm.env:get("GET"))
                         assert.is_nil(get(args, "k"))
                         assert.equal("v", get(args:resolve(nil, nil, 2, "args"), "k"))
-                        local visited = assert(vm.env:get("VISITS"))
-                        assert.equal(1, visited(vm.env:get("a")))
+                        local visits = assert(vm.env:get("VISITS"))
+                        assert.equal(1, visits(vm.env:get("a")))
                         assert.error(function() vm.env:set("GET", 0) end)
                         assert.no_error(function() vm.env:set("_GET", 0) end)
                     end
@@ -138,8 +140,8 @@ describe("VM", function()
             assert.same({ "Hello", "end" }, utils.gather_til_end(vm))
             assert.same({
                 main = {
-                    { I = 1,                                                             R = { 0xe } },
-                    { args = { { I = 1, k = "v", R = { 2 } }, { { I = 1, R = { 2 } } } } },
+                    { I = 1, R = { 0xe } },
+                    { args = { { I = 1, k = "v" }, { { I = 1, R = { 2 } } } } },
                 }
             }, vm.savedata.stats)
         end)
@@ -253,10 +255,11 @@ describe("VM", function()
         local output = assert(vm:next())
         assert.same({
             tags = true,
+            visited = false,
             select = {
-                { key = 2, option = { tags = true, text = "Selection #1" } },
-                { key = 5, option = { tags = true, text = "Selection #3" } },
-                { key = 6, option = { tags = true, text = "Selection #4" } },
+                { key = 2, option = { tags = true, text = "Selection #1", visited = false } },
+                { key = 5, option = { tags = true, text = "Selection #3", visited = false } },
+                { key = 6, option = { tags = true, text = "Selection #4", visited = false } },
             },
         }, output)
         assert.equal("Result #3", vm:next(5).text)
@@ -264,18 +267,20 @@ describe("VM", function()
 
         assert.same({
             tags = true,
+            visited = true,
             select = {
-                { key = 2, option = { tags = true, text = "Selection #1" } },
-                { key = 6, option = { tags = true, text = "Selection #4" } },
+                { key = 2, option = { tags = true, text = "Selection #1", visited = false } },
+                { key = 6, option = { tags = true, text = "Selection #4", visited = false } },
             },
         }, vm:next())
         assert.equal("Result #4", vm:next(6).text)
         assert.equal("Hello", vm:next().text)
         assert.same({
             tags = true,
+            visited = true,
             select = {
-                { key = 2, option = { tags = true, text = "Selection #1" } },
-                { key = 6, option = { tags = true, text = "Selection #4" } },
+                { key = 2, option = { tags = true, text = "Selection #1", visited = false } },
+                { key = 6, option = { tags = true, text = "Selection #4", visited = true } },
             },
         }, vm:next())
         assert.equal("Result #4", vm:next(6).text)
@@ -283,8 +288,9 @@ describe("VM", function()
 
         assert.same({
             tags = true,
+            visited = true,
             select = {
-                { key = 2, option = { tags = true, text = "Selection #1" } },
+                { key = 2, option = { tags = true, text = "Selection #1", visited = false } },
             },
         }, vm:next())
         assert.equal("Result #1", vm:next(2).text)
@@ -312,7 +318,53 @@ describe("VM", function()
         assert.is_nil(vm:next())
     end)
 
-    it("too many jumps", function ()
+    it("text read count", function()
+        local vm
+        vm = wrap({
+            {
+                labels = {
+                    first = { 2 },
+                }
+            },
+            "Text1",
+            "Text2",
+            {
+                {},
+                "Text3",
+                "Text4",
+                {
+                    ---@param args TablePath
+                    func = function(args) vm.env:get("FUNC").S_ONCE(args) end,
+                    args = {
+                        {},
+                        { {}, "Selection #1", "Result #1" },
+                        { {}, { function() return vm.env:get("RECUR")(1) end,
+                            { {}, "Selection #2" } }, "Result #2" },
+                    },
+                },
+            },
+            {
+                link = { "first" }, root_node = "main",
+            },
+        })
+        for i = 1, 4 do
+            assert.same({ tags = true, text = "Text" .. tostring(i), visited = false }, vm:next())
+        end
+        assert.same({ tags = true, visited = false, select = {
+            { key = 2, option = { tags = true, text = "Selection #1", visited = false } },
+            { key = 3, option = { tags = true, text = "Selection #2", visited = false } },
+        }}, vm:next())
+        assert.same({ tags = true, text = "Result #2", visited = false }, vm:next(3))
+        for i = 1, 4 do
+            assert.same({ tags = true, text = "Text" .. tostring(i), visited = true }, vm:next())
+        end
+        assert.same({ tags = true, visited = true, select = {
+            { key = 2, option = { tags = true, text = "Selection #1", visited = false } },
+            { key = 3, option = { tags = true, text = "Selection #2", visited = true } },
+        }}, vm:next())
+    end)
+
+    it("too many jumps", function()
         local vm = wrap({
             {
                 labels = {

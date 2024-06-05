@@ -290,6 +290,8 @@ function TablePath:step(t, init)
             end
         end
         while new:is_array(t) do
+            -- Incremental updates to make read counts consistent
+            self:set(new)
             -- Skipping the metadata node
             new:resolve(2)
         end

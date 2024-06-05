@@ -25,11 +25,11 @@ async function assertOutput(
 
   let option: number | undefined;
   let inputI = 0;
-  output.forEach((line) => {
+  output.forEach((line, i) => {
     const result = runner.next(option);
     option = undefined;
     if (typeof line === 'string') {
-      assert.equal((result as TextLine)?.text, line);
+      assert.equal((result as TextLine)?.text, line, `${i}: ${line}`);
     } else if (Array.isArray(line)) {
       const { select } = result as SelectLine;
       assert.isArray(select);
@@ -62,9 +62,9 @@ test('Texts', async () => {
   await assertOutput('*Hello* ***World***', [], ['*Hello* ***World***']);
   await assertOutput('String: {type("")}', [], ['String: string']);
   await assertOutput('`a = 1024`\nValue: {a} + {a} = {a + a}', [], ['Value: 1024 + 1024 = 2048']);
-  await assertOutput(':a[b] :c d :e[f] g', [], [{ text: 'd :e[f] g', tags: { a: 'b', c: '' } }]);
+  await assertOutput(':a[b] :c d :e[f] g', [], [{ text: 'd :e[f] g', tags: { a: 'b', c: '' }, visited: false }]);
   await assertOutput(':a[result: {1 + 1}] :c[{2 + 2}] e {4 + 4}', [], [
-    { text: 'e 8', tags: { a: 'result: 2', c: '4' } },
+    { text: 'e 8', tags: { a: 'result: 2', c: '4' }, visited: false, },
   ]);
 });
 
@@ -88,6 +88,12 @@ test('Heading history', async () => {
 # heading 2
 {VISITS(heading_2)}
 `, [], ['0', '1', '0', '1']);
+  await assertOutput(`
+{VISITS(heading_1)}
+\`IP:set(VM:lookup_label(heading_1))\`
+# heading 1
+{VISITS(heading_1)}
+`, [], ['0', '1']);
   await assertOutput(`
 {VISITS(a)}
 - A {VISITS(a)}
@@ -131,7 +137,7 @@ test('Options', async () => {
   await assertOutput(`
 - :tag[value] text
   A
-`, ['text'], [[{ text: 'text', tags: { tag: 'value' } }], 'A']);
+`, ['text'], [[{ text: 'text', tags: { tag: 'value' }, visited: false }], 'A']);
 });
 
 test('Recursive fibonacci', async () => {
@@ -232,6 +238,7 @@ E
     option: {
       text: 'D',
       tags: true as true | Record<string, string>,
+      visited: false,
     },
   }];
   assert.deepEqual((runner.next() as SelectLine).select, options);

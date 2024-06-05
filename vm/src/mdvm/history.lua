@@ -44,6 +44,7 @@ end
 --- Fetches a bit in a bit set.
 --- @param bitset table<number, number>
 --- @param index number
+--- @return boolean bit the bit
 function history.get_bit(bitset, index)
     local offset = (index - 1) % bits_per_number
     local i = (index - 1 - offset) / bits_per_number + 1
@@ -62,7 +63,7 @@ end
 --- @param save table
 --- @param path TablePath
 --- @param key string
---- @returns string|number|boolean|nil
+--- @return string|number|boolean|table|nil
 function history.get(save, path, key)
     for _, segment in ipairs(path) do
         save = save[segment]
@@ -73,7 +74,7 @@ function history.get(save, path, key)
     local meta = save[1]
     if meta then
         assert(type(meta) == "table")
-        return meta[key]
+        return meta[assert(key)]
     end
     return nil
 end
@@ -91,7 +92,8 @@ function history.set(save, root, path, key, value)
         local node = path:get(root, 1)
         assert(node and node.func)
     else
-        assert(path:is_array(root))
+        local is_array = path:is_array(root)
+        assert(is_array, tostring(path))
     end
     for _, segment in ipairs(path) do
         save = makedir(save, segment)
@@ -107,12 +109,37 @@ end
 --- Records the path change.
 ---
 --- - For text nodes, it simply marks the line as read.
+--- @param save table
+--- @param root table
+--- @param path TablePath
+function history.record_simple(save, root, path)
+    local old = path:copy()
+    local i = old[#old]
+    if type(i) ~= "number" then
+        return
+    end
+    if not old:get(root) or not old:is_array(root, 1) then
+        return
+    end
+
+    old[#old] = nil
+    local reads = history.get(save, old, "R")
+    if type(reads) ~= "table" then
+        reads = {}
+        history.set(save, root, old, "R", reads)
+    end
+    old[#old + 1] = i
+    history.set_bit(reads, i)
+end
+
+--- Records the path change.
+---
 --- - For arrays (probably with labeled ones), it increments their visited counter.
 --- @param save table
 --- @param root table
 --- @param old TablePath|nil
 --- @param new TablePath
-function history.record_simple(save, root, old, new)
+function history.record_move(save, root, old, new)
     if old and old:equals(new) then
         return
     end
@@ -137,15 +164,6 @@ function history.record_simple(save, root, old, new)
             if not old or meta.I == 0 then
                 meta.I = meta.I + 1
             end
-
-            if i < #new then
-                local read = meta.R
-                if not read then
-                    read = {}
-                    meta.R = read
-                end
-                history.set_bit(read, new[i + 1])
-            end
         end
         i = i + 1
     end
@@ -154,6 +172,7 @@ end
 --- Returns the visited count.
 --- @param save table
 --- @param path TablePath
+--- @return number count the visited count
 function history.get_recorded_count(save, path)
     local is_array, node = path:is_array(save)
     if is_array then
@@ -163,7 +182,7 @@ function history.get_recorded_count(save, path)
     is_array, parent = path:is_array(save, 1)
     if is_array then
         local bitset = assert(parent)[1].R
-        return bitset and history.get_bit(bitset, path[#path]) or 0
+        return bitset and (history.get_bit(bitset, path[#path]) and 1) or 0
     end
     return 0
 end

@@ -23,6 +23,7 @@ local TablePath = require("mdvm.table_path")
 ---
 --- @field tags table<string, string>|boolean|nil tags
 --- @field text string|nil the translated and interpolated text
+--- @field visited boolean whether the text has been visited
 
 --- @class Selectable
 ---
@@ -38,6 +39,7 @@ local TablePath = require("mdvm.table_path")
 ---
 --- @field tags table<string, string>|boolean|nil tags
 --- @field text string|nil the translated and interpolated text
+--- @field visited boolean whether the text or the select has been visited
 --- @field select Selectable[]|nil the selectable options
 
 --- @class IOCache
