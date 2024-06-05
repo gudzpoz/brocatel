@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>API references &#8212; brocatel  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=12dfc556" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=888ff710"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Welcome to brocatelVM’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="api-references">
+<h1>API references<a class="headerlink" href="#api-references" title="Link to this heading">¶</a></h1>
+<section id="the-brocatel-module">
+<h2>The <code class="docutils literal notranslate"><span class="pre">brocatel</span></code> module<a class="headerlink" href="#the-brocatel-module" title="Link to this heading">¶</a></h2>
+<p id="module-brocatel">The brocatel module, containing the core brocatel.VM implementation.</p>
+<dl class="lua function">
+<dt class="sig sig-object lua" id="brocatel.load_vm">
+<em class="property"> </em><span class="sig-prename descclassname"><span class="pre">brocatel.</span></span><span class="sig-name descname"><span class="pre">load_vm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">content</span></em>, <em class="sig-param"><span class="pre">save</span></em>, <em class="sig-param"><span class="pre">extra_env</span></em><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.load_vm" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a VM from a string chunk compiled by the Brocatel compiler.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">save</span></code> argument is equivalent to <cite>load_vm</cite> and then calling <cite>VM.load</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>content</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">str</span></code></span>) – the compile brocatel chunk</p></li>
+<li><p><strong>save</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">str</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – the savedata content, from <a class="reference internal" href="#brocatel.VM.save" title="brocatel.VM.save"><code class="xref any lua lua-meth docutils literal notranslate"><span class="pre">brocatel.VM.save</span></code></a></p></li>
+<li><p><strong>extra_env</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">table</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – extra Lua environment globals (only <cite>extern</cite>, <cite>print</cite> and <cite>require</cite> permitted)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>vm</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><a class="reference internal" href="#brocatel.VM" title="brocatel.VM"><code class="xref lua lua-class docutils literal notranslate"><span class="pre">brocatel.VM</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="the-vm-class">
+<h2>The <code class="docutils literal notranslate"><span class="pre">VM</span></code> class<a class="headerlink" href="#the-vm-class" title="Link to this heading">¶</a></h2>
+<dl class="lua class">
+<dt class="sig sig-object lua" id="brocatel.VM">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">brocatel.VM</span></span><a class="headerlink" href="#brocatel.VM" title="Link to this definition">¶</a></dt>
+<dd><p>The brocatel runtime VM.</p>
+<section id="basic-usage">
+<h3>Basic usage:<a class="headerlink" href="#basic-usage" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>Going through the story with <a class="reference internal" href="#brocatel.VM.next" title="brocatel.VM.next"><code class="xref any lua lua-meth docutils literal notranslate"><span class="pre">brocatel.VM.next</span></code></a></p></li>
+<li><p>Saving the VM state with <a class="reference internal" href="#brocatel.VM.save" title="brocatel.VM.save"><code class="xref any lua lua-meth docutils literal notranslate"><span class="pre">brocatel.VM.save</span></code></a></p></li>
+<li><p>Loading the VM state with <a class="reference internal" href="#brocatel.VM.load" title="brocatel.VM.load"><code class="xref any lua lua-meth docutils literal notranslate"><span class="pre">brocatel.VM.load</span></code></a></p></li>
+<li><p>Supplying a gettext implementation with <a class="reference internal" href="#brocatel.VM.set_gettext" title="brocatel.VM.set_gettext"><code class="xref any lua lua-meth docutils literal notranslate"><span class="pre">brocatel.VM.set_gettext</span></code></a></p></li>
+</ul>
+<dl class="lua attribute">
+<dt class="sig sig-object lua" id="brocatel.VM.code">
+<span class="sig-name descname"><span class="pre">code</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">Code</span><a class="headerlink" href="#brocatel.VM.code" title="Link to this definition">¶</a></dt>
+<dd><p>the compiled brocatel scripts</p>
+</dd></dl>
+
+<dl class="lua attribute">
+<dt class="sig sig-object lua" id="brocatel.VM.env">
+<span class="sig-name descname"><span class="pre">env</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">StackedEnv</span><a class="headerlink" href="#brocatel.VM.env" title="Link to this definition">¶</a></dt>
+<dd><p>the environment handle</p>
+</dd></dl>
+
+<dl class="lua attribute">
+<dt class="sig sig-object lua" id="brocatel.VM.savedata">
+<span class="sig-name descname"><span class="pre">savedata</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">SaveData</span><a class="headerlink" href="#brocatel.VM.savedata" title="Link to this definition">¶</a></dt>
+<dd><p>save data</p>
+</dd></dl>
+
+<dl class="lua attribute">
+<dt class="sig sig-object lua" id="brocatel.VM.flags">
+<span class="sig-name descname"><span class="pre">flags</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">Flags</span><a class="headerlink" href="#brocatel.VM.flags" title="Link to this definition">¶</a></dt>
+<dd><p>inner api for data storage, cleaned on each <cite>next</cite> call</p>
+</dd></dl>
+
+<dl class="lua attribute">
+<dt class="sig sig-object lua" id="brocatel.VM.gettext">
+<span class="sig-name descname"><span class="pre">gettext</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">Gettext</span><a class="headerlink" href="#brocatel.VM.gettext" title="Link to this definition">¶</a></dt>
+<dd><p>GNU Gettext config</p>
+</dd></dl>
+
+<dl class="lua attribute">
+<dt class="sig sig-object lua" id="brocatel.VM.config">
+<span class="sig-name descname"><span class="pre">config</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">Config</span><a class="headerlink" href="#brocatel.VM.config" title="Link to this definition">¶</a></dt>
+<dd><p>the VM config</p>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.call_with_env">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">call_with_env</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">env</span></em>, <em class="sig-param"><span class="pre">func</span></em><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.call_with_env" title="Link to this definition">¶</a></dt>
+<dd><p>Calls a function with the supplied environment pushed into the stacked env.</p>
+<p>It simply executes <cite>push(env); result = func(…); pop()</cite> and returns the result.
+However, the actual environment of the function is not changed, which means
+it should already bind to vm.env.env to make the environment change effective.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>env</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">table</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – </p></li>
+<li><p><strong>func</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">function</span></code></span>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.eval_with_env">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">eval_with_env</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">env</span></em>, <em class="sig-param"><span class="pre">ip</span></em>, <em class="sig-param"><span class="pre">env_keys</span></em><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.eval_with_env" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluates a node at the supplied pointer with the environment pushed.</p>
+<p>It yields values just like <cite>next</cite>, unless any <cite>if-else</cite> statement yields false,
+when it will return nil instead.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>env</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">table</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – </p></li>
+<li><p><strong>ip</strong> (<span><a class="reference internal" href="#TablePath" title="TablePath"><code class="xref lua lua-class docutils literal notranslate"><span class="pre">TablePath</span></code></a></span>) – </p></li>
+<li><p><strong>env_keys</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">table</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.set_gettext">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">set_gettext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">gettext</span></em>, <em class="sig-param"><span class="pre">ngettext</span></em><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.set_gettext" title="Link to this definition">¶</a></dt>
+<dd><p>GNU gettext interface supplied by the user to offload translation to GNU gettext.</p>
+<p>Configures the gettext functionality.</p>
+<p>Although GNU Gettext requires <cite>msgid-plural</cite> for ngettext,
+you don’t always write your plots in languages with a plural form
+(nor have we a way to write this in Markdown in a neat way).
+If you are wrapping gettext library calls and using PO fields
+generated by our <cite>lgettext</cite>, you can just pass an empty string as
+<cite>msgid-plural</cite>.
+See also <a class="reference external" href="https://www.man7.org/linux/man-pages/man3/gettext.3.html">gettext(3)</a>
+and <a class="reference external" href="https://www.man7.org/linux/man-pages/man3/ngettext.3.html">ngettext(3)</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gettext</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">fun(str):str</span></code></span>) – see <code class="docutils literal notranslate"><span class="pre">gettext(3)</span></code></p></li>
+<li><p><strong>ngettext</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">fun(str,</span> <span class="pre">number):str</span></code></span>) – see <code class="docutils literal notranslate"><span class="pre">ngettext(3)</span></code></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.set_config">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">set_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">config</span></em><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.set_config" title="Link to this definition">¶</a></dt>
+<dd><p>Runtime VM config.</p>
+<p>Configures the VM.</p>
+<p>The supplied config will be merged with the default config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">Config</span></code></span>) – the config</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.push_stack_frame">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">push_stack_frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">params</span></em>, <em class="sig-param"><span class="pre">ip</span></em>, <em class="sig-param"><span class="pre">extra_keys</span></em><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.push_stack_frame" title="Link to this definition">¶</a></dt>
+<dd><p>Performs a function call by pushing a new stack frame (with return address and params)</p>
+<p>and jumping to the supplied ip.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">table</span></code></span>) – the parameters</p></li>
+<li><p><strong>ip</strong> (<span><a class="reference internal" href="#TablePath" title="TablePath"><code class="xref lua lua-class docutils literal notranslate"><span class="pre">TablePath</span></code></a></span>) – the return address</p></li>
+<li><p><strong>extra_keys</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">list[str]</span></code></span>) – names of function local variables</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.pop_stack_frame">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">pop_stack_frame</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.pop_stack_frame" title="Link to this definition">¶</a></dt>
+<dd><p>Pops a stack frame and jumps to the return address.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>success false if no function call in stack</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">boolean</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.next">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">next</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">input</span></em><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.next" title="Link to this definition">¶</a></dt>
+<dd><p>Yields the next line.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">number</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – the input when the previous line is a list of options</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>line the next line or nil if the story has ended</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">Output</span> <span class="pre">or</span> <span class="pre">nil</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.current">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">current</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.current" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the current line.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the current line or nil if the story has ended</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">Output</span> <span class="pre">or</span> <span class="pre">nil</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.interpolate">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">interpolate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">text</span></em>, <em class="sig-param"><span class="pre">values</span></em>, <em class="sig-param"><span class="pre">translate</span></em>, <em class="sig-param"><span class="pre">plural</span></em><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.interpolate" title="Link to this definition">¶</a></dt>
+<dd><p>Interpolates the text with the supplied values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">str</span></code></span>) – </p></li>
+<li><p><strong>values</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">dict[str,</span> <span class="pre">function]</span></code></span>) – </p></li>
+<li><p><strong>translate</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">boolean</span></code></span>) – </p></li>
+<li><p><strong>plural</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">str</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.translate">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">translate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">msgid</span></em>, <em class="sig-param"><span class="pre">count</span></em><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.translate" title="Link to this definition">¶</a></dt>
+<dd><p>Translates a message if a gettext backend is configured.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msgid</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">str</span></code></span>) – the message</p></li>
+<li><p><strong>count</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">number</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – the plural</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.lookup_label">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">lookup_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">keys</span></em><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.lookup_label" title="Link to this definition">¶</a></dt>
+<dd><p>Looks up a label relative to the current IP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>keys</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">table</span></code></span>) – relative label path</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">TablePath</span> <span class="pre">or</span> <span class="pre">nil</span></code></span></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">Element</span> <span class="pre">or</span> <span class="pre">nil</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.ip_debug_info">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">ip_debug_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">ip</span></em><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.ip_debug_info" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the debug information of the current IP or the supplied pointer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ip</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">TablePath</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – the pointer (defaults to the current IP)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>info the current node info</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">InvalidNode</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.validate_links">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">validate_links</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.validate_links" title="Link to this definition">¶</a></dt>
+<dd><p>The function is mainly called by the compiler to detect invalid links.
+The users need not to check link validity themselves.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>incorrect incorrect link nodes</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">list[InvalidNode]</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.save">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.save" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a string that can be loaded to restore the VM state.</p>
+<p>Internally, the returned string is just a serialized Lua table,
+without any obfuscation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>state the VM state serialized to a string</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="brocatel.VM.load">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">state</span></em><span class="sig-paren">)</span><a class="headerlink" href="#brocatel.VM.load" title="Link to this definition">¶</a></dt>
+<dd><p>Loads a string generated by <cite>save()</cite> to restore to a certain VM.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>state</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">str</span></code></span>) – the VM state serialized to a string</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+</section>
+<section id="the-output-type">
+<h2>The <code class="docutils literal notranslate"><span class="pre">Output</span></code> type<a class="headerlink" href="#the-output-type" title="Link to this heading">¶</a></h2>
+<dl class="lua class">
+<dt class="sig sig-object lua" id="Output">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Output</span></span><a class="headerlink" href="#Output" title="Link to this definition">¶</a></dt>
+<dd><dl class="lua attribute">
+<dt class="sig sig-object lua" id="Output.tags">
+<span class="sig-name descname"><span class="pre">tags</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">dict[str,</span> <span class="pre">str]</span> <span class="pre">or</span> <span class="pre">boolean</span> <span class="pre">or</span> <span class="pre">nil</span><a class="headerlink" href="#Output.tags" title="Link to this definition">¶</a></dt>
+<dd><p>tags</p>
+</dd></dl>
+
+<dl class="lua attribute">
+<dt class="sig sig-object lua" id="Output.text">
+<span class="sig-name descname"><span class="pre">text</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">str</span> <span class="pre">or</span> <span class="pre">nil</span><a class="headerlink" href="#Output.text" title="Link to this definition">¶</a></dt>
+<dd><p>the translated and interpolated text</p>
+</dd></dl>
+
+<dl class="lua attribute">
+<dt class="sig sig-object lua" id="Output.visited">
+<span class="sig-name descname"><span class="pre">visited</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">boolean</span><a class="headerlink" href="#Output.visited" title="Link to this definition">¶</a></dt>
+<dd><p>whether the text or the select has been visited</p>
+</dd></dl>
+
+<dl class="lua attribute">
+<dt class="sig sig-object lua" id="Output.select">
+<span class="sig-name descname"><span class="pre">select</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">list[Selectable]</span> <span class="pre">or</span> <span class="pre">nil</span><a class="headerlink" href="#Output.select" title="Link to this definition">¶</a></dt>
+<dd><p>the selectable options</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="lua class">
+<dt class="sig sig-object lua" id="Selectable">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Selectable</span></span><a class="headerlink" href="#Selectable" title="Link to this definition">¶</a></dt>
+<dd><dl class="lua attribute">
+<dt class="sig sig-object lua" id="Selectable.key">
+<span class="sig-name descname"><span class="pre">key</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">number</span><a class="headerlink" href="#Selectable.key" title="Link to this definition">¶</a></dt>
+<dd><p>a number referring to the option, to be passed to <cite>VM.next</cite> to select to option</p>
+</dd></dl>
+
+<dl class="lua attribute">
+<dt class="sig sig-object lua" id="Selectable.option">
+<span class="sig-name descname"><span class="pre">option</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">Text</span><a class="headerlink" href="#Selectable.option" title="Link to this definition">¶</a></dt>
+<dd><p>the displayed text</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="lua class">
+<dt class="sig sig-object lua" id="Text">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">Text</span></span><a class="headerlink" href="#Text" title="Link to this definition">¶</a></dt>
+<dd><dl class="lua attribute">
+<dt class="sig sig-object lua" id="Text.tags">
+<span class="sig-name descname"><span class="pre">tags</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">dict[str,</span> <span class="pre">str]</span> <span class="pre">or</span> <span class="pre">boolean</span> <span class="pre">or</span> <span class="pre">nil</span><a class="headerlink" href="#Text.tags" title="Link to this definition">¶</a></dt>
+<dd><p>tags</p>
+</dd></dl>
+
+<dl class="lua attribute">
+<dt class="sig sig-object lua" id="Text.text">
+<span class="sig-name descname"><span class="pre">text</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">str</span> <span class="pre">or</span> <span class="pre">nil</span><a class="headerlink" href="#Text.text" title="Link to this definition">¶</a></dt>
+<dd><p>the translated and interpolated text</p>
+</dd></dl>
+
+<dl class="lua attribute">
+<dt class="sig sig-object lua" id="Text.visited">
+<span class="sig-name descname"><span class="pre">visited</span></span><em class="property"><span class="pre">:</span> </em><span class="pre">boolean</span><a class="headerlink" href="#Text.visited" title="Link to this definition">¶</a></dt>
+<dd><p>whether the text has been visited</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="the-tablepath-class">
+<h2>The <code class="docutils literal notranslate"><span class="pre">TablePath</span></code> class<a class="headerlink" href="#the-tablepath-class" title="Link to this heading">¶</a></h2>
+<dl class="lua alias">
+<dt class="sig sig-object lua" id="TablePathSeg">
+<em class="property"><span class="pre">alias</span> </em><span class="sig-name descname"><span class="pre">TablePathSeg</span></span><em class="property"><span class="pre">:</span> </em><span class="sig-prename descclassname"><span class="pre">string|number</span></span><a class="headerlink" href="#TablePathSeg" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="lua class">
+<dt class="sig sig-object lua" id="TablePath">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">TablePath</span></span><a class="headerlink" href="#TablePath" title="Link to this definition">¶</a></dt>
+<dd><p>Simplified JSONPath for Lua tables.</p>
+<p>It recognizes basic elements (only arrays for now) in the brocatel runtime format,
+to allow easier navigation through the tree structure.</p>
+<dl class="lua staticmethod">
+<dt class="sig sig-object lua" id="TablePath.from">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">from</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">t</span></em><span class="sig-paren">)</span><a class="headerlink" href="#TablePath.from" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a path from an array.</p>
+<p>The table is copied into the new path.
+Listeners are not copied.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">list[TablePathSeg]</span> <span class="pre">or</span> <span class="pre">TablePath</span></code></span>) – the path</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span><a class="reference internal" href="#TablePath" title="TablePath"><code class="xref lua lua-class docutils literal notranslate"><span class="pre">TablePath</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="TablePath.copy">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TablePath.copy" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a copy of the current pointer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><a class="reference internal" href="#TablePath" title="TablePath"><code class="xref lua lua-class docutils literal notranslate"><span class="pre">TablePath</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="TablePath.set_listener">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">set_listener</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">listener</span></em><span class="sig-paren">)</span><a class="headerlink" href="#TablePath.set_listener" title="Link to this definition">¶</a></dt>
+<dd><p>Sets the path change listener.</p>
+<p>When the path is changed, it calls the listener, passing the new path and
+the new path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>listener</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">function</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="TablePath.set">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">t</span></em><span class="sig-paren">)</span><a class="headerlink" href="#TablePath.set" title="Link to this definition">¶</a></dt>
+<dd><p>Sets the path in place.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>t</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">table</span> <span class="pre">or</span> <span class="pre">TablePath</span></code></span>) – the new path</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>self</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><a class="reference internal" href="#TablePath" title="TablePath"><code class="xref lua lua-class docutils literal notranslate"><span class="pre">TablePath</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="TablePath.equals">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">equals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#TablePath.equals" title="Link to this definition">¶</a></dt>
+<dd><p>Returns true if the two paths equal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">table</span> <span class="pre">or</span> <span class="pre">TablePath</span></code></span>) – the other path</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>eq</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">boolean</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="TablePath.get">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">t</span></em>, <em class="sig-param"><span class="pre">parents</span></em><span class="sig-paren">)</span><a class="headerlink" href="#TablePath.get" title="Link to this definition">¶</a></dt>
+<dd><p>Fetches the element of the table at the current path.</p>
+<p>Sets the <cite>parents</cite> parameter to <cite>1</cite> to fetch the parent node instead,
+or to <cite>2</cite> to fetch a grandparent node, etc.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">table</span></code></span>) – </p></li>
+<li><p><strong>parents</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">number</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – the levels to go up</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>node</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">Element</span> <span class="pre">or</span> <span class="pre">nil</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="TablePath.resolve">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">resolve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">...</span></em><span class="sig-paren">)</span><a class="headerlink" href="#TablePath.resolve" title="Link to this definition">¶</a></dt>
+<dd><p>Points the path to a new path relative to the current one.</p>
+<p>Use <cite>nil</cite> as a parameter to “go up”. Examples:</p>
+<p><cite>TablePath.new():resolve(“a”, b”, 1)</cite> points the path to <cite>{“a”, “b”, 1}</cite>.
+<cite>TablePath.from({1, 1, 1}):resolve(nil, nil, 2)</cite> points the path to <cite>{1, 2}</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vararg</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">table</span> <span class="pre">or</span> <span class="pre">str</span> <span class="pre">or</span> <span class="pre">number</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – the relative path</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>self the new current path, <em>not</em> a new one</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><a class="reference internal" href="#TablePath" title="TablePath"><code class="xref lua lua-class docutils literal notranslate"><span class="pre">TablePath</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="TablePath.is_array">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">is_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">t</span></em>, <em class="sig-param"><span class="pre">parents</span></em><span class="sig-paren">)</span><a class="headerlink" href="#TablePath.is_array" title="Link to this definition">¶</a></dt>
+<dd><p>Returns true if the pointer is pointing to an brocatel array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">table</span></code></span>) – </p></li>
+<li><p><strong>parents</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">number</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>is_array</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">boolean</span></code></span></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>node</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">Element</span> <span class="pre">or</span> <span class="pre">nil</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="TablePath.is_parent_to">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">is_parent_to</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#TablePath.is_parent_to" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<span><a class="reference internal" href="#TablePath" title="TablePath"><code class="xref lua lua-class docutils literal notranslate"><span class="pre">TablePath</span></code></a></span>) – </p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">boolean</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="TablePath.step">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">t</span></em>, <em class="sig-param"><span class="pre">init</span></em><span class="sig-paren">)</span><a class="headerlink" href="#TablePath.step" title="Link to this definition">¶</a></dt>
+<dd><p>Points the path to the next element.</p>
+<p>The iteration follows the brocatel runtime format specification.
+It repeats the following until it finds a valid “next element”.</p>
+<p>## Procedure</p>
+<p>(1). If the parent node of the current element is not an <em>array</em> node, go to that parent node and start over.</p>
+<p>(2). If it is an <em>array</em> node:</p>
+<p>(2.1). If the current element is the last child node, go to that parent node and start over from (1).</p>
+<p>(2.2). If the current element is not the last child node, go to the next sibling and</p>
+<p>(2.2.1). If we are now at an <em>non-array</em> node, then it is a valid “next element”. <em>Returns</em>.</p>
+<p>(2.2.2). If we are now at an <em>array</em> node and</p>
+<p>(2.2.2.1). If its first element (excluding the metadata element) is <cite>nil</cite>, start over from (1).</p>
+<p>(2.2.2.2). If its first element is an <em>array</em>, go there and start over from (2.2.2).</p>
+<p>(2.2.2.3). If its first element is an <em>non-array</em> node, go there and we are done. <em>Returns</em>.</p>
+<p>## Details</p>
+<p>It tells whether a Lua table node is an <em>array</em>, by looking at its first element.
+An <em>array</em> expects a metadata element (a Lua table), while others never.</p>
+<p>## Usage</p>
+<p>The function steps the pointer to the next valid element.
+For a root node like <cite>{{}, “A”, “B”}</cite>, a pointer <cite>{2}</cite> points to <cite>“A”</cite>.
+And stepping the pointer makes it point to <cite>“B”</cite>.</p>
+<p>However, you cannot step any pointer to point to the first valid element,
+which is not “the next element” to any. In order to initialize a pointer
+by letting it point to the first valid element, call <cite>step</cite> with its <cite>init</cite>
+parameter set to <cite>true</cite> on an empty pointer.</p>
+<p>It may be clearer to state it this way:
+<cite>init = false</cite>: looks up the next valid element, current element <strong>excluded</strong>, while
+<cite>init = true</cite>: looks up the next valid element, current element <strong>included</strong>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">table</span></code></span>) – </p></li>
+<li><p><strong>init</strong> (<span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">boolean</span> <span class="pre">or</span> <span class="pre">nil</span></code></span>) – see the above usage tips</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>success false if the tree is exhausted and no valid next element can be found</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">boolean</span></code></span></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>gone_up true if the process exhausted at least one array and started looking at its siblings</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">boolean</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="lua method">
+<dt class="sig sig-object lua" id="TablePath.is_done">
+<em class="property"> </em><span class="sig-name descname"><span class="pre">is_done</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TablePath.is_done" title="Link to this definition">¶</a></dt>
+<dd><p>Returns true if the pointer cannot get further incremented (pointing to the root).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>done</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span><code class="xref lua lua-class docutils literal notranslate"><span class="pre">boolean</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">brocatel</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API references</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-brocatel-module">The <code class="docutils literal notranslate"><span class="pre">brocatel</span></code> module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-vm-class">The <code class="docutils literal notranslate"><span class="pre">VM</span></code> class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-output-type">The <code class="docutils literal notranslate"><span class="pre">Output</span></code> type</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-tablepath-class">The <code class="docutils literal notranslate"><span class="pre">TablePath</span></code> class</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to brocatelVM’s documentation!</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, gudzpoz.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/api.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

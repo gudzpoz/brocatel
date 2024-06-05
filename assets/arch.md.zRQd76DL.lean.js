@@ -1,0 +1,1 @@
+import{_ as s,c as i,o as a,a4 as e}from"./chunks/framework.CPGI-sM3.js";const g=JSON.parse('{"title":"Brocatel Architecture","description":"","frontmatter":{},"headers":[],"relativePath":"arch.md","filePath":"arch.md"}'),n={name:"arch.md"},t=e("",64),l=[t];function h(p,k,r,o,d,E){return a(),i("div",null,l)}const y=s(n,[["render",h]]);export{g as __pageData,y as default};

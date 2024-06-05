@@ -1,0 +1,1 @@
+import{_ as t,c as e,o as s,a4 as i}from"./chunks/framework.CPGI-sM3.js";const m=JSON.parse('{"title":"Brocatel Roadmap","description":"","frontmatter":{},"headers":[],"relativePath":"roadmap.md","filePath":"roadmap.md"}'),a={name:"roadmap.md"},l=i("",25),c=[l];function o(n,k,d,h,r,p){return s(),e("div",null,c)}const u=t(a,[["render",o]]);export{m as __pageData,u as default};
