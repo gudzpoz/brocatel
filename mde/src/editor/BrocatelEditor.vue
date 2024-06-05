@@ -64,24 +64,31 @@ const emit = defineEmits<{
 }>();
 </script>
 <style>
-/*
- * Removes browser default editor border.
- */
+/* Removes browser default editor border. */
  .ProseMirror.outline-none {
   outline: 2px solid transparent;
   outline-offset: 2px;
 }
 
+/* Fix bullet list markers. */
+li[data-list-type="bullet"] > div[data-node-view-root] {
+  display: inline-flex;
+  vertical-align: top;
+}
+li[data-list-type="bullet"] > div[data-node-view-root] > div.paragraph {
+  position: relative;
+  top: -0.4em;
+}
 /**
-* @prosemirror-adapter/vue: minimize inconvenience from node views.
-*/
+ * @prosemirror-adapter/vue: minimize inconvenience from node views.
+ */
 .ProseMirror div[data-node-view-root] {
   display: flex;
 }
 
-/*
-* mdx.ts: inline mdx expression styles.
-*/
+/**
+ * mdx.ts: inline mdx expression styles.
+ */
 .ProseMirror.milkdown-theme-nord div.paragraph code[data-type="mdxTextExpression"]::before,
 .ProseMirror.milkdown-theme-nord .heading code[data-type="mdxTextExpression"]::before {
   content: "{";
