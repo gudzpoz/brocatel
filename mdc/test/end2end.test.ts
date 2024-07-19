@@ -68,6 +68,14 @@ test('Texts', async () => {
   ]);
 });
 
+test('Unicode', async () => {
+  await assertOutput('Hello \u{1F600} World!', [], ['Hello \u{1F600} World!']);
+  await assertOutput('Hello \u{200B} World!', [], ['Hello \u{200B} World!']);
+  await assertOutput('Hello \u{00A0} World!', [], ['Hello \u{00A0} World!']);
+  await assertOutput('Hello \u{202F} World!', [], ['Hello \u{202F} World!']);
+  await assertOutput('Hello \u{01} World!', [], ['Hello \u{01} World!']);
+});
+
 test('Conditionals', async () => {
   await assertOutput('`type("") == "nil"` nil', [], []);
   await assertOutput('`type({}) == "table"` nil', [], ['nil']);

@@ -18,6 +18,21 @@ interface Annotated {
   value: SourceNode;
 }
 
+function luaStringify(value: number | boolean | string) {
+  if (typeof value !== 'string') {
+    return String(value);
+  }
+  return `"${
+    value
+      .replace(/\\/g, '\\\\')
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r')
+      .replace(/\t/g, '\\t')
+      .replace(/\v/g, '\\v')
+  }"`;
+}
+
 type StackElement = TableStart | Raw | Annotated;
 
 export default class LuaTableGenerator {
@@ -72,13 +87,13 @@ export default class LuaTableGenerator {
 
   value(v: string | number | boolean, position?: Position) {
     this.sep();
-    this.push(JSON.stringify(v), position);
+    this.push(luaStringify(v), position);
     return this;
   }
 
   pair(k: string, position?: Position) {
     this.sep();
-    this.push(isIdentifier(k) ? k : `[${JSON.stringify(k)}]`, position);
+    this.push(isIdentifier(k) ? k : `[${luaStringify(k)}]`, position);
     this.paired = true;
     return this;
   }
